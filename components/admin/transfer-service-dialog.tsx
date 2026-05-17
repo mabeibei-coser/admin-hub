@@ -273,6 +273,12 @@ export function TransferServiceDialog({
             </p>
           )}
 
+          {/* 确认前的提示 —— 让用户知道点完按钮会发生什么 */}
+          <p className="text-xs text-gray-500 flex items-start gap-1.5">
+            <Info className="size-3.5 shrink-0 mt-0.5 text-gray-400" />
+            确认后将在「服务跟踪」模块中自动创建记录
+          </p>
+
           <div className="flex gap-2 pt-1">
             <Button
               type="button"
