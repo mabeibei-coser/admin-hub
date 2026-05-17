@@ -11,6 +11,7 @@ import { ResumeDiagnosisSection } from "@/components/report/resume-diagnosis-sec
 import { NegotiationSection } from "@/components/report/negotiation-section";
 import { WorkplaceInsightSection } from "@/components/report/workplace-insight-section";
 import type { ReportData, JobFormData, QuizAnswer } from "@/lib/types";
+import { withBase } from "@/lib/url";
 
 interface StoredFile {
   formData: JobFormData;
@@ -33,7 +34,7 @@ export default function ReportPreviewPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/admin/reports/${id}`)
+    fetch(withBase(`/api/admin/reports/${id}`))
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<ApiResponse>;

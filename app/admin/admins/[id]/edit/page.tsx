@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { AdminForm } from "@/components/admin/admin-form";
+import { withBase } from "@/lib/url";
 
 interface AdminRow {
   id: number;
@@ -30,8 +31,8 @@ export default function EditAdminPage() {
   useEffect(() => {
     // 并行拉取：目标管理员数据 + 当前登录用户信息
     Promise.all([
-      fetch("/api/admin/admins").then((r) => r.json()),
-      fetch("/api/admin/me").then((r) => r.json()),
+      fetch(withBase("/api/admin/admins")).then((r) => r.json()),
+      fetch(withBase("/api/admin/me")).then((r) => r.json()),
     ])
       .then(([adminsData, meData]) => {
         const target = (adminsData.admins ?? []).find(

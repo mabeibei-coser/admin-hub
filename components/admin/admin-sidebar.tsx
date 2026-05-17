@@ -15,6 +15,7 @@ import {
 import { useState, useEffect } from "react";
 import { PROJECTS } from "@/lib/projects";
 import { ChangePasswordDialog } from "./change-password-dialog";
+import { withBase } from "@/lib/url";
 
 type ProjectFilter = "all" | "report" | "nav";
 
@@ -38,7 +39,7 @@ const PROJECT_ICONS: Record<string, React.ComponentType<{ className?: string }>>
 function useAdminMe() {
   const [data, setData] = useState<MeData | null>(null);
   useEffect(() => {
-    fetch("/api/admin/me")
+    fetch(withBase("/api/admin/me"))
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setData(d))
       .catch(() => setData(null));
@@ -61,8 +62,8 @@ export function AdminSidebar() {
     if (loggingOut) return;
     setLoggingOut(true);
     try {
-      await fetch("/api/admin/logout", { method: "POST" });
-      window.location.href = "/admin/login";
+      await fetch(withBase("/api/admin/logout"), { method: "POST" });
+      window.location.href = withBase("/admin/login");
     } catch {
       setLoggingOut(false);
     }

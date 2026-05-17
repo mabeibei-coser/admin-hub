@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ASSIGNABLE_MENUS } from "@/lib/menus";
+import { withBase } from "@/lib/url";
 
 interface AdminRow {
   id: number;
@@ -51,7 +52,7 @@ export default function AdminsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/admins");
+      const res = await fetch(withBase("/api/admin/admins"));
       if (!res.ok) throw new Error((await res.json()).error ?? "加载失败");
       const data = await res.json();
       setAdmins(data.admins ?? []);
@@ -71,7 +72,7 @@ export default function AdminsPage() {
     const newActive = !admin.is_active;
     setToggling(admin.id);
     try {
-      const res = await fetch(`/api/admin/admins/${admin.id}`, {
+      const res = await fetch(withBase(`/api/admin/admins/${admin.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: newActive }),

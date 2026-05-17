@@ -27,6 +27,7 @@ import {
   TransferServiceDialog,
   type TransferTargetRow,
 } from "@/components/admin/transfer-service-dialog";
+import { withBase } from "@/lib/url";
 
 interface MeData {
   adminId: number;
@@ -199,7 +200,7 @@ function AdminReportsContent() {
   const [transferRow, setTransferRow] = useState<TransferTargetRow | null>(null);
   const [me, setMe] = useState<MeData | null>(null);
   useEffect(() => {
-    fetch("/api/admin/me")
+    fetch(withBase("/api/admin/me"))
       .then((r) => (r.ok ? r.json() : null))
       .then(
         (d: MeData | null) =>
@@ -243,7 +244,7 @@ function AdminReportsContent() {
       params.set("page", String(page));
       params.set("pageSize", String(pageSize));
 
-      const res = await fetch(`/api/admin/reports?${params}`);
+      const res = await fetch(withBase(`/api/admin/reports?${params}`));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setData((await res.json()) as ApiResponse);
     } catch (e) {
@@ -956,7 +957,7 @@ function RowActions({
     <div className="flex items-center justify-end gap-2">
       {row.has_resume ? (
         <a
-          href={`/api/admin/reports/${row.id}/resume?project=${row.project}`}
+          href={withBase(`/api/admin/reports/${row.id}/resume?project=${row.project}`)}
           download
           className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
         >
@@ -1016,7 +1017,7 @@ function ExpandedDetails({ row }: { row: ReportRow }) {
           <span className="text-gray-400">简历：</span>
           {row.has_resume ? (
             <a
-              href={`/api/admin/reports/${row.id}/resume?project=${row.project}`}
+              href={withBase(`/api/admin/reports/${row.id}/resume?project=${row.project}`)}
               download
               className="text-[var(--blue-700)] hover:underline"
             >
@@ -1054,7 +1055,7 @@ function ExpandedDetails({ row }: { row: ReportRow }) {
         <span className="text-gray-400">简历：</span>
         {row.has_resume ? (
           <a
-            href={`/api/admin/reports/${row.id}/resume?project=${row.project}`}
+            href={withBase(`/api/admin/reports/${row.id}/resume?project=${row.project}`)}
             download
             className="text-[var(--blue-700)] hover:underline"
           >
