@@ -280,7 +280,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as ServiceStatus)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+              className="h-8 text-sm border border-input rounded-md px-2.5 bg-white w-full min-w-[5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
             >
               {SERVICE_STATUSES.map((s) => (
                 <option key={s.key} value={s.key}>
@@ -382,8 +382,7 @@ function StaffSelect({
       onChange={(e) =>
         onChange(e.target.value === "" ? null : Number(e.target.value))
       }
-      className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 max-w-xs"
-      style={{ fontSize: "16px" }}
+      className="h-8 text-sm border border-input rounded-md px-2.5 bg-white w-full min-w-[5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
     >
       {allowNone && <option value="">不指定</option>}
       {!allowNone && !required && <option value="">—</option>}
