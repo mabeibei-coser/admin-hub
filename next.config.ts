@@ -3,7 +3,9 @@ import type { NextConfig } from "next";
 const BASE_PATH = "/b100";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["better-sqlite3"],
+  // better-sqlite3: native module，必须外部
+  // svg-captcha: 运行时读 .ttf 字体文件，不能被打包
+  serverExternalPackages: ["better-sqlite3", "svg-captcha"],
   basePath: BASE_PATH,
   trailingSlash: true,
   // 锁定 turbopack workspace root 为本目录。git worktree 场景下，主目录
