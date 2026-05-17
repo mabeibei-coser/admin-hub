@@ -70,8 +70,7 @@ export default function AdminLoginPage() {
     "focus-visible:!bg-white/[0.07] focus-visible:!border-[var(--blue-400)] focus-visible:!ring-[oklch(0.7_0.16_245_/_0.25)]";
 
   return (
-    /* 移动端居中；md+ 把 form 推到左侧 — 避开右侧 mesh 亮区 + 反对称构图（taste-skill variance=8） */
-    <div className="login-brand-panel relative min-h-dvh flex items-center justify-center md:justify-start md:pl-[10vw] lg:pl-[14vw] xl:pl-[18vw] p-6">
+    <div className="login-brand-panel relative min-h-dvh flex items-center justify-center p-6">
       {/* 左上 logo */}
       <header className="absolute top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2.5 z-10">
         <div className="size-9 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-[0_4px_12px_oklch(0_0_0_/_0.3)]">
