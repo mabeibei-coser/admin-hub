@@ -16,18 +16,25 @@ export async function GET() {
     ignoreChars: "0o1ilI", // 视觉易混淆的字符
     noise: 1,
     color: false,
-    background: "#f1f5f9", // 浅灰底，深色字，高对比度，防复制截图传播
+    // 不设 background → SVG 背景透明（玻璃卡片背景透过来）
     width: 120,
     height: 44,
-    fontSize: 46,
+    fontSize: 50,
   });
+
+  // svg-captcha 把字符渲染为 <path fill="...">，噪点为 <path stroke="...">。
+  // 深色玻璃背景上白色字符对比度最高；噪点保留但降到几乎不可见。
+  const svgData = captcha.data
+    .replace(/<rect[^>]*\/>/g, "")                                  // 移除背景矩形 → 透明
+    .replace(/\bfill="(?!none")([^"]*)"/g, 'fill="#ffffff"')        // 字符路径改白色
+    .replace(/\bstroke="[^"]*"/g, 'stroke="rgba(255,255,255,0.2)"'); // 噪点降至微弱白色
 
   const s = await getCaptchaSession();
   s.text = captcha.text.toLowerCase();
   s.createdAt = Date.now();
   await s.save();
 
-  return new NextResponse(captcha.data, {
+  return new NextResponse(svgData, {
     status: 200,
     headers: {
       "Content-Type": "image/svg+xml",
