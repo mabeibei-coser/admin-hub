@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Loader2, AlertTriangle, UserCog, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   SERVICE_CATEGORIES,
   SERVICE_STATUSES,
@@ -13,7 +11,7 @@ import {
   statusLabel,
   CATEGORY_BADGE_CLASS,
   STATUS_BADGE_CLASS,
-  SERVICE_PROJECT_LABELS,
+  maskPhone,
   type ServiceCategory,
   type ServiceStatus,
 } from "@/lib/service-tracking";
@@ -25,17 +23,15 @@ interface PickerAdmin {
 }
 
 export interface TrackingEditorInitial {
-  source_project: "report" | "nav";
-  target_position: string | null;
+  user_name: string | null;
+  user_phone: string | null;
   service_category: ServiceCategory;
   status: ServiceStatus;
-  overall_note: string | null;
   first_service_at: number;
   staff1_admin_id: number;
   staff2_admin_id: number | null;
   staff1_name: string | null;
   staff2_name: string | null;
-  recorder_name: string | null;
 }
 
 interface Props {
@@ -64,7 +60,6 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
   // 编辑状态字段
   const [category, setCategory] = useState<ServiceCategory>(initial.service_category);
   const [status, setStatus] = useState<ServiceStatus>(initial.status);
-  const [overallNote, setOverallNote] = useState(initial.overall_note ?? "");
   const [staff1Id, setStaff1Id] = useState<number>(initial.staff1_admin_id);
   const [staff2Id, setStaff2Id] = useState<number | null>(initial.staff2_admin_id);
   const [admins, setAdmins] = useState<PickerAdmin[] | null>(null);
@@ -92,7 +87,6 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
     setError(null);
     setCategory(initial.service_category);
     setStatus(initial.status);
-    setOverallNote(initial.overall_note ?? "");
     setStaff1Id(initial.staff1_admin_id);
     setStaff2Id(initial.staff2_admin_id);
   }
@@ -125,7 +119,6 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
         body: JSON.stringify({
           service_category: category,
           status,
-          overall_note: overallNote || null,
           staff1_admin_id: staff1Id,
           staff2_admin_id: staff2Id,
         }),
@@ -212,10 +205,17 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
       </div>
 
       <div>
-        <Row label="服务项目">
-          {SERVICE_PROJECT_LABELS[initial.source_project] ?? initial.source_project}
+        <Row label="服务对象">
+          <span className="text-gray-800">
+            {initial.user_name || "—"}
+          </span>
+          <span className="ml-2 text-xs tabular-nums text-gray-500">
+            {maskPhone(initial.user_phone)}
+          </span>
         </Row>
-        <Row label="意向岗位">{initial.target_position || "—"}</Row>
+        <Row label="转服务时间">
+          <span className="tabular-nums">{formatTs(initial.first_service_at)}</span>
+        </Row>
         <Row label="服务分类">
           {editing ? (
             <div className="flex flex-wrap gap-2">
@@ -248,35 +248,6 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
             </span>
           )}
         </Row>
-        <Row label="首次服务时间">
-          <span className="tabular-nums">{formatTs(initial.first_service_at)}</span>
-        </Row>
-        <Row label="服务状态">
-          {editing ? (
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as ServiceStatus)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
-            >
-              {SERVICE_STATUSES.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span
-              className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border ${STATUS_BADGE_CLASS[initial.status]}`}
-            >
-              <span
-                className={`size-1.5 rounded-full ${
-                  initial.status === "in_progress" ? "bg-blue-500" : "bg-emerald-500"
-                }`}
-              />
-              {statusLabel(initial.status)}
-            </span>
-          )}
-        </Row>
         <Row label="主服务人员">
           {editing ? (
             <StaffSelect
@@ -304,20 +275,29 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
             <span>{initial.staff2_name || "—"}</span>
           )}
         </Row>
-        <Row label="转入人">{initial.recorder_name || "—"}</Row>
-        <Row label="整体备注">
+        <Row label="服务状态">
           {editing ? (
-            <Textarea
-              value={overallNote}
-              onChange={(e) => setOverallNote(e.target.value)}
-              rows={3}
-              placeholder="可补充背景信息、关键诉求、家庭情况等"
-              className="resize-none"
-              style={{ fontSize: "16px" }}
-            />
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as ServiceStatus)}
+              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+            >
+              {SERVICE_STATUSES.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
           ) : (
-            <span className="whitespace-pre-wrap text-gray-700">
-              {initial.overall_note || "—"}
+            <span
+              className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border ${STATUS_BADGE_CLASS[initial.status]}`}
+            >
+              <span
+                className={`size-1.5 rounded-full ${
+                  initial.status === "in_progress" ? "bg-blue-500" : "bg-emerald-500"
+                }`}
+              />
+              {statusLabel(initial.status)}
             </span>
           )}
         </Row>

@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMenu } from "@/lib/admin-session";
 import { getDb } from "@/lib/db";
-import { touchLastServiceAt } from "@/lib/service-tracking";
+import {
+  touchLastServiceAt,
+  type ServiceRecordAttachment,
+} from "@/lib/service-tracking";
+
+function sanitizeAttachments(input: unknown): ServiceRecordAttachment[] {
+  if (!Array.isArray(input)) return [];
+  const out: ServiceRecordAttachment[] = [];
+  for (const item of input) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    if (typeof o.id !== "string" || !/^[a-f0-9-]{36}$/i.test(o.id)) continue;
+    if (typeof o.filename !== "string" || !o.filename) continue;
+    if (typeof o.mime !== "string") continue;
+    if (typeof o.size !== "number" || !Number.isFinite(o.size)) continue;
+    out.push({ id: o.id, filename: o.filename, mime: o.mime, size: o.size });
+  }
+  return out;
+}
 
 /**
  * PATCH /api/admin/service-tracking/[id]/records/[recordId]
@@ -53,6 +71,11 @@ export async function PATCH(
   if (body.note !== undefined) {
     sets.push("note = ?");
     sqlParams.push(body.note === null ? null : String(body.note));
+  }
+  if (body.attachments !== undefined) {
+    const cleaned = sanitizeAttachments(body.attachments);
+    sets.push("attachments_json = ?");
+    sqlParams.push(cleaned.length ? JSON.stringify(cleaned) : null);
   }
 
   if (sets.length === 0) {
