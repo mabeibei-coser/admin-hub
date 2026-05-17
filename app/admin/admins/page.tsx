@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, RefreshCw, ShieldCheck, UserCog } from "lucide-react";
+import { Plus, RefreshCw, ShieldCheck, UserCog, Users } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { PageHeader } from "@/components/admin/page-header";
 import {
   Table,
   TableBody,
@@ -67,32 +68,40 @@ export default function AdminsPage() {
   }, [fetchAdmins]);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      {/* 页头 */}
-      <div className="flex items-center justify-between mb-6 gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">管理员管理</h1>
-          <p className="text-sm text-gray-500 mt-0.5 tabular-nums">
-            {loading ? "加载中…" : admins.length > 0 ? `共 ${admins.length} 人 · ${admins.filter(a => a.is_active).length} 人启用中` : "管理各老师的登录账号与菜单权限"}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={fetchAdmins} disabled={loading}>
-            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
-            刷新
-          </Button>
-          <Link
-            href="/admin/admins/new"
-            className={buttonVariants({ size: "sm", className: "bg-blue-600 hover:bg-blue-700" })}
-          >
-            <Plus className="size-3.5" />
-            新建管理员
-          </Link>
-        </div>
-      </div>
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
+      {/* 页头 — 统一 PageHeader */}
+      <PageHeader
+        icon={Users}
+        title="管理员管理"
+        subtitle={
+          <span className="tabular-nums">
+            {loading
+              ? "加载中…"
+              : admins.length > 0
+              ? `共 ${admins.length} 人 · ${admins.filter((a) => a.is_active).length} 人启用中`
+              : "管理各老师的登录账号与菜单权限"}
+          </span>
+        }
+        accentColor="blue"
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={fetchAdmins} disabled={loading}>
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+              刷新
+            </Button>
+            <Link
+              href="/admin/admins/new"
+              className={buttonVariants({ size: "sm", className: "bg-[var(--blue-700)] hover:bg-[var(--blue-600)] text-white" })}
+            >
+              <Plus className="size-3.5" />
+              新建管理员
+            </Link>
+          </>
+        }
+      />
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4">
+        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}

@@ -11,6 +11,14 @@ import {
   RefreshCw,
   Inbox,
   ArrowRightCircle,
+  Briefcase,
+  Compass,
+  LayoutGrid,
+  Sparkles,
+  Clock,
+  Calendar,
+  CalendarDays,
+  type LucideIcon,
 } from "lucide-react";
 import {
   Table,
@@ -27,6 +35,7 @@ import {
   TransferServiceDialog,
   type TransferTargetRow,
 } from "@/components/admin/transfer-service-dialog";
+import { PageHeader } from "@/components/admin/page-header";
 import { withBase } from "@/lib/url";
 
 interface MeData {
@@ -129,6 +138,27 @@ function formatTs(ms: number) {
   const d = new Date(ms);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** KPI 卡右上的圆形 icon avatar — Tabler 风 */
+function KpiIcon({
+  icon: Icon,
+  size = "md",
+}: {
+  icon: LucideIcon;
+  size?: "sm" | "md";
+}) {
+  return (
+    <div
+      className={`shrink-0 rounded-full bg-[var(--blue-50)] flex items-center justify-center ring-1 ring-[var(--blue-200)]/60 ${
+        size === "sm" ? "size-7" : "size-9"
+      }`}
+    >
+      <Icon
+        className={`text-[var(--blue-700)] ${size === "sm" ? "size-3.5" : "size-4"}`}
+      />
+    </div>
+  );
 }
 
 function ProjectBadge({ project }: { project: ProjectId }) {
@@ -335,31 +365,25 @@ function AdminReportsContent() {
         }}
       />
       <div className="max-w-7xl mx-auto space-y-5">
-        {/* 标题 — 单色装饰条 + 项目色点 */}
-        <div className="relative">
-          <div
-            aria-hidden
-            className={`absolute -top-1 left-0 h-[3px] w-16 rounded-full ${
-              project === "nav"
-                ? "bg-[var(--semantic-positive)]"
-                : project === "report"
-                ? "bg-[var(--blue-700)]"
-                : "bg-[var(--blue-500)]"
-            }`}
-          />
-          <div className="pt-2">
-            <div className="flex flex-wrap items-baseline gap-2.5">
-              <h1 className="text-2xl font-semibold text-[var(--navy-800)] tracking-tight">
-                {currentProjectLabel}
-              </h1>
-              {project !== "all" && (
-                <span className="text-xs text-gray-500">
-                  {PROJECTS[project as ProjectId].description ?? ""}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* 标题 — 统一 PageHeader（圆形 icon avatar + 顶部装饰条） */}
+        <PageHeader
+          icon={
+            project === "nav"
+              ? Compass
+              : project === "report"
+              ? Briefcase
+              : LayoutGrid
+          }
+          title={currentProjectLabel}
+          subtitle={
+            project !== "all"
+              ? PROJECTS[project as ProjectId].description ?? null
+              : "两个项目报告聚合视图"
+          }
+          accentColor={
+            project === "nav" ? "green" : project === "report" ? "blue" : "neutral"
+          }
+        />
 
         {/* nav 降级提示 */}
         {navDegraded && (
@@ -378,8 +402,8 @@ function AdminReportsContent() {
         {/* Project Filter Pill Bar — 焦点级切换 */}
         <ProjectPillBar project={project} showService={me?.showService} />
 
-        {/* 过滤栏 — 去框感，inline 排列 */}
-        <div className="flex flex-wrap gap-3 items-end px-1">
+        {/* 过滤栏 — Tabler 风：包成轻卡 */}
+        <div className="bg-white rounded-xl ring-1 ring-[var(--report-border)] shadow-sm p-4 flex flex-wrap gap-3 items-end">
           <div>
             <div className="text-xs text-gray-500 mb-1">开始日期</div>
             <Input
@@ -645,8 +669,11 @@ function TodayStrip({
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
         {/* 左 5 栏：今日新增大数字 */}
         <div className="md:col-span-5">
-          <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
-            今日新增
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
+              今日新增
+            </div>
+            <KpiIcon icon={Sparkles} />
           </div>
           {loading && data === null ? (
             <div className="h-12 w-24 bg-gray-100 rounded animate-pulse mt-2" />
@@ -673,8 +700,11 @@ function TodayStrip({
         {/* 右 6 栏：两个 secondary KPI */}
         <div className="md:col-span-6 grid grid-cols-2 gap-4">
           <div>
-            <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
-              简历上传率
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
+                简历上传率
+              </div>
+              <KpiIcon icon={FileText} size="sm" />
             </div>
             {loading && data === null ? (
               <div className="h-7 w-16 bg-gray-100 rounded animate-pulse mt-2" />
@@ -685,8 +715,11 @@ function TodayStrip({
             )}
           </div>
           <div>
-            <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
-              平均耗时
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
+                平均耗时
+              </div>
+              <KpiIcon icon={Clock} size="sm" />
             </div>
             {loading && data === null ? (
               <div className="h-7 w-16 bg-gray-100 rounded animate-pulse mt-2" />
@@ -719,13 +752,18 @@ function NavStatStrip({
   const Cell = ({
     label,
     value,
+    icon,
   }: {
     label: string;
     value: number | undefined;
+    icon: LucideIcon;
   }) => (
     <div>
-      <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
-        {label}
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
+          {label}
+        </div>
+        <KpiIcon icon={icon} size="sm" />
       </div>
       {skeleton ? (
         <div className="h-10 w-20 bg-gray-100 rounded animate-pulse mt-2" />
@@ -740,10 +778,10 @@ function NavStatStrip({
   return (
     <div className="bg-white rounded-xl ring-1 ring-[var(--report-border)] shadow-sm p-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-        <Cell label="总报告数" value={total} />
-        <Cell label="本月新增" value={monthCount} />
-        <Cell label="本周新增" value={weekCount} />
-        <Cell label="转服务数量" value={transferredCount} />
+        <Cell label="总报告数" value={total} icon={FileText} />
+        <Cell label="本月新增" value={monthCount} icon={Calendar} />
+        <Cell label="本周新增" value={weekCount} icon={CalendarDays} />
+        <Cell label="转服务数量" value={transferredCount} icon={ArrowRightCircle} />
       </div>
     </div>
   );
