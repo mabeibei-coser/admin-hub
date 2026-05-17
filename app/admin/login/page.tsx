@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, ArrowRight, Briefcase, Compass, LifeBuoy } from "lucide-react";
+import { ShieldCheck, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isValidCnMobile } from "@/lib/phone";
@@ -45,178 +45,131 @@ export default function AdminLoginPage() {
     }
   };
 
+  // —— input 在深色背景下的覆盖样式（! 用于压过 Input primitive 的默认 light theme） ——
+  const darkInputClass =
+    "!h-11 !px-3.5 !text-[15px] " +
+    "!bg-white/[0.04] !border-white/15 !text-white placeholder:!text-white/30 " +
+    "hover:!border-white/25 " +
+    "focus-visible:!bg-white/[0.07] focus-visible:!border-[var(--blue-400)] focus-visible:!ring-[oklch(0.7_0.16_245_/_0.25)]";
+
   return (
-    <div className="min-h-dvh flex">
-      {/* ============ 左侧 form 面板 ============ */}
-      <div className="login-form-panel relative flex flex-col flex-1 lg:flex-none lg:w-[44%] xl:w-[40%] min-w-0">
-        {/* 顶部 logo */}
-        <header className="px-8 lg:px-14 pt-8 lg:pt-10 flex items-center gap-2.5">
-          <div className="size-8 rounded-xl bg-[var(--blue-700)] flex items-center justify-center shadow-[0_4px_12px_oklch(0.55_0.2_252_/_0.35)]">
-            <ShieldCheck className="size-4 text-white" strokeWidth={2.5} />
+    <div className="login-brand-panel relative min-h-dvh flex items-center justify-center p-6">
+      {/* 左上 logo */}
+      <header className="absolute top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2.5 z-10">
+        <div className="size-9 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-[0_4px_12px_oklch(0_0_0_/_0.3)]">
+          <ShieldCheck className="size-4 text-white" strokeWidth={2.4} />
+        </div>
+        <div className="leading-tight">
+          <div className="text-sm font-semibold tracking-tight text-white">
+            谨世 ATA
           </div>
-          <div className="leading-tight">
-            <div className="text-sm font-semibold tracking-tight text-[var(--navy-800)]">
-              谨世 ATA
-            </div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--blue-600)] font-medium">
-              admin&nbsp;hub
-            </div>
+          <div className="text-[10px] uppercase tracking-[0.14em] text-white/60 font-medium">
+            admin&nbsp;hub
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* 中段 form — 垂直居中 */}
-        <main className="flex-1 flex items-center px-8 lg:px-14">
-          <div className="w-full max-w-[380px] mx-auto py-12">
-            <div className="mb-9">
-              <h1 className="text-[28px] font-semibold tracking-tight text-[var(--navy-900)] leading-tight">
-                欢迎回来
-              </h1>
-              <p className="mt-2 text-sm text-gray-500">
-                登录后管理报告与服务跟进
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-1.5">
-                <Label
-                  htmlFor="username"
-                  className="text-[11px] font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  手机号
-                </Label>
-                <Input
-                  id="username"
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="11 位大陆手机号"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value.trim())}
-                  autoFocus
-                  autoComplete="username"
-                  maxLength={11}
-                  required
-                  className="!h-11 !px-3.5 !text-[15px] tabular-nums"
-                  style={{ fontSize: "16px" }}
-                />
-                {usernameError && (
-                  <p className="text-xs text-red-600 pl-0.5">{usernameError}</p>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <Label
-                  htmlFor="password"
-                  className="text-[11px] font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  密码
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="请输入密码"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                  className="!h-11 !px-3.5 !text-[15px]"
-                  style={{ fontSize: "16px" }}
-                />
-              </div>
-
-              {error && (
-                <div
-                  role="alert"
-                  className="text-sm text-red-700 bg-red-50/80 border border-red-200/70 rounded-lg px-3 py-2.5 flex gap-2 items-start"
-                >
-                  <span className="size-1.5 rounded-full bg-red-500 mt-1.5 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading || !canSubmit}
-                className="btn-primary-glow w-full h-11 rounded-xl text-[15px] font-medium flex items-center justify-center gap-2 group"
-              >
-                <span>{loading ? "登录中…" : "登录"}</span>
-                {!loading && (
-                  <ArrowRight
-                    className="size-4 transition-transform group-hover:translate-x-0.5"
-                    strokeWidth={2.25}
-                  />
-                )}
-              </button>
-            </form>
-
-            <p className="mt-7 text-xs text-gray-400 text-center">
-              忘记密码？请联系超管重置
-            </p>
-          </div>
-        </main>
-
-        {/* 底部 copyright */}
-        <footer className="px-8 lg:px-14 pb-6 flex items-center justify-between text-[11px] text-gray-400">
-          <span>© {new Date().getFullYear()} 谨世 ATA · admin-hub</span>
-          <span className="tabular-nums">v0.1.14</span>
-        </footer>
+      {/* 右上角运行状态 */}
+      <div className="absolute top-8 right-8 hidden sm:flex items-center gap-2 text-[11px] text-white/60 z-10">
+        <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_oklch(0.7_0.18_155)]" />
+        <span>系统运行正常</span>
       </div>
 
-      {/* ============ 右侧 brand 面板（仅 lg+ 显示） ============ */}
-      <aside className="login-brand-panel hidden lg:flex flex-1 relative items-center justify-center p-14 text-white">
-        {/* 顶部辅助 chip */}
-        <div className="absolute top-10 right-12 flex items-center gap-2 text-[11px] text-white/60 z-10">
-          <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_oklch(0.7_0.18_155)]" />
-          <span>系统运行正常</span>
-        </div>
-
-        {/* 中央内容 */}
-        <div className="relative z-10 max-w-md text-center">
-          {/* 浮动品牌 mark */}
-          <div className="login-mark mx-auto mb-10 size-20 rounded-3xl bg-white/[0.08] border border-white/15 backdrop-blur-md flex items-center justify-center shadow-[0_30px_60px_-20px_oklch(0_0_0_/_0.5)]">
-            <ShieldCheck className="size-10 text-white" strokeWidth={1.5} />
+      {/* —— 中央 form 卡片：glassmorphism —— */}
+      <div className="relative z-10 w-full max-w-[400px]">
+        <div className="rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-2xl shadow-[0_30px_60px_-20px_oklch(0_0_0_/_0.5),inset_0_1px_0_oklch(1_0_0_/_0.08)] p-8 sm:p-10">
+          <div className="mb-7">
+            <h1 className="text-[28px] font-semibold tracking-tight text-white leading-tight">
+              欢迎回来
+            </h1>
+            <p className="mt-2 text-sm text-white/55">
+              登录后管理报告与服务跟进
+            </p>
           </div>
 
-          <h2 className="text-[34px] leading-[1.15] font-semibold tracking-tight text-gradient-hero">
-            一处后台
-            <br />
-            管全部业务
-          </h2>
-          <p className="mt-5 text-[15px] leading-relaxed text-white/65 max-w-sm mx-auto">
-            职业定位 · 职业导航 · 服务跟进
-            <br />
-            报告查阅、客户对接、权限管理 一站完成
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="username"
+                className="text-[11px] font-medium text-white/55 uppercase tracking-wider"
+              >
+                手机号
+              </Label>
+              <Input
+                id="username"
+                type="tel"
+                inputMode="numeric"
+                placeholder="11 位大陆手机号"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.trim())}
+                autoFocus
+                autoComplete="username"
+                maxLength={11}
+                required
+                className={`${darkInputClass} tabular-nums`}
+                style={{ fontSize: "16px" }}
+              />
+              {usernameError && (
+                <p className="text-xs text-red-300 pl-0.5">{usernameError}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="password"
+                className="text-[11px] font-medium text-white/55 uppercase tracking-wider"
+              >
+                密码
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="请输入密码"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                className={darkInputClass}
+                style={{ fontSize: "16px" }}
+              />
+            </div>
+
+            {error && (
+              <div
+                role="alert"
+                className="text-sm text-red-200 bg-red-500/10 border border-red-400/30 rounded-lg px-3 py-2.5 flex gap-2 items-start"
+              >
+                <span className="size-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !canSubmit}
+              className="btn-primary-glow w-full h-11 rounded-xl text-[15px] font-medium flex items-center justify-center gap-2 group"
+            >
+              <span>{loading ? "登录中…" : "登录"}</span>
+              {!loading && (
+                <ArrowRight
+                  className="size-4 transition-transform group-hover:translate-x-0.5"
+                  strokeWidth={2.25}
+                />
+              )}
+            </button>
+          </form>
+
+          <p className="mt-7 text-xs text-white/40 text-center">
+            忘记密码？请联系超管重置
           </p>
-
-          {/* 业务模块 chip 行 */}
-          <div className="mt-10 flex items-center justify-center gap-2">
-            <BrandChip icon={Briefcase} label="职业定位" />
-            <BrandChip icon={Compass} label="职业导航" />
-            <BrandChip icon={LifeBuoy} label="服务跟进" />
-          </div>
         </div>
+      </div>
 
-        {/* 底部分隔线 + 引文 */}
-        <div className="absolute bottom-12 left-14 right-14 z-10">
-          <div className="brand-divider h-px w-full mb-5" />
-          <p className="text-xs text-white/45 text-center tracking-wide">
-            「让每一份报告都被认真对待」
-          </p>
-        </div>
-      </aside>
-    </div>
-  );
-}
-
-function BrandChip({
-  icon: Icon,
-  label,
-}: {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  label: string;
-}) {
-  return (
-    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/10 backdrop-blur-md text-[12px] text-white/80">
-      <Icon className="size-3.5 text-white/60" strokeWidth={2} />
-      <span>{label}</span>
+      {/* 底部 copyright */}
+      <footer className="absolute bottom-5 left-0 right-0 flex items-center justify-center gap-3 text-[11px] text-white/35 z-10">
+        <span>© {new Date().getFullYear()} 谨世 ATA · admin-hub</span>
+        <span className="hidden sm:inline text-white/20">·</span>
+        <span className="hidden sm:inline tabular-nums">v0.1.15</span>
+      </footer>
     </div>
   );
 }
