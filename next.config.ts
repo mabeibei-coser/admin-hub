@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["better-sqlite3"],
-  basePath: "/admin",
+  basePath: "/b100",
 };
 
 export default nextConfig;

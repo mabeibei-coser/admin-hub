@@ -39,7 +39,7 @@ const sessionOptions: SessionOptions = {
       process.env.NODE_ENV === "production",
     httpOnly: true,
     sameSite: "lax",
-    path: "/admin", // 生产 nginx 反代用 /admin/ 子路径，cookie 只发给 /admin/* 路径
+    path: "/b100", // 生产 nginx 反代用 /b100/ 子路径，cookie 只发给 /b100/* 路径
     maxAge: 60 * 60 * 24 * 7, // 7 天
   },
 };
