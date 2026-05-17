@@ -6,7 +6,7 @@ import fs from "fs";
 import path from "path";
 import { ChevronLeft, Download, AlertTriangle } from "lucide-react";
 import type { JobFormData, QuizAnswer } from "@/lib/types";
-import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2, QuizBank } from "@/lib/types-nav";
+import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2, QuizBank, QuizQuestion as NavQuizQuestion } from "@/lib/types-nav";
 import { PROJECTS } from "@/lib/projects";
 
 type ProjectId = "report" | "nav";
@@ -104,6 +104,7 @@ export default async function ReportDetailPage({
   // ─── Parse data by project ────────────────────────────────────────────────
   let reportData: NavReportData | null = null;
   let interviewQ1Q2: InterviewQ1Q2 | null = null;
+  let interviewQuestions: { Q1?: string; Q2?: string } | null = null;
   let navFormData: NavJobFormData | null = null;
   let navQuizAnswers: NavQuizAnswer[] | null = null;
   let navQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
@@ -115,6 +116,12 @@ export default async function ReportDetailPage({
     try { interviewQ1Q2 = JSON.parse(row.interview_q1q2_json as string) as InterviewQ1Q2; } catch { /* empty */ }
     try { navFormData = JSON.parse(row.form_data_json as string) as NavJobFormData; } catch { /* empty */ }
     try { navQuizAnswers = JSON.parse(row.quiz_answers_json as string) as NavQuizAnswer[]; } catch { /* empty */ }
+    // 访谈 Q1/Q2 题干（career-nav v0.10.13+ 持久化；老档案为 null）
+    try {
+      const iqStr = row.interview_questions_json as string | null;
+      if (iqStr) interviewQuestions = JSON.parse(iqStr) as { Q1?: string; Q2?: string };
+    } catch { /* empty */ }
+    // 量表题 lookup map：合并 quiz-bank.json 固定题（SJT-01/02）+ db 里持久化的动态题（SJT-03~08）
     const navDbPath = process.env.NAV_DB_PATH;
     if (navDbPath) {
       try {
@@ -124,6 +131,15 @@ export default async function ReportDetailPage({
         }
       } catch { /* quiz bank missing or unreadable */ }
     }
+    try {
+      const dqStr = row.dynamic_questions_json as string | null;
+      if (dqStr) {
+        const dynamicQs = JSON.parse(dqStr) as NavQuizQuestion[];
+        for (const q of dynamicQs) {
+          navQuizBankMap.set(q.id, { text: q.text, options: q.options.map((o) => ({ label: o.label, text: o.text })) });
+        }
+      }
+    } catch { /* dynamic questions missing or unreadable */ }
   } else {
     const storagePath = row.report_storage_path as string | null;
     if (storagePath) {
@@ -308,6 +324,12 @@ export default async function ReportDetailPage({
                     <div className="text-xs font-medium text-gray-500 mb-1.5">
                       Q1 动态访谈（AI 生成题）
                     </div>
+                    {interviewQuestions?.Q1 && (
+                      <div className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-1.5 leading-relaxed">
+                        <span className="text-blue-600 font-medium mr-1">题：</span>
+                        {interviewQuestions.Q1}
+                      </div>
+                    )}
                     <pre className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap leading-relaxed">
                       {interviewQ1Q2.Q1}
                     </pre>
@@ -318,6 +340,12 @@ export default async function ReportDetailPage({
                     <div className="text-xs font-medium text-gray-500 mb-1.5">
                       Q2 动态访谈（AI 生成题）
                     </div>
+                    {interviewQuestions?.Q2 && (
+                      <div className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-1.5 leading-relaxed">
+                        <span className="text-blue-600 font-medium mr-1">题：</span>
+                        {interviewQuestions.Q2}
+                      </div>
+                    )}
                     <pre className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap leading-relaxed">
                       {interviewQ1Q2.Q2}
                     </pre>
