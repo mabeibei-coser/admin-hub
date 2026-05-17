@@ -723,6 +723,19 @@
   background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.15), transparent);
 }
 
+/* 深色面板内 input 浏览器自动填充修正
+   Chrome 默认会给 autofill 的 input 一个白底黑字，会在深色玻璃卡上显得突兀。
+   下面用极长 inset shadow 覆盖白底，再把文字色 painted 成白色。 */
+.login-brand-panel input:-webkit-autofill,
+.login-brand-panel input:-webkit-autofill:hover,
+.login-brand-panel input:-webkit-autofill:focus,
+.login-brand-panel input:-webkit-autofill:active {
+  -webkit-text-fill-color: #fff !important;
+  -webkit-box-shadow: 0 0 0 1000px oklch(0.22 0.04 252) inset !important;
+  caret-color: #fff;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 /* ============================================
    Buttons · primary glow & ring
    ============================================ */
