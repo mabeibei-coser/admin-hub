@@ -140,6 +140,12 @@ export function maskPhone(phone: string | null | undefined): string {
   return `${s.slice(0, 3)}****${s.slice(-4)}`;
 }
 
+/**
+ * 预警阈值（天）：状态为「跟进中」且 `last_service_at`（如为 null 则用 `first_service_at`）落在
+ * 阈值天前即视为预警。改这一个常量即可调整全站预警敏感度。
+ */
+export const WARNING_THRESHOLD_DAYS = 14;
+
 /** 服务时间相对显示（X 天前 / 今天 / N 小时前），用于列表 "最新服务记录" 列 */
 export function formatRelative(ts: number | null | undefined): string {
   if (!ts) return "—";
