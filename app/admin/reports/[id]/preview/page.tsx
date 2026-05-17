@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { ReportRenderContext } from "@/components/report/report-context";
 import { OverviewSection } from "@/components/report/overview-section";
@@ -10,31 +10,41 @@ import { PositionInfoSection } from "@/components/report/position-info-section";
 import { ResumeDiagnosisSection } from "@/components/report/resume-diagnosis-section";
 import { NegotiationSection } from "@/components/report/negotiation-section";
 import { WorkplaceInsightSection } from "@/components/report/workplace-insight-section";
-import type { ReportData, JobFormData, QuizAnswer } from "@/lib/types";
+import { NavReportRenderer } from "@/components/admin/nav-report-renderer";
+import type { ReportData, JobFormData } from "@/lib/types";
+import type {
+  ReportData as NavReportData,
+  JobFormData as NavJobFormData,
+  ScoringResult,
+  InterviewQ1Q2,
+} from "@/lib/types-nav";
 import { withBase } from "@/lib/url";
 
-interface StoredFile {
-  formData: JobFormData;
-  quizAnswers: QuizAnswer[];
-  reportData: ReportData;
-  sectionsStatus: Record<string, unknown>;
-}
+type Project = "report" | "nav";
 
 interface ApiResponse {
+  project: Project;
   meta: Record<string, unknown>;
-  reportData: StoredFile | null;
+  reportData: ReportData | NavReportData | null;
+  interviewQ1Q2?: InterviewQ1Q2 | null;
+  formData: JobFormData | NavJobFormData | null;
+  scoring?: ScoringResult | null;
 }
 
-const TOTAL = 6;
+const TOTAL_REPORT = 6;
 
 export default function ReportPreviewPage() {
   const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const project: Project =
+    searchParams.get("project") === "nav" ? "nav" : "report";
+
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(withBase(`/api/admin/reports/${id}`))
+    fetch(withBase(`/api/admin/reports/${id}?project=${project}`))
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<ApiResponse>;
@@ -42,7 +52,7 @@ export default function ReportPreviewPage() {
       .then((d) => setApiData(d))
       .catch((e) => setError(e instanceof Error ? e.message : "加载失败"))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, project]);
 
   const ctxValue = useMemo(() => ({ exporting: false }), []);
 
@@ -54,7 +64,7 @@ export default function ReportPreviewPage() {
     );
   }
 
-  if (error || !apiData?.reportData?.reportData) {
+  if (error || !apiData?.reportData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[var(--blue-50)]/60 to-white px-6">
         <div className="max-w-md text-center space-y-3">
@@ -66,27 +76,49 @@ export default function ReportPreviewPage() {
     );
   }
 
-  const { reportData: report, formData } = apiData.reportData;
   const meta = apiData.meta;
-  const position = (meta.target_position as string) ?? formData?.targetPosition ?? "—";
-  const education = (meta.target_education as string) ?? formData?.targetEducation ?? "";
+  const position = (meta.target_position as string) ?? "—";
   const createdAt = meta.created_at
     ? new Date(meta.created_at as number).toLocaleString("zh-CN")
     : "—";
 
+  const banner = (
+    <div className="sticky top-0 z-50 bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-800 flex items-center gap-2">
+      <AlertTriangle className="size-3.5 shrink-0" />
+      <span>
+        管理员预览 · 报告 #{id} · 岗位：{position} · 生成时间：{createdAt}
+      </span>
+    </div>
+  );
+
+  if (project === "nav") {
+    return (
+      <>
+        {banner}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <NavReportRenderer
+            reportData={apiData.reportData as NavReportData}
+            interviewQ1Q2={apiData.interviewQ1Q2 ?? null}
+            formData={apiData.formData as NavJobFormData | null}
+            scoring={apiData.scoring ?? null}
+          />
+        </div>
+      </>
+    );
+  }
+
+  // report 项目
+  const report = apiData.reportData as ReportData;
+  const formData = apiData.formData as JobFormData | null;
+  const education =
+    (meta.target_education as string) ?? formData?.targetEducation ?? "";
+
   return (
     <ReportRenderContext.Provider value={ctxValue}>
-      {/* 管理员预览横幅 */}
-      <div className="sticky top-0 z-50 bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-800 flex items-center gap-2">
-        <AlertTriangle className="size-3.5 shrink-0" />
-        <span>
-          管理员预览 · 报告 #{id} · 岗位：{position} · 生成时间：{createdAt}
-        </span>
-      </div>
-
+      {banner}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         {report.overview && (
-          <OverviewSection data={report.overview} index={1} total={TOTAL} />
+          <OverviewSection data={report.overview} index={1} total={TOTAL_REPORT} />
         )}
         {report.salary && (
           <SalarySection
@@ -94,7 +126,7 @@ export default function ReportPreviewPage() {
             positionName={position}
             targetEducation={education}
             index={2}
-            total={TOTAL}
+            total={TOTAL_REPORT}
           />
         )}
         {report.positionInfo && (
@@ -102,28 +134,28 @@ export default function ReportPreviewPage() {
             data={report.positionInfo}
             positionName={position}
             index={3}
-            total={TOTAL}
+            total={TOTAL_REPORT}
           />
         )}
         {report.resumeDiagnosis && (
           <ResumeDiagnosisSection
             data={report.resumeDiagnosis}
             index={4}
-            total={TOTAL}
+            total={TOTAL_REPORT}
           />
         )}
         {report.salaryNegotiation && (
           <NegotiationSection
             data={report.salaryNegotiation}
             index={5}
-            total={TOTAL}
+            total={TOTAL_REPORT}
           />
         )}
         {report.workplaceInsight && (
           <WorkplaceInsightSection
             data={report.workplaceInsight}
             index={6}
-            total={TOTAL}
+            total={TOTAL_REPORT}
           />
         )}
       </div>

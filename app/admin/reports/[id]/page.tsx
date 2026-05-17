@@ -3,12 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAdminDb, isNavDbReady } from "@/lib/db";
 import fs from "fs";
-import { ChevronLeft, Download } from "lucide-react";
+import { ChevronLeft, Download, AlertTriangle } from "lucide-react";
 import type { JobFormData, QuizAnswer } from "@/lib/types";
-import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, ScoringResult, InterviewQ1Q2 } from "@/lib/types-nav";
+import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2 } from "@/lib/types-nav";
 import { PROJECTS } from "@/lib/projects";
-import { NavReportRenderer } from "@/components/admin/nav-report-renderer";
-import { UnifiedPDFButton } from "@/components/admin/unified-pdf-button";
 
 type ProjectId = "report" | "nav";
 
@@ -107,7 +105,6 @@ export default async function ReportDetailPage({
   let interviewQ1Q2: InterviewQ1Q2 | null = null;
   let navFormData: NavJobFormData | null = null;
   let navQuizAnswers: NavQuizAnswer[] | null = null;
-  let scoring: ScoringResult | null = null;
   let reportFormData: JobFormData | null = null;
   let reportQuizAnswers: QuizAnswer[] = [];
 
@@ -116,7 +113,6 @@ export default async function ReportDetailPage({
     try { interviewQ1Q2 = JSON.parse(row.interview_q1q2_json as string) as InterviewQ1Q2; } catch { /* empty */ }
     try { navFormData = JSON.parse(row.form_data_json as string) as NavJobFormData; } catch { /* empty */ }
     try { navQuizAnswers = JSON.parse(row.quiz_answers_json as string) as NavQuizAnswer[]; } catch { /* empty */ }
-    try { scoring = JSON.parse(row.scoring_json as string) as ScoringResult; } catch { /* empty */ }
   } else {
     const storagePath = row.report_storage_path as string | null;
     if (storagePath) {
@@ -201,15 +197,6 @@ export default async function ReportDetailPage({
             </>
           )}
 
-          <Row label="IP" value={row.ip as string | null} />
-          <Row
-            label="生成耗时"
-            value={
-              (row.duration_ms as number | null)
-                ? `${Math.round((row.duration_ms as number) / 1000)}s`
-                : null
-            }
-          />
           <Row
             label="简历文件"
             value={
@@ -233,50 +220,24 @@ export default async function ReportDetailPage({
               )
             }
           />
+          <Row
+            label="报告附件"
+            value={
+              hasReportData ? (
+                <Link
+                  href={`/admin/reports/${String(row.id as number)}/preview?project=${project}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                >
+                  <Download className="size-3.5" />
+                  {project === "nav" ? "职业导航报告" : "职业定位报告"}
+                </Link>
+              ) : (
+                <span className="text-gray-400">未生成</span>
+              )
+            }
+          />
         </Card>
-
-        {/* ── 表单原始数据（report 侧） ──────────────────────────────── */}
-        {project === "report" && reportFormData && (
-          <Card title="填报信息（原始）">
-            <Row label="意向岗位" value={reportFormData.targetPosition} />
-            <Row label="学历" value={reportFormData.targetEducation} />
-            <Row label="意向公司" value={reportFormData.targetCompany} />
-            <Row label="城市能级" value={reportFormData.targetCityTier} />
-            {reportFormData.resumeText && (
-              <div className="mt-3">
-                <div className="text-xs text-gray-500 mb-1.5">简历文本（摘录前 500 字）</div>
-                <pre className="text-[11px] bg-gray-50 rounded p-3 overflow-auto whitespace-pre-wrap text-gray-700 max-h-40">
-                  {reportFormData.resumeText.slice(0, 500)}
-                  {reportFormData.resumeText.length > 500 ? "…" : ""}
-                </pre>
-              </div>
-            )}
-          </Card>
-        )}
-
-        {/* ── 表单原始数据（nav 侧） ────────────────────────────────── */}
-        {project === "nav" && navFormData && (
-          <Card title="填报信息（原始）">
-            <Row label="姓名" value={navFormData.name ?? null} />
-            <Row label="手机号" value={navFormData.phone ?? null} />
-            <Row label="意向岗位" value={navFormData.targetPosition} />
-            <Row label="学历" value={eduLabel(navFormData.education)} />
-            <Row label="工作年限" value={workYearsLabel(navFormData.workYears)} />
-            <Row
-              label="用户身份"
-              value={IDENTITY_LABELS[navFormData.identity] ?? navFormData.identity}
-            />
-            {navFormData.resumeText && (
-              <div className="mt-3">
-                <div className="text-xs text-gray-500 mb-1.5">简历文本（摘录前 500 字）</div>
-                <pre className="text-[11px] bg-gray-50 rounded p-3 overflow-auto whitespace-pre-wrap text-gray-700 max-h-40">
-                  {navFormData.resumeText.slice(0, 500)}
-                  {navFormData.resumeText.length > 500 ? "…" : ""}
-                </pre>
-              </div>
-            )}
-          </Card>
-        )}
 
         {/* ── 量表作答（report 侧） ───────────────────────────────────── */}
         {project === "report" && reportQuizAnswers.length > 0 && (
@@ -312,29 +273,39 @@ export default async function ReportDetailPage({
           </Card>
         )}
 
-        {/* ── 操作区 ─────────────────────────────────────────────────── */}
-        <div className="flex gap-3 print:hidden">
-          <UnifiedPDFButton
-            project={project}
-            reportId={id}
-            hasData={hasReportData}
-          />
-          {!hasReportData && (
-            <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-400 text-sm rounded-lg cursor-not-allowed">
-              报告数据不可用
-            </span>
+        {/* ── 访谈内容（nav 侧）— Q1/Q2 完整展开 ────────────────────── */}
+        {project === "nav" &&
+          interviewQ1Q2 &&
+          (interviewQ1Q2.Q1 || interviewQ1Q2.Q2) && (
+            <Card title="访谈内容（Q1 / Q2）">
+              <div className="space-y-3">
+                <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 flex items-start gap-1.5">
+                  <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                  以下内容为用户访谈原始回答，含个人陈述、PII 敏感信息。请勿截图传播或对外汇报。
+                </div>
+                {interviewQ1Q2.Q1 && (
+                  <div>
+                    <div className="text-xs font-medium text-gray-500 mb-1.5">
+                      Q1 动态访谈（AI 生成题）
+                    </div>
+                    <pre className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap leading-relaxed">
+                      {interviewQ1Q2.Q1}
+                    </pre>
+                  </div>
+                )}
+                {interviewQ1Q2.Q2 && (
+                  <div>
+                    <div className="text-xs font-medium text-gray-500 mb-1.5">
+                      Q2 动态访谈（AI 生成题）
+                    </div>
+                    <pre className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap leading-relaxed">
+                      {interviewQ1Q2.Q2}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </Card>
           )}
-        </div>
-
-        {/* ── Nav 报告渲染（5 模块） ─────────────────────────────────── */}
-        {project === "nav" && (
-          <NavReportRenderer
-            reportData={reportData}
-            interviewQ1Q2={interviewQ1Q2}
-            formData={navFormData}
-            scoring={scoring}
-          />
-        )}
       </div>
     </div>
   );
