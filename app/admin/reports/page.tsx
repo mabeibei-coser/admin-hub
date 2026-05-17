@@ -140,7 +140,7 @@ function formatTs(ms: number) {
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** KPI 卡右上的圆形 icon avatar — Tabler 风 */
+/** KPI 卡右上的 icon avatar — squircle + 蓝调渐变 + 微 shadow */
 function KpiIcon({
   icon: Icon,
   size = "md",
@@ -150,12 +150,13 @@ function KpiIcon({
 }) {
   return (
     <div
-      className={`shrink-0 rounded-full bg-[var(--blue-50)] flex items-center justify-center ring-1 ring-[var(--blue-200)]/60 ${
-        size === "sm" ? "size-7" : "size-9"
+      className={`shrink-0 rounded-xl bg-gradient-to-br from-[var(--blue-100)] to-[var(--blue-50)] flex items-center justify-center ring-1 ring-[var(--blue-200)]/50 shadow-[0_2px_6px_oklch(0.55_0.2_252_/_0.08)] ${
+        size === "sm" ? "size-8" : "size-10"
       }`}
     >
       <Icon
-        className={`text-[var(--blue-700)] ${size === "sm" ? "size-3.5" : "size-4"}`}
+        className={`text-[var(--blue-700)] ${size === "sm" ? "size-4" : "size-5"}`}
+        strokeWidth={2.2}
       />
     </div>
   );
@@ -163,21 +164,12 @@ function KpiIcon({
 
 function ProjectBadge({ project }: { project: ProjectId }) {
   const meta = PROJECTS[project];
-  const palette =
-    meta.color === "green"
-      ? {
-          dot: "bg-[var(--semantic-positive)]",
-          text: "text-[var(--semantic-positive)]",
-        }
-      : {
-          dot: "bg-[var(--blue-500)]",
-          text: "text-[var(--blue-700)]",
-        };
+  const tone = meta.color === "green" ? "success" : "info";
+  const dotColor =
+    meta.color === "green" ? "bg-[var(--semantic-positive)]" : "bg-[var(--blue-500)]";
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${palette.text}`}
-    >
-      <span className={`size-1.5 rounded-full ${palette.dot}`} />
+    <span className="status-pill" data-tone={tone}>
+      <span className={`size-1.5 rounded-full ${dotColor}`} />
       {meta.shortLabel}
     </span>
   );
@@ -204,9 +196,9 @@ function PageSkeleton() {
     <div className="p-6">
       <div className="max-w-7xl mx-auto space-y-5">
         <div className="h-6 w-32 bg-gray-100 rounded animate-pulse" />
-        <div className="h-32 rounded-xl bg-white ring-1 ring-[var(--report-border)] shadow-sm" />
+        <div className="h-32 surface-panel" />
         <div className="h-8 w-72 rounded bg-gray-100 animate-pulse" />
-        <div className="h-64 rounded-xl bg-white ring-1 ring-[var(--report-border)] shadow-sm" />
+        <div className="h-64 surface-panel" />
       </div>
     </div>
   );
@@ -405,7 +397,7 @@ function AdminReportsContent() {
         <ProjectPillBar project={project} showService={me?.showService} />
 
         {/* 过滤栏 — Tabler 风：包成轻卡 */}
-        <div className="bg-white rounded-xl ring-1 ring-[var(--report-border)] shadow-sm p-4 flex flex-wrap gap-3 items-end">
+        <div className="surface-panel p-4 flex flex-wrap gap-3 items-end">
           <div>
             <div className="text-xs text-gray-500 mb-1">开始日期</div>
             <Input
@@ -533,7 +525,7 @@ function AdminReportsContent() {
         </div>
 
         {/* 表格 */}
-        <div className="bg-white rounded-xl ring-1 ring-[var(--report-border)] shadow-sm overflow-hidden">
+        <div className="surface-panel overflow-hidden">
           {error && (
             <div className="p-4 text-sm text-red-600 border-b border-red-100 bg-red-50 flex items-center justify-between">
               <span>加载失败：{error}</span>
@@ -667,26 +659,31 @@ function TodayStrip({
   const avgDur = data?.stats.avgDurationSec;
 
   return (
-    <div className="bg-white rounded-xl ring-1 ring-[var(--report-border)] shadow-sm p-5">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
+    <div className="surface-panel relative overflow-hidden p-6">
+      {/* 右上角微弱品牌渐变 — 让单卡看起来更"指挥中心"而非平面 */}
+      <div
+        aria-hidden
+        className="absolute -top-12 -right-12 size-48 rounded-full bg-[radial-gradient(circle,oklch(0.7_0.16_245_/_0.12),transparent_65%)] pointer-events-none"
+      />
+      <div className="relative grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
         {/* 左 5 栏：今日新增大数字 */}
         <div className="md:col-span-5">
           <div className="flex items-center justify-between gap-2">
-            <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
+            <div className="text-[10.5px] text-gray-500 font-semibold tracking-[0.16em] uppercase">
               今日新增
             </div>
             <KpiIcon icon={Sparkles} />
           </div>
           {loading && data === null ? (
-            <div className="h-12 w-24 bg-gray-100 rounded animate-pulse mt-2" />
+            <div className="h-12 w-24 bg-gray-100 rounded animate-pulse mt-3" />
           ) : (
-            <div className="text-4xl md:text-5xl font-semibold tabular-nums tracking-tight leading-none mt-2 text-[var(--navy-900)]">
+            <div className="kpi-number text-[44px] md:text-[52px] font-semibold leading-none mt-3">
               {todayCount ?? "—"}
             </div>
           )}
-          <div className="text-xs text-gray-500 mt-2 tabular-nums">
+          <div className="text-xs text-gray-500 mt-3 tabular-nums">
             累计{" "}
-            <span className="font-medium text-[var(--navy-700)]">
+            <span className="font-semibold text-[var(--navy-800)]">
               {total ?? "—"}
             </span>{" "}
             份{project === "all" && " · 两个项目合计"}
@@ -696,37 +693,37 @@ function TodayStrip({
         {/* 中间分隔（仅桌面） */}
         <div
           aria-hidden
-          className="hidden md:block md:col-span-1 h-full w-px bg-[var(--report-border)] mx-auto"
+          className="hidden md:block md:col-span-1 h-full w-px bg-gradient-to-b from-transparent via-[var(--report-border)] to-transparent mx-auto"
         />
 
         {/* 右 6 栏：两个 secondary KPI */}
-        <div className="md:col-span-6 grid grid-cols-2 gap-4">
+        <div className="md:col-span-6 grid grid-cols-2 gap-6">
           <div>
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
+              <div className="text-[10.5px] text-gray-500 font-semibold tracking-[0.16em] uppercase">
                 简历上传率
               </div>
               <KpiIcon icon={FileText} size="sm" />
             </div>
             {loading && data === null ? (
-              <div className="h-7 w-16 bg-gray-100 rounded animate-pulse mt-2" />
+              <div className="h-8 w-16 bg-gray-100 rounded animate-pulse mt-3" />
             ) : (
-              <div className="text-2xl font-semibold tabular-nums tracking-tight leading-none mt-2 text-[var(--navy-700)]">
+              <div className="text-[26px] font-semibold tabular-nums tracking-tight leading-none mt-3 text-[var(--navy-800)]">
                 {resumeRate !== undefined ? `${resumeRate}%` : "—"}
               </div>
             )}
           </div>
           <div>
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
+              <div className="text-[10.5px] text-gray-500 font-semibold tracking-[0.16em] uppercase">
                 平均耗时
               </div>
               <KpiIcon icon={Clock} size="sm" />
             </div>
             {loading && data === null ? (
-              <div className="h-7 w-16 bg-gray-100 rounded animate-pulse mt-2" />
+              <div className="h-8 w-16 bg-gray-100 rounded animate-pulse mt-3" />
             ) : (
-              <div className="text-2xl font-semibold tabular-nums tracking-tight leading-none mt-2 text-[var(--navy-700)]">
+              <div className="text-[26px] font-semibold tabular-nums tracking-tight leading-none mt-3 text-[var(--navy-800)]">
                 {avgDur ? `${avgDur}s` : "—"}
               </div>
             )}
@@ -755,22 +752,26 @@ function NavStatStrip({
     label,
     value,
     icon,
+    highlight,
   }: {
     label: string;
     value: number | undefined;
     icon: LucideIcon;
+    highlight?: boolean;
   }) => (
     <div>
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
+        <div className="text-[10.5px] text-gray-500 font-semibold tracking-[0.16em] uppercase">
           {label}
         </div>
         <KpiIcon icon={icon} size="sm" />
       </div>
       {skeleton ? (
-        <div className="h-10 w-20 bg-gray-100 rounded animate-pulse mt-2" />
+        <div className="h-10 w-20 bg-gray-100 rounded animate-pulse mt-3" />
       ) : (
-        <div className="text-3xl md:text-4xl font-semibold tabular-nums tracking-tight leading-none mt-2 text-[var(--navy-900)]">
+        <div
+          className={`${highlight ? "kpi-number" : "text-[var(--navy-800)]"} text-[32px] md:text-[38px] font-semibold tabular-nums tracking-tight leading-none mt-3`}
+        >
           {value ?? "—"}
         </div>
       )}
@@ -778,9 +779,13 @@ function NavStatStrip({
   );
 
   return (
-    <div className="bg-white rounded-xl ring-1 ring-[var(--report-border)] shadow-sm p-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-        <Cell label="总报告数" value={total} icon={FileText} />
+    <div className="surface-panel relative overflow-hidden p-6">
+      <div
+        aria-hidden
+        className="absolute -top-12 -right-12 size-48 rounded-full bg-[radial-gradient(circle,oklch(0.7_0.16_245_/_0.12),transparent_65%)] pointer-events-none"
+      />
+      <div className="relative grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+        <Cell label="总报告数" value={total} icon={FileText} highlight />
         <Cell label="本月新增" value={monthCount} icon={Calendar} />
         <Cell label="本周新增" value={weekCount} icon={CalendarDays} />
         <Cell label="转服务数量" value={transferredCount} icon={ArrowRightCircle} />
@@ -823,15 +828,15 @@ function ProjectPillBar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 px-1">
+    <div className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl bg-[oklch(0.95_0.012_252_/_0.6)] ring-1 ring-[oklch(0.9_0.018_252_/_0.5)]">
       {pills.map((p) => (
         <Link
           key={p.href}
           href={p.href}
-          className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs transition-colors ${
+          className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
             p.active
-              ? "bg-[var(--blue-50)] text-[var(--blue-700)] ring-1 ring-[var(--blue-200)]/60 font-medium"
-              : "text-gray-600 hover:bg-gray-50"
+              ? "bg-white text-[var(--blue-700)] shadow-[0_1px_2px_oklch(0.3_0.1_252_/_0.08),0_4px_12px_oklch(0.55_0.2_252_/_0.1)]"
+              : "text-gray-600 hover:text-[var(--navy-800)] hover:bg-white/50"
           }`}
         >
           {p.label}

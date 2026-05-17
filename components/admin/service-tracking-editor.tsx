@@ -155,7 +155,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-xl ring-1 ring-gray-100 shadow-sm shadow-gray-200/60 p-5 relative">
+    <div className="surface-panel p-5 relative">
       {/* Toast */}
       {toast && (
         <div className="absolute top-3 right-3 px-3 py-1.5 bg-gray-900/90 text-white text-xs rounded-md shadow-lg animate-in fade-in slide-in-from-top-1 duration-200">

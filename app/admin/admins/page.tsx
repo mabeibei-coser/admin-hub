@@ -124,7 +124,7 @@ export default function AdminsPage() {
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
+        <div className="surface-panel overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50">

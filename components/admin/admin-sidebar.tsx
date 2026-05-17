@@ -29,7 +29,7 @@ interface MeData {
 }
 
 /** 图标映射：project id → icon component */
-const PROJECT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+const PROJECT_ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
   report: Briefcase,
   nav: Compass,
 };
@@ -76,28 +76,32 @@ export function AdminSidebar() {
         onClose={() => setPwdDialogOpen(false)}
       />
 
-      <aside className="hidden md:flex md:flex-col md:w-56 lg:w-60 shrink-0 border-r border-gray-200 bg-white">
-        {/* Logo: 圆点 + 文字 + 账号尾号 */}
-        <div className="px-5 py-4 border-b border-gray-100">
+      <aside className="hidden md:flex md:flex-col md:w-60 lg:w-64 shrink-0 border-r border-sidebar-border bg-sidebar">
+        {/* === Logo block — 标志性 brand mark === */}
+        <div className="px-5 pt-5 pb-4">
           <Link
             href="/admin/reports"
-            className="flex items-center gap-2.5 font-semibold"
+            className="flex items-center gap-3 rounded-xl px-1 py-1 -mx-1 hover:bg-[oklch(0.97_0.02_252_/_0.6)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
           >
-            <div className="size-1.5 rounded-full bg-[var(--blue-700)] shrink-0" />
-            <div className="leading-tight">
-              <div className="text-sm tracking-tight text-[var(--navy-800)]">
+            <div className="size-9 rounded-xl bg-gradient-to-br from-[var(--blue-600)] to-[var(--blue-700)] flex items-center justify-center shadow-[0_4px_12px_oklch(0.55_0.2_252_/_0.3),inset_0_1px_0_oklch(1_0_0_/_0.2)] shrink-0">
+              <ShieldCheck className="size-4.5 text-white" strokeWidth={2.4} />
+            </div>
+            <div className="leading-tight min-w-0">
+              <div className="text-[15px] font-semibold tracking-tight text-[var(--navy-900)] truncate">
                 谨世 ATA
               </div>
-              {me?.username && (
-                <div className="text-[10px] tabular-nums text-gray-500 font-normal">
-                  · {me.username.slice(-4)}
-                </div>
-              )}
+              <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--blue-600)] font-medium">
+                admin&nbsp;hub
+              </div>
             </div>
           </Link>
         </div>
 
-        {/* 报告管理 section */}
+        <div className="px-5 mb-1">
+          <div className="h-px bg-[oklch(0.93_0.006_240)]" />
+        </div>
+
+        {/* === 报告管理 section === */}
         <SectionHeader label="报告管理" />
         <nav className="px-3 flex flex-col gap-0.5">
           {(!me ? (["report", "nav"] as string[]) : me.visibleProjects).map(
@@ -120,7 +124,7 @@ export function AdminSidebar() {
           )}
         </nav>
 
-        {/* 服务管理 section — 有 service 权限或加载中显示 */}
+        {/* === 服务管理 section === */}
         {(!me || me.showService) && (
           <>
             <SectionHeader label="服务管理" />
@@ -135,7 +139,7 @@ export function AdminSidebar() {
           </>
         )}
 
-        {/* 系统管理 section — 仅超管可见 */}
+        {/* === 系统管理 section — 仅超管可见 === */}
         {(!me || me.showAdmins) && (
           <>
             <SectionHeader label="系统管理" />
@@ -150,36 +154,40 @@ export function AdminSidebar() {
           </>
         )}
 
-        {/* Bottom: 用户块 + 操作 */}
-        <div className="mt-auto p-3 border-t border-gray-100">
-          {/* 用户身份块 — monogram */}
-          <div className="px-3 py-2.5 flex items-center gap-2.5 mb-1">
+        {/* === Bottom: 用户卡 + 操作 === */}
+        <div className="mt-auto p-3 pt-4 border-t border-[oklch(0.93_0.006_240)]">
+          {/* 用户身份块 — monogram + status dot */}
+          <div className="px-2 py-2 flex items-center gap-3 mb-2 rounded-xl bg-[oklch(0.97_0.02_252_/_0.4)]">
             <div className="relative shrink-0">
-              <div className="size-8 rounded-full bg-[var(--blue-50)] text-[var(--blue-700)] flex items-center justify-center text-[13px] font-semibold ring-1 ring-[var(--blue-200)]/60">
+              <div className="size-9 rounded-xl bg-gradient-to-br from-[var(--blue-100)] to-[var(--blue-50)] text-[var(--blue-700)] flex items-center justify-center text-sm font-semibold ring-1 ring-[var(--blue-200)]/60 shadow-sm">
                 {me?.name?.slice(0, 1) ?? "—"}
               </div>
               {me?.isSuper && (
-                <ShieldCheck className="absolute -bottom-0.5 -right-0.5 size-3 text-[var(--blue-700)] bg-white rounded-full" />
+                <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-white shadow-sm flex items-center justify-center ring-1 ring-[var(--blue-200)]/60">
+                  <ShieldCheck className="size-2.5 text-[var(--blue-700)]" strokeWidth={2.5} />
+                </div>
               )}
             </div>
-            <div className="min-w-0 leading-tight">
-              <div className="text-sm font-medium text-[var(--navy-800)] truncate">
+            <div className="min-w-0 leading-tight flex-1">
+              <div className="text-[13px] font-medium text-[var(--navy-900)] truncate flex items-center gap-1.5">
                 {me?.name ?? "—"}
+                {me?.isSuper && (
+                  <span className="text-[9px] font-medium uppercase tracking-wider text-[var(--blue-700)] bg-[var(--blue-50)] px-1.5 py-0.5 rounded-md ring-1 ring-[var(--blue-200)]/50">
+                    超管
+                  </span>
+                )}
               </div>
-              <div className="text-[10px] text-gray-400 tabular-nums">
+              <div className="text-[10px] text-gray-400 tabular-nums mt-0.5">
                 {me?.username
                   ? `${me.username.slice(0, 3)} •••• ${me.username.slice(-4)}`
                   : ""}
-                {me?.isSuper && (
-                  <span className="ml-1 text-[var(--blue-700)]">· 超管</span>
-                )}
               </div>
             </div>
           </div>
 
           <button
             onClick={() => setPwdDialogOpen(true)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-gray-600 hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
           >
             <KeyRound className="size-4 text-gray-400" />
             修改密码
@@ -187,7 +195,7 @@ export function AdminSidebar() {
           <button
             onClick={handleLogout}
             disabled={loggingOut}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-gray-600 hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
           >
             <LogOut className="size-4 text-gray-400" />
             {loggingOut ? "登出中…" : "登出"}
@@ -198,17 +206,18 @@ export function AdminSidebar() {
   );
 }
 
-/** 分组标题：xxs label + 横向分割线 */
+/** 分组标题 — 全大写小字 + 间距 */
 function SectionHeader({ label }: { label: string }) {
   return (
-    <div className="px-5 pt-5 pb-2 flex items-center gap-2">
-      <div className="text-xs text-gray-400 font-medium shrink-0">{label}</div>
-      <div className="h-px flex-1 bg-gray-100" />
+    <div className="px-5 pt-5 pb-1.5">
+      <div className="text-[10px] uppercase tracking-[0.14em] text-gray-400 font-semibold">
+        {label}
+      </div>
     </div>
   );
 }
 
-/** 单行 nav item — 激活态：纯 bg + 蓝色文字，无左竖线 */
+/** 单行 nav item — 激活态：左侧 accent bar + 蓝色文字 + 微 bg */
 function SidebarNavItem({
   label,
   icon: Icon,
@@ -216,7 +225,7 @@ function SidebarNavItem({
   href,
 }: {
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   active: boolean;
   href: string;
 }) {
@@ -224,17 +233,24 @@ function SidebarNavItem({
     <Link
       href={href}
       className={`
-        flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors duration-150
+        relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] transition-all duration-150
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]
         ${
           active
-            ? "bg-[var(--blue-50)] text-[var(--blue-700)] font-medium"
-            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            ? "bg-[oklch(0.96_0.03_252)] text-[var(--blue-700)] font-medium shadow-[inset_0_0_0_1px_oklch(0.87_0.07_252_/_0.4)]"
+            : "text-gray-600 hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)]"
         }
       `}
     >
+      {active && (
+        <span
+          aria-hidden
+          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-[var(--blue-700)]"
+        />
+      )}
       <Icon
-        className={`size-4 ${active ? "text-[var(--blue-700)]" : "text-gray-400"}`}
+        className={`size-4 transition-colors ${active ? "text-[var(--blue-700)]" : "text-gray-400 group-hover:text-gray-600"}`}
+        strokeWidth={active ? 2.4 : 2}
       />
       <span className="flex-1">{label}</span>
     </Link>
@@ -264,13 +280,15 @@ export function AdminMobileBar() {
         open={pwdDialogOpen}
         onClose={() => setPwdDialogOpen(false)}
       />
-      <div className="md:hidden border-b border-gray-200 bg-white px-4 py-2 flex items-center gap-3 overflow-x-auto">
+      <div className="md:hidden border-b border-sidebar-border bg-sidebar px-4 py-2.5 flex items-center gap-3 overflow-x-auto">
         <Link
           href="/admin/reports"
-          className="flex items-center gap-1.5 font-semibold shrink-0"
+          className="flex items-center gap-2 font-semibold shrink-0"
         >
-          <div className="size-1.5 rounded-full bg-[var(--blue-700)] shrink-0" />
-          <span className="text-sm tracking-tight text-[var(--navy-800)]">
+          <div className="size-6 rounded-lg bg-gradient-to-br from-[var(--blue-600)] to-[var(--blue-700)] flex items-center justify-center shadow-sm">
+            <ShieldCheck className="size-3 text-white" strokeWidth={2.5} />
+          </div>
+          <span className="text-[13.5px] tracking-tight text-[var(--navy-900)]">
             谨世 ATA
           </span>
         </Link>

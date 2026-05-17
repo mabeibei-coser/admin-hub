@@ -63,7 +63,7 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
   const [confirmDelete, setConfirmDelete] = useState<RecordItem | null>(null);
 
   return (
-    <div className="bg-white rounded-xl ring-1 ring-gray-100 shadow-sm shadow-gray-200/60 p-5">
+    <div className="surface-panel p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-gray-700">
           服务记录（{initial.length} 条）
