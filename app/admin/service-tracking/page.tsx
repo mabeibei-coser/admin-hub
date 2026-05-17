@@ -106,7 +106,7 @@ function PageSkeleton() {
     <div className="p-6">
       <div className="max-w-7xl mx-auto space-y-5">
         <div className="h-6 w-32 bg-gray-100 rounded animate-pulse" />
-        <div className="h-64 rounded-xl bg-white ring-1 ring-gray-100 shadow-sm shadow-gray-200/60" />
+        <div className="h-64 surface-panel" />
       </div>
     </div>
   );
@@ -231,7 +231,7 @@ function ListContent() {
         </div>
 
         {/* 筛选 — Tabler 风：包成轻卡 */}
-        <div className="bg-white rounded-xl ring-1 ring-gray-100 shadow-sm shadow-gray-200/60 p-4 flex flex-wrap gap-3 items-end">
+        <div className="surface-panel p-4 flex flex-wrap gap-3 items-end">
           <div>
             <div className="text-xs text-gray-500 mb-1">服务状态</div>
             <select
@@ -312,7 +312,7 @@ function ListContent() {
         </div>
 
         {/* 桌面 Table */}
-        <div className="bg-white rounded-xl ring-1 ring-gray-100 shadow-sm shadow-gray-200/60 overflow-hidden hidden md:block">
+        <div className="surface-panel overflow-hidden hidden md:block">
           {error && (
             <div className="p-4 text-sm text-red-600 border-b border-red-100 bg-red-50 flex items-center justify-between">
               <span>加载失败：{error}</span>
@@ -453,7 +453,7 @@ function ListContent() {
         </div>
 
         {/* 移动卡片 */}
-        <div className="md:hidden bg-white rounded-xl ring-1 ring-gray-100 shadow-sm shadow-gray-200/60 overflow-hidden">
+        <div className="md:hidden surface-panel overflow-hidden">
           {error && (
             <div className="p-4 text-sm text-red-600 border-b border-red-100 bg-red-50">
               加载失败：{error}

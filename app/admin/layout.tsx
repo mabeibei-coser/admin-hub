@@ -7,7 +7,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-background flex">
       {/* 左侧 sidebar (desktop) — useSearchParams 需要 Suspense 包裹才能 prerender；
           fallback 设 null：登录页 sidebar 返回 null 时不会出现白条占位 */}
       <Suspense fallback={null}>

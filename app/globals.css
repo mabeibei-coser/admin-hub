@@ -7,9 +7,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  /* Inter 排在前面 → 英文 / 数字走 Inter，中文 fall-through 到 PingFang SC。
+     变量名 --font-inter 由 app/layout.tsx 的 next/font 注入。 */
+  --font-sans: var(--font-inter), "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SF Mono", "Cascadia Code", "Consolas", monospace;
-  --font-heading: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: var(--font-inter), "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,54 +51,62 @@
 }
 
 :root {
-  --background: oklch(0.985 0.002 240);
-  --foreground: oklch(0.17 0.02 250);
+  /* —— Surface (warm off-white, slight cool tint) —— */
+  --background: oklch(0.987 0.004 240);
+  --foreground: oklch(0.18 0.025 252);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.17 0.02 250);
+  --card-foreground: oklch(0.18 0.025 252);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.17 0.02 250);
-  --primary: oklch(0.45 0.18 250);
+  --popover-foreground: oklch(0.18 0.025 252);
+  /* —— Primary: modern brand blue (lifted lightness, slightly higher chroma) —— */
+  --primary: oklch(0.55 0.2 252);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.01 240);
-  --secondary-foreground: oklch(0.25 0.04 250);
-  --muted: oklch(0.96 0.008 240);
-  --muted-foreground: oklch(0.5 0.02 250);
-  --accent: oklch(0.94 0.02 240);
-  --accent-foreground: oklch(0.25 0.04 250);
+  --secondary: oklch(0.965 0.008 240);
+  --secondary-foreground: oklch(0.26 0.04 252);
+  --muted: oklch(0.965 0.006 240);
+  --muted-foreground: oklch(0.52 0.02 250);
+  --accent: oklch(0.945 0.02 240);
+  --accent-foreground: oklch(0.26 0.04 252);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.01 240);
-  --input: oklch(0.91 0.01 240);
-  --ring: oklch(0.55 0.15 250);
-  --chart-1: oklch(0.55 0.18 250);
-  --chart-2: oklch(0.65 0.14 230);
-  --chart-3: oklch(0.5 0.12 270);
-  --chart-4: oklch(0.7 0.08 210);
-  --chart-5: oklch(0.4 0.15 250);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0.002 240);
-  --sidebar-foreground: oklch(0.17 0.02 250);
-  --sidebar-primary: oklch(0.45 0.18 250);
+  --border: oklch(0.918 0.008 240);
+  --input: oklch(0.918 0.008 240);
+  --ring: oklch(0.6 0.18 252);
+  --chart-1: oklch(0.58 0.2 252);
+  --chart-2: oklch(0.68 0.14 230);
+  --chart-3: oklch(0.52 0.14 270);
+  --chart-4: oklch(0.72 0.08 210);
+  --chart-5: oklch(0.42 0.16 252);
+  --radius: 0.75rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.18 0.025 252);
+  --sidebar-primary: oklch(0.55 0.2 252);
   --sidebar-primary-foreground: oklch(0.99 0 0);
   --sidebar-accent: oklch(0.94 0.02 240);
-  --sidebar-accent-foreground: oklch(0.25 0.04 250);
-  --sidebar-border: oklch(0.91 0.01 240);
-  --sidebar-ring: oklch(0.55 0.15 250);
+  --sidebar-accent-foreground: oklch(0.26 0.04 252);
+  --sidebar-border: oklch(0.93 0.006 240);
+  --sidebar-ring: oklch(0.6 0.18 252);
 
-  /* Custom brand tokens */
-  --navy-950: oklch(0.18 0.04 255);
-  --navy-900: oklch(0.22 0.06 252);
-  --navy-800: oklch(0.28 0.08 250);
-  --navy-700: oklch(0.35 0.12 250);
-  --navy-600: oklch(0.42 0.16 250);
-  --blue-700: oklch(0.47 0.17 252);
-  --blue-600: oklch(0.54 0.16 250);
-  --blue-500: oklch(0.6 0.15 248);
-  --blue-400: oklch(0.65 0.16 245);
-  --blue-300: oklch(0.75 0.12 240);
-  --blue-200: oklch(0.85 0.07 238);
-  --blue-100: oklch(0.93 0.03 238);
-  --blue-50: oklch(0.97 0.01 238);
-  --gold-500: oklch(0.72 0.12 75);
+  /* —— Custom brand tokens (modernized) —— */
+  --navy-950: oklch(0.16 0.04 255);
+  --navy-900: oklch(0.2 0.06 252);
+  --navy-800: oklch(0.26 0.07 250);
+  --navy-700: oklch(0.33 0.1 250);
+  --navy-600: oklch(0.4 0.14 250);
+  --blue-700: oklch(0.5 0.2 252);
+  --blue-600: oklch(0.57 0.19 250);
+  --blue-500: oklch(0.63 0.18 248);
+  --blue-400: oklch(0.7 0.16 245);
+  --blue-300: oklch(0.78 0.12 240);
+  --blue-200: oklch(0.87 0.07 238);
+  --blue-100: oklch(0.94 0.03 238);
+  --blue-50: oklch(0.975 0.012 238);
+  --gold-500: oklch(0.74 0.13 75);
+
+  /* —— Tinted neutrals for surfaces & shadows —— */
+  --surface-tinted: oklch(0.985 0.006 240);
+  --surface-elevated: oklch(1 0 0);
+  --shadow-tinted: 0 1px 2px oklch(0.3 0.06 252 / 0.05), 0 6px 24px oklch(0.3 0.06 252 / 0.06);
+  --shadow-tinted-lg: 0 2px 4px oklch(0.3 0.06 252 / 0.06), 0 18px 40px oklch(0.3 0.06 252 / 0.1);
 
   /* Report tokens — aligned with form/quiz blue theme */
   --report-ink: oklch(0.17 0.02 250);
@@ -150,9 +160,21 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* 数字默认 tabular，避免列表 / KPI 中数字宽度跳动 */
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   html {
     @apply font-sans;
+  }
+  /* 标题字重 + 紧凑 tracking — 让 PingFang 中文配 Inter 英文都更有节奏 */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.015em;
+  }
+  /* 表单元素继承字体（避免浏览器默认 system-ui） */
+  input, textarea, select, button {
+    font: inherit;
   }
 }
 
@@ -637,3 +659,175 @@
 }
 .animate-cta-pulse { animation: cta-pulse 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .animate-cta-pulse { animation: none; } }
+
+/* ============================================
+   LOGIN · split-screen brand panel
+   ============================================ */
+
+/* 右侧深色品牌面板 — 多层 radial 渐变 + 微噪点 */
+.login-brand-panel {
+  position: relative;
+  background:
+    radial-gradient(ellipse 60% 50% at 80% 10%, oklch(0.4 0.18 252 / 0.6), transparent 60%),
+    radial-gradient(ellipse 70% 60% at 10% 90%, oklch(0.32 0.16 268 / 0.55), transparent 65%),
+    radial-gradient(ellipse 50% 80% at 50% 50%, oklch(0.28 0.12 240 / 0.4), transparent 70%),
+    linear-gradient(160deg, oklch(0.18 0.06 252) 0%, oklch(0.12 0.04 258) 100%);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* 网格底纹 */
+.login-brand-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(oklch(1 0 0 / 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(1 0 0 / 0.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black, transparent 80%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 噪点纹理 — 打破纯净渐变的"AI 感" */
+.login-brand-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 左侧 form 面板 — 微妙的 cool tint，避免纯白割裂感 */
+.login-form-panel {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, oklch(0.965 0.02 252 / 0.6), transparent 60%),
+    var(--surface-elevated);
+}
+
+/* 品牌面板内的浮动 mark — 大号纹章 + 慢速 float */
+@keyframes float-mark {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(0.5deg); }
+}
+.login-mark {
+  animation: float-mark 8s ease-in-out infinite;
+}
+
+/* 品牌面板顶部细分隔线 */
+.brand-divider {
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.15), transparent);
+}
+
+/* ============================================
+   Buttons · primary glow & ring
+   ============================================ */
+
+.btn-primary-glow {
+  background: linear-gradient(180deg, var(--blue-600), var(--blue-700));
+  color: white;
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.2),
+    0 1px 2px oklch(0.3 0.1 252 / 0.18),
+    0 6px 20px oklch(0.55 0.2 252 / 0.25);
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1),
+              filter 200ms;
+}
+.btn-primary-glow:not(:disabled):hover {
+  filter: brightness(1.04);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.25),
+    0 2px 4px oklch(0.3 0.1 252 / 0.22),
+    0 10px 28px oklch(0.55 0.2 252 / 0.4);
+  transform: translateY(-1px);
+}
+.btn-primary-glow:not(:disabled):active {
+  transform: translateY(0);
+  filter: brightness(0.97);
+  box-shadow:
+    inset 0 1px 2px oklch(0.25 0.1 252 / 0.25),
+    0 1px 2px oklch(0.3 0.1 252 / 0.18);
+}
+.btn-primary-glow:disabled {
+  filter: saturate(0.3);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   Surfaces · panels & cards
+   ============================================ */
+
+.surface-panel {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-tinted);
+}
+
+.surface-panel-soft {
+  background: linear-gradient(180deg, oklch(0.99 0.005 240), oklch(0.975 0.008 240));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+/* KPI 数字渐变 — 取代灰扁数字 */
+.kpi-number {
+  background: linear-gradient(180deg, var(--navy-800), var(--blue-700));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* 表格行 hover — 蓝色 tint，比 hover:bg-gray-50 更有品牌 */
+.row-hover {
+  transition: background-color 150ms;
+}
+.row-hover:hover {
+  background-color: oklch(0.97 0.02 252 / 0.6);
+}
+
+/* Status pill — 替代 generic badge */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 9999px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+.status-pill[data-tone="info"] {
+  background: oklch(0.96 0.03 252);
+  color: var(--blue-700);
+  box-shadow: inset 0 0 0 1px oklch(0.85 0.07 252 / 0.5);
+}
+.status-pill[data-tone="success"] {
+  background: oklch(0.96 0.04 155);
+  color: oklch(0.35 0.12 155);
+  box-shadow: inset 0 0 0 1px oklch(0.82 0.1 155 / 0.5);
+}
+.status-pill[data-tone="warning"] {
+  background: oklch(0.97 0.06 70);
+  color: oklch(0.4 0.12 55);
+  box-shadow: inset 0 0 0 1px oklch(0.84 0.12 65 / 0.55);
+}
+.status-pill[data-tone="neutral"] {
+  background: oklch(0.96 0.005 240);
+  color: oklch(0.42 0.02 250);
+  box-shadow: inset 0 0 0 1px oklch(0.9 0.008 240);
+}
+.status-pill[data-tone="danger"] {
+  background: oklch(0.97 0.04 25);
+  color: oklch(0.45 0.18 25);
+  box-shadow: inset 0 0 0 1px oklch(0.85 0.1 25 / 0.5);
+}
