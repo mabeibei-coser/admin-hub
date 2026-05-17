@@ -147,7 +147,7 @@ export async function GET(req: NextRequest) {
       countQuery = `SELECT COUNT(*) AS c FROM main.reports ${where}`;
       queryParams = [...params];
     } else if (effectiveProject === "nav") {
-      listQuery = `${navSelect} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+      listQuery = `${navSelect} ORDER BY n.created_at DESC LIMIT ? OFFSET ?`;
       countQuery = `SELECT COUNT(*) AS c FROM nav.reports ${where}`;
       queryParams = [...params];
     } else {
