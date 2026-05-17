@@ -618,6 +618,7 @@ function NavStatStrip({
   data: ApiResponse | null;
   loading: boolean;
 }) {
+  const total = data?.stats.total;
   const monthCount = data?.stats.monthCount;
   const weekCount = data?.stats.weekCount;
   const transferredCount = data?.stats.transferredCount;
@@ -646,7 +647,8 @@ function NavStatStrip({
 
   return (
     <div className="bg-white rounded-xl ring-1 ring-[var(--report-border)] shadow-sm p-5">
-      <div className="grid grid-cols-3 gap-4 md:gap-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+        <Cell label="总报告数" value={total} />
         <Cell label="本月新增" value={monthCount} />
         <Cell label="本周新增" value={weekCount} />
         <Cell label="转服务数量" value={transferredCount} />
