@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, RefreshCw, ShieldCheck, ShieldOff, UserCog } from "lucide-react";
+import { Plus, RefreshCw, ShieldCheck, UserCog } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Table,
@@ -46,7 +46,6 @@ export default function AdminsPage() {
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toggling, setToggling] = useState<number | null>(null);
 
   const fetchAdmins = useCallback(async () => {
     setLoading(true);
@@ -66,30 +65,6 @@ export default function AdminsPage() {
   useEffect(() => {
     fetchAdmins();
   }, [fetchAdmins]);
-
-  async function toggleActive(admin: AdminRow) {
-    if (toggling !== null) return;
-    const newActive = !admin.is_active;
-    setToggling(admin.id);
-    try {
-      const res = await fetch(withBase(`/api/admin/admins/${admin.id}`), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_active: newActive }),
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        alert(json.error ?? "操作失败");
-        return;
-      }
-      // 乐观更新
-      setAdmins((prev) =>
-        prev.map((a) => (a.id === admin.id ? { ...a, is_active: newActive ? 1 : 0 } : a))
-      );
-    } finally {
-      setToggling(null);
-    }
-  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -145,7 +120,7 @@ export default function AdminsPage() {
             <TableHeader>
               <TableRow className="bg-gray-50">
                 <TableHead className="w-28">姓名</TableHead>
-                <TableHead className="w-36">登录手机号</TableHead>
+                <TableHead className="w-36">用户名</TableHead>
                 <TableHead>备注</TableHead>
                 <TableHead className="w-48">菜单权限</TableHead>
                 <TableHead className="w-20 text-center">状态</TableHead>
@@ -184,39 +159,12 @@ export default function AdminsPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link
-                        href={`/admin/admins/${admin.id}/edit`}
-                        className={buttonVariants({ variant: "ghost", size: "xs", className: "focus-visible:ring-2 focus-visible:ring-blue-500/50" })}
-                      >
-                        编辑
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => toggleActive(admin)}
-                        disabled={toggling === admin.id}
-                        className={
-                          admin.is_active
-                            ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                            : "text-green-600 hover:text-green-700 hover:bg-green-50"
-                        }
-                      >
-                        {toggling === admin.id ? (
-                          "…"
-                        ) : admin.is_active ? (
-                          <>
-                            <ShieldOff className="size-3" />
-                            停用
-                          </>
-                        ) : (
-                          <>
-                            <ShieldCheck className="size-3" />
-                            启用
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    <Link
+                      href={`/admin/admins/${admin.id}/edit`}
+                      className={buttonVariants({ variant: "ghost", size: "xs", className: "focus-visible:ring-2 focus-visible:ring-blue-500/50" })}
+                    >
+                      编辑
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))}
