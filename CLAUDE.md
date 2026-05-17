@@ -19,7 +19,7 @@
 详见 `README.md`。关键约束：
 - admin-hub 对 `nav.*` 只读
 - admin-hub 独家拥有 `admins / service_tracking / service_tracking_records` 三张表的 schema
-- iron-session cookie `path: "/admin"`（生产 nginx 反代用子路径方案）
+- iron-session cookie `path: "/b100"`（与 next.config.ts 的 basePath 严格相等；生产 nginx 子路径方案）
 
 ## 数据访问
 
@@ -37,8 +37,8 @@ shadcn 的 `components/ui/` 也各一份。
 
 ## 部署
 
-- 本机：`npm run dev` → http://localhost:3001
-- 生产：nginx 子路径 `<domain>/admin/` 反代到 :3001。详见 `README.md` 与 `D:/_workspace/01_项目-Coding/plans/fluttering-juggling-castle.md`（plan 文件 Step 8）
+- 本机：`npm run dev` → `http://localhost:3001/b100/admin/login`
+- 生产：nginx 子路径 `https://h100.jsai100.com/b100/` 反代到服务器 :3004。日常说"部署"即触发 `tencent-deploy` skill，自动跑 merge main + push tag + ssh git pull + pm2 restart + curl 验证
 
 ## 工具脚本
 
@@ -53,6 +53,7 @@ shadcn 的 `components/ui/` 也各一份。
 2. **不要把 admin 表 init 加回 career-report 的 db.ts** —— 那是 silent schema drift 的源头
 3. **不要把 `data/` 目录放在坚果云/OneDrive 等同步目录** —— sync agent 会破坏 sqlite WAL
 4. **iron-session 密钥与 career-report 共用** —— 但不要在 admin-hub 改这个值；任何 cookie 行为变化要同步两个项目
+5. **客户端 URL 必须用 `lib/url.ts` 的 `withBase()` 包装** —— Next.js 的 basePath 不会自动作用到 `fetch()` / `window.location.href` / `window.open` / 原生 `<a href>` / proxy.ts 里 `new URL(path, req.url)`。`<Link>` / `router.push` / `next/navigation` 的 `redirect()` 会自动加 basePath，不用包。漏了 withBase 会让客户端请求剥离 `/b100`，详见 commit `3256262`
 
 ## 与全局规则的关系
 

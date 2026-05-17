@@ -24,8 +24,8 @@ admin-hub 本身只跑 admin UI + API（`localhost:3001`），不直接服务终
                            │  │
                        ┌───┴──┴──────────┐
                        │  admin-hub      │
-                       │  :3001          │
-                       │  /admin/        │
+                       │  :3001 / :3004  │  (本机 / 生产)
+                       │  /b100/         │
                        └─────────────────┘
 ```
 
@@ -52,7 +52,7 @@ admin-hub 本身只跑 admin UI + API（`localhost:3001`），不直接服务终
 3. 启动：
    ```powershell
    npm run dev
-   # 打开 http://localhost:3001/admin/login
+   # 打开 http://localhost:3001/b100/admin/login
    ```
 
 4. （可选）跑 smoke 测试验证全链路：
@@ -117,7 +117,7 @@ admin-hub/
 │   └── ui/                 # shadcn 基础组件
 ├── lib/
 │   ├── db.ts               # SQLite 连接 + admin 表 init + ATTACH nav.db
-│   ├── admin-session.ts    # iron-session，cookieOptions.path:"/admin"
+│   ├── admin-session.ts    # iron-session，cookieOptions.path:"/b100"
 │   ├── menus.ts            # 菜单权限
 │   ├── service-tracking.ts # 服务跟进枚举/权限
 │   ├── projects.ts         # SHARED
@@ -140,9 +140,13 @@ admin-hub/
 
 ## 部署
 
-参考 `D:/_workspace/01_项目-Coding/fluttering-juggling-castle.md`（plan 文件）的 Step 8。生产环境通过 nginx 把 `/admin/` 子路径反代到 admin-hub :3001。
+生产环境通过 nginx 把 `/b100/` 子路径反代到 admin-hub `:3004`（端口由 PM2 + nginx 配合自动分配）。详见根目录 skill `tencent-deploy` 或日常说"部署"即触发。
+
+部署架构：
+- `h100.jsai100.com/b100/...` → nginx → `127.0.0.1:3004/b100/...` → admin-hub
+- `h100.jsai100.com/`         → nginx → `127.0.0.1:3000` → career-report（用户端）
 
 回滚预案：
-1. nginx 注释掉 `/admin/` 和 `/api/admin/` 两个 location，reload
-2. pm2 停掉 admin-hub
-3. 必要时 git revert career-report 的 admin 删除 commit
+1. nginx 注释掉 `/b100/` location，`nginx -s reload`
+2. pm2 停掉 admin-hub：`pm2 stop admin-hub`
+3. 完全撤回切割：在 career-report 仓 git revert `c1f4b17`（"切走管理后台"那个 commit）后重新部署 career-report
