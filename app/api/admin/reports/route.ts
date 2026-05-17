@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb, isNavDbReady } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-session";
 import { canViewMenu } from "@/lib/menus";
+import { startOfMonthCN, startOfWeekCN } from "@/lib/cn-time";
 
 export const runtime = "nodejs";
 
@@ -48,6 +49,8 @@ interface ReportRow {
   duration_ms: number | null;
   sections_status: string | null;
   ip: string | null;
+  /** 已转服务的 service_tracking.id；NULL = 未转。仅 nav 项目可能非 NULL。 */
+  tracking_id: number | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -97,30 +100,42 @@ export async function GET(req: NextRequest) {
     }
     const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-    // 列对齐：report 库没有 user_identity / uuid / work_years / user_name / user_phone，select NULL 占位
+    // navSelect 用 LEFT JOIN service_tracking，nav.reports 起别名 n. —— WHERE 列名要 prefix
+    const conditionsNav = conditions.map((c) =>
+      c.replace(/^(created_at|target_position|has_resume)\b/, "n.$1")
+    );
+    const whereNav = conditionsNav.length > 0 ? `WHERE ${conditionsNav.join(" AND ")}` : "";
+
+    // 列对齐：report 库没有 user_identity / uuid / work_years / user_name / user_phone / tracking_id，select NULL 占位
     const reportSelect = `
       SELECT id, created_at, 'report' AS project,
              target_position, target_education,
              NULL AS work_years, NULL AS user_name, NULL AS user_phone,
              target_company, target_city_tier,
              has_resume, resume_filename, NULL AS user_identity, NULL AS uuid,
-             duration_ms, sections_status, ip
+             duration_ms, sections_status, ip,
+             NULL AS tracking_id
       FROM main.reports ${where}
     `;
     // nav 库的 target_education 列在 finalize 时写 NULL，真实学历在 form_data_json 里。
     // 用 SQLite JSON1 的 json_extract 直接抽出，省得前端解析。
     // user_name / user_phone / work_years 同理。
+    // LEFT JOIN service_tracking 给每行补 tracking_id（已转服务则非 NULL）。
     const navSelect = `
-      SELECT id, created_at, 'nav' AS project,
-             target_position,
-             json_extract(form_data_json, '$.education') AS target_education,
-             json_extract(form_data_json, '$.workYears') AS work_years,
-             json_extract(form_data_json, '$.name') AS user_name,
-             json_extract(form_data_json, '$.phone') AS user_phone,
+      SELECT n.id, n.created_at, 'nav' AS project,
+             n.target_position,
+             json_extract(n.form_data_json, '$.education') AS target_education,
+             json_extract(n.form_data_json, '$.workYears') AS work_years,
+             json_extract(n.form_data_json, '$.name') AS user_name,
+             json_extract(n.form_data_json, '$.phone') AS user_phone,
              NULL AS target_company, NULL AS target_city_tier,
-             has_resume, resume_filename, user_identity, uuid,
-             duration_ms, sections_status, ip
-      FROM nav.reports ${where}
+             n.has_resume, n.resume_filename, n.user_identity, n.uuid,
+             n.duration_ms, n.sections_status, n.ip,
+             st.id AS tracking_id
+      FROM nav.reports n
+      LEFT JOIN main.service_tracking st
+        ON st.source_project = 'nav' AND st.source_report_id = n.id
+      ${whereNav}
     `;
 
     // 根据 project filter 决定查哪一侧或两侧 UNION
@@ -155,6 +170,9 @@ export async function GET(req: NextRequest) {
       todayCount: number;
       resumeRate: number;
       avgDurationSec: number | null;
+      monthCount?: number;
+      weekCount?: number;
+      transferredCount?: number;
     } {
       const reportPart = `SELECT COUNT(*) AS total,
         SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS today_count,
@@ -202,12 +220,35 @@ export async function GET(req: NextRequest) {
       };
       const t = r.total ?? 0;
       const resumeCount = r.resume_count ?? 0;
-      return {
+      const base = {
         total: t,
         todayCount: r.today_count ?? 0,
         resumeRate: t > 0 ? Math.round((resumeCount / t) * 100) : 0,
         avgDurationSec: r.avg_dur ? Math.round(r.avg_dur / 1000) : null,
       };
+      // nav 项目专属：本月新增 / 本周新增 / 累计已转服务数
+      if (p === "nav") {
+        const monthStart = startOfMonthCN();
+        const weekStart = startOfWeekCN();
+        const monthRow = db
+          .prepare("SELECT COUNT(*) AS c FROM nav.reports WHERE created_at >= ?")
+          .get(monthStart) as { c: number };
+        const weekRow = db
+          .prepare("SELECT COUNT(*) AS c FROM nav.reports WHERE created_at >= ?")
+          .get(weekStart) as { c: number };
+        const transferRow = db
+          .prepare(
+            "SELECT COUNT(DISTINCT source_report_id) AS c FROM service_tracking WHERE source_project = 'nav'"
+          )
+          .get() as { c: number };
+        return {
+          ...base,
+          monthCount: monthRow.c ?? 0,
+          weekCount: weekRow.c ?? 0,
+          transferredCount: transferRow.c ?? 0,
+        };
+      }
+      return base;
     }
 
     const stats = navReady ? statForProject(effectiveProject) : statForProject("report");
