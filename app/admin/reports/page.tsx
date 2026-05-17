@@ -140,28 +140,6 @@ function formatTs(ms: number) {
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** KPI 卡右上的 icon avatar — squircle + 蓝调渐变 + 微 shadow */
-function KpiIcon({
-  icon: Icon,
-  size = "md",
-}: {
-  icon: LucideIcon;
-  size?: "sm" | "md";
-}) {
-  return (
-    <div
-      className={`shrink-0 rounded-xl bg-gradient-to-br from-[var(--blue-100)] to-[var(--blue-50)] flex items-center justify-center ring-1 ring-[var(--blue-200)]/50 shadow-[0_2px_6px_oklch(0.55_0.2_252_/_0.08)] ${
-        size === "sm" ? "size-8" : "size-10"
-      }`}
-    >
-      <Icon
-        className={`text-[var(--blue-700)] ${size === "sm" ? "size-4" : "size-5"}`}
-        strokeWidth={2.2}
-      />
-    </div>
-  );
-}
-
 function ProjectBadge({ project }: { project: ProjectId }) {
   const meta = PROJECTS[project];
   const tone = meta.color === "green" ? "success" : "info";
@@ -390,13 +368,10 @@ function AdminReportsContent() {
           </div>
         )}
 
-        {/* Today Strip — 单卡 actionable 工作台 */}
-        <TodayStrip data={data} project={project} loading={loading} />
+        {/* KPI 卡片 4 张 — 顶部工作台 */}
+        <KpiStrip data={data} project={project} loading={loading} />
 
-        {/* Project Filter Pill Bar — 焦点级切换 */}
-        <ProjectPillBar project={project} showService={me?.showService} />
-
-        {/* 过滤栏 — Tabler 风：包成轻卡 */}
+        {/* 过滤栏 — 包成轻卡 */}
         <div className="surface-panel p-4 flex flex-wrap gap-3 items-end">
           <div>
             <div className="text-xs text-gray-500 mb-1">开始日期</div>
@@ -638,8 +613,8 @@ function AdminReportsContent() {
   );
 }
 
-/** Today Strip — 替代 4-StatCard 横排，actionable 工作台 */
-function TodayStrip({
+/** —— 4 张独立 KPI 卡片 — report / nav 分流 —— */
+function KpiStrip({
   data,
   project,
   loading,
@@ -648,200 +623,132 @@ function TodayStrip({
   project: ProjectFilter;
   loading: boolean;
 }) {
-  // nav 项目：本月新增 / 本周新增 / 已转服务（三栏并列）
+  const skeleton = loading && data === null;
+
+  // nav 项目：总报告数 / 本月新增 / 本周新增 / 转服务数量
   if (project === "nav") {
-    return <NavStatStrip data={data} loading={loading} />;
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KpiCard
+          label="总报告数"
+          value={data?.stats.total}
+          icon={FileText}
+          loading={skeleton}
+          highlight
+        />
+        <KpiCard
+          label="本月新增"
+          value={data?.stats.monthCount}
+          icon={Calendar}
+          loading={skeleton}
+        />
+        <KpiCard
+          label="本周新增"
+          value={data?.stats.weekCount}
+          icon={CalendarDays}
+          loading={skeleton}
+        />
+        <KpiCard
+          label="转服务数量"
+          value={data?.stats.transferredCount}
+          icon={ArrowRightCircle}
+          loading={skeleton}
+          accent="green"
+        />
+      </div>
+    );
   }
 
-  const todayCount = data?.stats.todayCount;
-  const total = data?.stats.total;
+  // report / all：今日新增 / 累计总数 / 简历上传率 / 平均耗时
   const resumeRate = data?.stats.resumeRate;
   const avgDur = data?.stats.avgDurationSec;
-
   return (
-    <div className="surface-panel relative overflow-hidden p-6">
-      {/* 右上角微弱品牌渐变 — 让单卡看起来更"指挥中心"而非平面 */}
-      <div
-        aria-hidden
-        className="absolute -top-12 -right-12 size-48 rounded-full bg-[radial-gradient(circle,oklch(0.7_0.16_245_/_0.12),transparent_65%)] pointer-events-none"
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <KpiCard
+        label="今日新增"
+        value={data?.stats.todayCount}
+        icon={Sparkles}
+        loading={skeleton}
+        highlight
       />
-      <div className="relative grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
-        {/* 左 5 栏：今日新增大数字 */}
-        <div className="md:col-span-5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-[10.5px] text-gray-500 font-semibold tracking-[0.16em] uppercase">
-              今日新增
-            </div>
-            <KpiIcon icon={Sparkles} />
-          </div>
-          {loading && data === null ? (
-            <div className="h-12 w-24 bg-gray-100 rounded animate-pulse mt-3" />
-          ) : (
-            <div className="kpi-number text-[44px] md:text-[52px] font-semibold leading-none mt-3">
-              {todayCount ?? "—"}
-            </div>
-          )}
-          <div className="text-xs text-gray-500 mt-3 tabular-nums">
-            累计{" "}
-            <span className="font-semibold text-[var(--navy-800)]">
-              {total ?? "—"}
-            </span>{" "}
-            份{project === "all" && " · 两个项目合计"}
-          </div>
-        </div>
-
-        {/* 中间分隔（仅桌面） */}
-        <div
-          aria-hidden
-          className="hidden md:block md:col-span-1 h-full w-px bg-gradient-to-b from-transparent via-[var(--report-border)] to-transparent mx-auto"
-        />
-
-        {/* 右 6 栏：两个 secondary KPI */}
-        <div className="md:col-span-6 grid grid-cols-2 gap-6">
-          <div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-[10.5px] text-gray-500 font-semibold tracking-[0.16em] uppercase">
-                简历上传率
-              </div>
-              <KpiIcon icon={FileText} size="sm" />
-            </div>
-            {loading && data === null ? (
-              <div className="h-8 w-16 bg-gray-100 rounded animate-pulse mt-3" />
-            ) : (
-              <div className="text-[26px] font-semibold tabular-nums tracking-tight leading-none mt-3 text-[var(--navy-800)]">
-                {resumeRate !== undefined ? `${resumeRate}%` : "—"}
-              </div>
-            )}
-          </div>
-          <div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-[10.5px] text-gray-500 font-semibold tracking-[0.16em] uppercase">
-                平均耗时
-              </div>
-              <KpiIcon icon={Clock} size="sm" />
-            </div>
-            {loading && data === null ? (
-              <div className="h-8 w-16 bg-gray-100 rounded animate-pulse mt-3" />
-            ) : (
-              <div className="text-[26px] font-semibold tabular-nums tracking-tight leading-none mt-3 text-[var(--navy-800)]">
-                {avgDur ? `${avgDur}s` : "—"}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <KpiCard
+        label={project === "all" ? "累计 (两项目合计)" : "累计总数"}
+        value={data?.stats.total}
+        icon={Inbox}
+        loading={skeleton}
+      />
+      <KpiCard
+        label="简历上传率"
+        value={resumeRate !== undefined ? `${resumeRate}%` : undefined}
+        icon={FileText}
+        loading={skeleton}
+      />
+      <KpiCard
+        label="平均耗时"
+        value={avgDur ? `${avgDur}s` : undefined}
+        icon={Clock}
+        loading={skeleton}
+      />
     </div>
   );
 }
 
-/** nav 项目专属统计卡：本月新增 / 本周新增 / 已转服务（按北京时间自然月、周一为始） */
-function NavStatStrip({
-  data,
+/** 单张 KPI 卡 — 独立 surface，可 hover lift + accent 主色 */
+function KpiCard({
+  label,
+  value,
+  icon: Icon,
   loading,
+  accent = "blue",
+  highlight,
 }: {
-  data: ApiResponse | null;
+  label: string;
+  value: number | string | undefined;
+  icon: LucideIcon;
   loading: boolean;
+  accent?: "blue" | "green";
+  highlight?: boolean;
 }) {
-  const total = data?.stats.total;
-  const monthCount = data?.stats.monthCount;
-  const weekCount = data?.stats.weekCount;
-  const transferredCount = data?.stats.transferredCount;
-  const skeleton = loading && data === null;
+  const iconBg =
+    accent === "green"
+      ? "bg-gradient-to-br from-[oklch(0.94_0.06_155)] to-[oklch(0.97_0.03_155)] text-[var(--semantic-positive)] ring-[oklch(0.85_0.08_155)]/40"
+      : "bg-gradient-to-br from-[var(--blue-100)] to-[var(--blue-50)] text-[var(--blue-700)] ring-[var(--blue-200)]/50";
+  const glowColor =
+    accent === "green"
+      ? "oklch(0.65_0.16_155_/_0.1)"
+      : "oklch(0.7_0.16_245_/_0.1)";
 
-  const Cell = ({
-    label,
-    value,
-    icon,
-    highlight,
-  }: {
-    label: string;
-    value: number | undefined;
-    icon: LucideIcon;
-    highlight?: boolean;
-  }) => (
-    <div>
-      <div className="flex items-center justify-between gap-2">
-        <div className="text-[10.5px] text-gray-500 font-semibold tracking-[0.16em] uppercase">
+  return (
+    <div className="surface-panel relative overflow-hidden p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_oklch(0.3_0.06_252_/_0.08),0_18px_36px_oklch(0.55_0.2_252_/_0.12)] group">
+      {/* 右上角微弱渐变 — hover 时加强 */}
+      <div
+        aria-hidden
+        className="absolute -top-10 -right-10 size-32 rounded-full pointer-events-none opacity-70 group-hover:opacity-100 transition-opacity"
+        style={{
+          background: `radial-gradient(circle, ${glowColor}, transparent 65%)`,
+        }}
+      />
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="text-[10.5px] text-gray-500 font-semibold tracking-[0.16em] uppercase pt-0.5 min-w-0 truncate">
           {label}
         </div>
-        <KpiIcon icon={icon} size="sm" />
+        <div
+          className={`shrink-0 size-9 rounded-xl flex items-center justify-center ring-1 shadow-[0_2px_6px_oklch(0.55_0.2_252_/_0.08)] ${iconBg}`}
+        >
+          <Icon className="size-4.5" strokeWidth={2.2} />
+        </div>
       </div>
-      {skeleton ? (
-        <div className="h-10 w-20 bg-gray-100 rounded animate-pulse mt-3" />
+      {loading ? (
+        <div className="h-10 w-20 bg-gray-100 rounded animate-pulse mt-4" />
       ) : (
         <div
-          className={`${highlight ? "kpi-number" : "text-[var(--navy-800)]"} text-[32px] md:text-[38px] font-semibold tabular-nums tracking-tight leading-none mt-3`}
+          className={`${
+            highlight ? "kpi-number" : "text-[var(--navy-800)]"
+          } text-[34px] md:text-[40px] font-semibold tabular-nums tracking-tight leading-none mt-4`}
         >
           {value ?? "—"}
         </div>
       )}
-    </div>
-  );
-
-  return (
-    <div className="surface-panel relative overflow-hidden p-6">
-      <div
-        aria-hidden
-        className="absolute -top-12 -right-12 size-48 rounded-full bg-[radial-gradient(circle,oklch(0.7_0.16_245_/_0.12),transparent_65%)] pointer-events-none"
-      />
-      <div className="relative grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-        <Cell label="总报告数" value={total} icon={FileText} highlight />
-        <Cell label="本月新增" value={monthCount} icon={Calendar} />
-        <Cell label="本周新增" value={weekCount} icon={CalendarDays} />
-        <Cell label="转服务数量" value={transferredCount} icon={ArrowRightCircle} />
-      </div>
-    </div>
-  );
-}
-
-/** Project Filter Pill Bar — 焦点级 project 切换 */
-function ProjectPillBar({
-  project,
-  showService,
-}: {
-  project: ProjectFilter;
-  showService: boolean | undefined;
-}) {
-  const pills: Array<{ href: string; label: string; active: boolean }> = [
-    {
-      href: "/admin/reports?project=all",
-      label: "全部",
-      active: project === "all",
-    },
-    {
-      href: "/admin/reports?project=report",
-      label: PROJECTS.report.label,
-      active: project === "report",
-    },
-    {
-      href: "/admin/reports?project=nav",
-      label: PROJECTS.nav.label,
-      active: project === "nav",
-    },
-  ];
-  if (showService) {
-    pills.push({
-      href: "/admin/service-tracking",
-      label: "服务跟踪",
-      active: false,
-    });
-  }
-
-  return (
-    <div className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl bg-[oklch(0.95_0.012_252_/_0.6)] ring-1 ring-[oklch(0.9_0.018_252_/_0.5)]">
-      {pills.map((p) => (
-        <Link
-          key={p.href}
-          href={p.href}
-          className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
-            p.active
-              ? "bg-white text-[var(--blue-700)] shadow-[0_1px_2px_oklch(0.3_0.1_252_/_0.08),0_4px_12px_oklch(0.55_0.2_252_/_0.1)]"
-              : "text-gray-600 hover:text-[var(--navy-800)] hover:bg-white/50"
-          }`}
-        >
-          {p.label}
-        </Link>
-      ))}
     </div>
   );
 }
