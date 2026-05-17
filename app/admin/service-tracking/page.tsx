@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Inbox, RefreshCw, ArrowRightCircle, FileText, FolderOpen, Pencil, AlertTriangle } from "lucide-react";
+import { Inbox, RefreshCw, ArrowRightCircle, FileText, FolderOpen, Pencil, AlertTriangle, LifeBuoy } from "lucide-react";
+import { PageHeader } from "@/components/admin/page-header";
 import {
   Table,
   TableBody,
@@ -198,24 +199,22 @@ function ListContent() {
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto space-y-5">
-        {/* 标题 */}
-        <div className="relative">
-          <div
-            aria-hidden
-            className="absolute -top-1 left-0 h-0.5 w-12 rounded-full bg-gradient-to-r from-blue-500 to-violet-400"
-          />
-          <div className="space-y-1 pt-2">
-            <div className="flex items-baseline gap-2.5">
-              <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">
-                服务跟踪
-              </h1>
-              <span className="text-xs text-gray-500">咨询服务持续跟进记录</span>
-            </div>
-            <p className="text-sm text-gray-500 tabular-nums">
-              {loading ? "加载中…" : data ? `共 ${data.total} 条` : "—"}
-            </p>
-          </div>
-        </div>
+        {/* 标题 — 统一 PageHeader */}
+        <PageHeader
+          icon={LifeBuoy}
+          title="服务跟踪"
+          subtitle={
+            <span className="tabular-nums">
+              咨询服务持续跟进记录
+              {loading
+                ? " · 加载中…"
+                : data
+                ? ` · 共 ${data.total} 条`
+                : ""}
+            </span>
+          }
+          accentColor="blue"
+        />
 
         {/* 数据看板 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -231,8 +230,8 @@ function ListContent() {
           />
         </div>
 
-        {/* 筛选 */}
-        <div className="flex flex-wrap gap-3 items-end px-1">
+        {/* 筛选 — Tabler 风：包成轻卡 */}
+        <div className="bg-white rounded-xl ring-1 ring-gray-100 shadow-sm shadow-gray-200/60 p-4 flex flex-wrap gap-3 items-end">
           <div>
             <div className="text-xs text-gray-500 mb-1">服务状态</div>
             <select

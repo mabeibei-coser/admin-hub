@@ -48,63 +48,41 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="relative min-h-dvh bg-white grid md:grid-cols-[1fr_1.5fr]">
-      {/* 顶部克制装饰：1px 蓝色细线 */}
+    <div className="relative min-h-dvh bg-gray-50">
+      {/* Tabler 风顶部蓝色粗装饰条（border-top-wide border-primary） */}
       <div
         aria-hidden
-        className="absolute top-0 inset-x-0 h-px bg-[var(--blue-200)]"
+        className="absolute top-0 inset-x-0 h-1 bg-[var(--blue-700)] z-10"
       />
 
-      {/* 左叙述区：仅桌面端显示 */}
-      <aside className="hidden md:flex md:flex-col md:justify-center md:px-12 md:py-16 md:border-r md:border-[var(--report-border)]">
-        <h2 className="text-3xl font-semibold tracking-tight text-[var(--navy-800)]">
-          谨世 ATA
-        </h2>
-        <p className="mt-3 text-sm text-[var(--navy-700)] leading-relaxed">
-          应届校招定位 &amp; 求职导航后台
-        </p>
-        <p className="mt-6 text-[10px] font-mono text-gray-400 tracking-wider uppercase">
-          PROD · v2.1
-        </p>
-      </aside>
+      <div className="min-h-dvh grid lg:grid-cols-[5fr_7fr]">
+        {/* 左：登录表单区 */}
+        <div className="flex items-center justify-center px-4 py-12 lg:px-12 bg-white">
+          <div className="w-full max-w-sm">
+            {/* 品牌标识 — 居中（Tabler navbar-logo 风） */}
+            <div className="flex flex-col items-center gap-3 mb-8">
+              <div className="size-12 rounded-2xl bg-[var(--blue-700)] flex items-center justify-center shadow-sm">
+                <ShieldCheck className="size-6 text-white" />
+              </div>
+              <div className="text-center leading-tight">
+                <h1 className="text-xl font-semibold tracking-tight text-[var(--navy-800)]">
+                  谨世 ATA
+                </h1>
+                <p className="text-[11px] text-gray-500 mt-0.5">管理后台</p>
+              </div>
+            </div>
 
-      {/* 右表单区 */}
-      <div className="flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-sm">
-          {/* 移动端品牌标识 — 仅 < md 显示 */}
-          <div className="md:hidden mb-6 flex flex-col items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight text-[var(--navy-800)]">
-              谨世 ATA
-            </h1>
-            <p className="text-[12px] text-gray-500">管理后台</p>
-          </div>
-
-          {/* 登录卡片 + 左侧 accent rail */}
-          <div className="relative">
-            <span
-              aria-hidden
-              className="absolute left-0 inset-y-0 w-1 bg-[var(--blue-700)] rounded-l-md"
-            />
-            <Card className="relative ml-1 border border-[var(--report-border)] bg-white shadow-sm">
-              <CardContent className="p-6 pt-7">
-                {/* 卡片内的小图标 + 标题 */}
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-[var(--blue-700)]">
-                    <ShieldCheck className="size-5 text-white" />
-                  </div>
-                  <div className="leading-tight">
-                    <div className="text-base font-semibold text-[var(--navy-800)] tracking-tight">
-                      欢迎回来
-                    </div>
-                    <div className="text-[11px] text-gray-500">
-                      用手机号 + 密码登录
-                    </div>
-                  </div>
-                </div>
-
+            {/* 登录卡片 — Tabler card card-md 风 */}
+            <Card className="border border-[var(--report-border)] shadow-sm bg-white">
+              <CardContent className="p-7">
+                <h2 className="text-base font-semibold text-center text-[var(--navy-800)] mb-6">
+                  登录到您的账号
+                </h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="username">手机号</Label>
+                    <Label htmlFor="username" className="text-xs text-gray-600">
+                      手机号
+                    </Label>
                     <Input
                       id="username"
                       type="tel"
@@ -124,7 +102,9 @@ export default function AdminLoginPage() {
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="password">密码</Label>
+                    <Label htmlFor="password" className="text-xs text-gray-600">
+                      密码
+                    </Label>
                     <Input
                       id="password"
                       type="password"
@@ -144,7 +124,7 @@ export default function AdminLoginPage() {
                   )}
                   <Button
                     type="submit"
-                    className="w-full h-10 bg-[var(--blue-700)] hover:bg-[var(--blue-600)] disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                    className="w-full h-10 bg-[var(--blue-700)] hover:bg-[var(--blue-600)] text-white disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
                     disabled={loading || !canSubmit}
                   >
                     {loading ? "登录中…" : "登录"}
@@ -152,13 +132,50 @@ export default function AdminLoginPage() {
                 </form>
               </CardContent>
             </Card>
-          </div>
 
-          {/* 底部 helper */}
-          <p className="mt-6 text-[11px] text-gray-400 text-center">
-            忘记密码？请联系超管重置
-          </p>
+            {/* 底部 helper */}
+            <p className="mt-6 text-[11px] text-gray-400 text-center">
+              忘记密码？请联系超管重置
+            </p>
+          </div>
         </div>
+
+        {/* 右：品牌叙述区（Tabler cover 风蓝色装饰区，仅桌面） */}
+        <aside className="hidden lg:flex relative overflow-hidden bg-gradient-to-br from-[var(--navy-900)] via-[var(--blue-700)] to-[var(--blue-600)]">
+          {/* 几何网格装饰（复用 globals.css 的 hero-grid） */}
+          <div aria-hidden className="absolute inset-0 hero-grid opacity-30" />
+          {/* 柔光球装饰 */}
+          <div
+            aria-hidden
+            className="absolute -top-32 -right-32 size-96 rounded-full bg-white/5 blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="absolute -bottom-40 -left-32 size-[28rem] rounded-full bg-[var(--blue-400)]/15 blur-3xl"
+          />
+
+          {/* 内容 */}
+          <div className="relative z-10 flex flex-col justify-center px-16 py-24 text-white max-w-2xl">
+            <div className="flex items-center gap-2 mb-8">
+              <div className="size-1.5 rounded-full bg-white/70" />
+              <div className="text-[11px] font-mono text-white/60 tracking-wider uppercase">
+                Admin Console
+              </div>
+            </div>
+            <h2 className="text-4xl xl:text-5xl font-semibold tracking-tight leading-[1.15]">
+              应届校招定位
+              <br />
+              与求职导航后台
+            </h2>
+            <p className="mt-5 text-sm text-white/70 leading-relaxed max-w-md">
+              管理报告 · 跟进服务 · 监控转化——一个后台贯穿所有业务线。
+            </p>
+            <div className="mt-12 flex items-center gap-3 text-[10px] font-mono text-white/40 tracking-widest uppercase">
+              <div className="size-1 rounded-full bg-white/40" />
+              PROD · v2.1
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );
