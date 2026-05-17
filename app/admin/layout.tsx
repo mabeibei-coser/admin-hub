@@ -8,8 +8,9 @@ export default function AdminLayout({
 }) {
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* 左侧 sidebar (desktop) — useSearchParams 需要 Suspense 包裹才能 prerender */}
-      <Suspense fallback={<div className="hidden md:block md:w-56 lg:w-60 shrink-0 border-r border-gray-200 bg-white" />}>
+      {/* 左侧 sidebar (desktop) — useSearchParams 需要 Suspense 包裹才能 prerender；
+          fallback 设 null：登录页 sidebar 返回 null 时不会出现白条占位 */}
+      <Suspense fallback={null}>
         <AdminSidebar />
       </Suspense>
 
