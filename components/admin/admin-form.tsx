@@ -16,10 +16,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ASSIGNABLE_MENUS } from "@/lib/menus";
 import { isValidCnMobile } from "@/lib/phone";
+import { withBase } from "@/lib/url";
 
 // ---- schema ----
 const baseSchema = z.object({
-  username: z.string().refine(isValidCnMobile, { message: "请输入 11 位大陆手机号" }),
+  username: z
+    .string()
+    .refine(isValidCnMobile, { message: "用户名需为 11 位大陆手机号" }),
   name: z.string().min(1, "姓名不能为空"),
   note: z.string().optional(),
   menus: z.array(z.string()),
@@ -113,8 +116,8 @@ export function AdminForm(props: AdminFormProps) {
   async function onSubmit(data: any) {
     setServerError(null);
     const url = isEdit
-      ? `/api/admin/admins/${(props as EditProps).adminId}`
-      : "/api/admin/admins";
+      ? withBase(`/api/admin/admins/${(props as EditProps).adminId}`)
+      : withBase("/api/admin/admins");
     const method = isEdit ? "PATCH" : "POST";
 
     const payload: Record<string, unknown> = {
@@ -151,9 +154,9 @@ export function AdminForm(props: AdminFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-lg">
-      {/* 手机号（新建时可编辑，编辑时只读） */}
+      {/* 用户名（数据层仍存大陆手机号，UI 改名「用户名」） */}
       <div className="space-y-1.5">
-        <Label htmlFor="username">登录手机号</Label>
+        <Label htmlFor="username">用户名</Label>
         {isEdit ? (
           <Input
             id="username"
@@ -170,7 +173,7 @@ export function AdminForm(props: AdminFormProps) {
               type="tel"
               inputMode="numeric"
               maxLength={11}
-              placeholder="11 位大陆手机号"
+              placeholder="请输入 11 位手机号作为用户名"
               {...register("username" as never)}
               style={{ fontSize: "16px" }}
             />
@@ -271,22 +274,50 @@ export function AdminForm(props: AdminFormProps) {
         )}
       </div>
 
-      {/* 启用/停用（编辑时显示，自编辑时隐藏） */}
+      {/* 账号状态（编辑时显示，自编辑时隐藏） */}
       {isEdit && !isSelf && (
         <div className="space-y-1.5">
           <Label>账号状态</Label>
-          <label className="flex items-center gap-2.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) =>
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                setValue("is_active" as any, e.target.checked, { shouldValidate: true })
-              }
-              className="size-4 rounded border-gray-300 accent-blue-600"
-            />
-            <span className="text-sm text-gray-700">启用</span>
-          </label>
+          <div className="flex gap-2">
+            <label
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer transition-all border ${
+                isActive
+                  ? "ring-2 ring-emerald-500 bg-emerald-50 text-emerald-800 border-transparent"
+                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <input
+                type="radio"
+                name="is_active"
+                checked={isActive}
+                onChange={() =>
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  setValue("is_active" as any, true, { shouldValidate: true })
+                }
+                className="sr-only"
+              />
+              启用
+            </label>
+            <label
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer transition-all border ${
+                !isActive
+                  ? "ring-2 ring-amber-500 bg-amber-50 text-amber-800 border-transparent"
+                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <input
+                type="radio"
+                name="is_active"
+                checked={!isActive}
+                onChange={() =>
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  setValue("is_active" as any, false, { shouldValidate: true })
+                }
+                className="sr-only"
+              />
+              停用
+            </label>
+          </div>
           {!isActive && (
             <p className="text-[11px] text-amber-600">
               停用后该管理员将无法登录，已登录的 session 也会立即失效。
