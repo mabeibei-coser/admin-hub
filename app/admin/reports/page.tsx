@@ -154,8 +154,10 @@ function ProjectBadge({ project }: { project: ProjectId }) {
 }
 
 function readProjectFromUrl(p: string | null): ProjectFilter {
-  if (p === "all" || p === "report" || p === "nav") return p;
-  return "all";
+  // 「全部」tab 已下线（仅删除入口；后端 API 还兼容 project=all）。
+  // 历史链接 ?project=all 或不带参数时一律落到职业定位。
+  if (p === "report" || p === "nav") return p;
+  return "report";
 }
 
 /** Page wrapper — Suspense 让 useSearchParams 能在 static prerender 通过 */

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useSearchParams, usePathname } from "next/navigation";
 import {
-  LayoutGrid,
   Briefcase,
   Compass,
   LogOut,
@@ -54,7 +53,7 @@ export function AdminSidebar() {
   const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
   const me = useAdminMe();
 
-  const currentProject = (searchParams.get("project") ?? "all") as ProjectFilter;
+  const currentProject = (searchParams.get("project") ?? "report") as ProjectFilter;
 
   if (pathname === "/admin/login") return null;
 
@@ -100,16 +99,6 @@ export function AdminSidebar() {
         {/* 报告管理 section */}
         <SectionHeader label="报告管理" />
         <nav className="px-3 flex flex-col gap-0.5">
-          {/* 全部 */}
-          {(!me || me.showAll) && (
-            <SidebarNavItem
-              label="全部"
-              icon={LayoutGrid}
-              active={currentProject === "all" && pathname === "/admin/reports"}
-              href="/admin/reports?project=all"
-            />
-          )}
-          {/* 各项目 */}
           {(!me ? (["report", "nav"] as string[]) : me.visibleProjects).map(
             (pid) => {
               const meta = PROJECTS[pid as keyof typeof PROJECTS];
@@ -258,12 +247,11 @@ export function AdminMobileBar() {
   const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
   const me = useAdminMe();
 
-  const currentProject = (searchParams.get("project") ?? "all") as ProjectFilter;
+  const currentProject = (searchParams.get("project") ?? "report") as ProjectFilter;
 
   if (pathname === "/admin/login") return null;
 
   // 在 me 加载前显示骨架（loading 状态）
-  const showAll = !me || me.showAll;
   const visibleProjects: string[] = me ? me.visibleProjects : ["report", "nav"];
   const showService = !me || me.showService;
   const inServiceTracking = pathname.startsWith("/admin/service-tracking");
@@ -286,13 +274,6 @@ export function AdminMobileBar() {
         </Link>
         <div className="h-4 w-px bg-gray-200 shrink-0" />
         <div className="flex gap-1 shrink-0 overflow-x-auto">
-          {showAll && (
-            <MobilePill
-              href="/admin/reports?project=all"
-              active={currentProject === "all" && !inServiceTracking}
-              label="全部"
-            />
-          )}
           {visibleProjects.map((pid) => {
             const meta = PROJECTS[pid as keyof typeof PROJECTS];
             if (!meta) return null;
