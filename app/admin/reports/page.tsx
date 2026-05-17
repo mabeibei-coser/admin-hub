@@ -52,6 +52,8 @@ interface ReportRow {
   user_identity: string | null;
   uuid: string | null;
   duration_ms: number | null;
+  /** 已转服务的 service_tracking.id；NULL = 未转 */
+  tracking_id: number | null;
 }
 
 interface Stats {
@@ -59,6 +61,12 @@ interface Stats {
   todayCount: number;
   resumeRate: number;
   avgDurationSec: number | null;
+  /** nav 项目专属：本月新增 */
+  monthCount?: number;
+  /** nav 项目专属：本周新增 */
+  weekCount?: number;
+  /** nav 项目专属：累计已转服务数 */
+  transferredCount?: number;
 }
 
 interface ApiResponse {
@@ -116,12 +124,10 @@ function workYearsLabel(v: string | null | undefined): string {
 }
 
 function formatTs(ms: number) {
-  return new Date(ms).toLocaleString("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  // 手写格式确保 YYYY/MM/DD HH:mm 稳定输出（locale 行为差异避坑）
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function ProjectBadge({ project }: { project: ProjectId }) {
@@ -276,13 +282,12 @@ function AdminReportsContent() {
   // 列定义（通用 + 项目专属）
   // 通用列把"姓名"+"手机号"放在"时间"之后（report 项目没这俩字段，显示 "—"）
   const columns = useMemo(() => {
-    const common = ["时间", "姓名", "手机号", "项目"];
     if (project === "report")
-      return [...common, "岗位", "学历", "公司", "城市", "简历", "耗时", "操作"];
-    // 职业导航：用户要求去掉"耗时"列
+      return ["时间", "姓名", "手机号", "项目", "岗位", "学历", "公司", "城市", "简历", "耗时", "操作"];
+    // 职业导航：HR 关心节奏 + 用户身份 + 服务转化状态
     if (project === "nav")
-      return [...common, "岗位", "用户身份", "学历", "工作年限", "操作"];
-    return [...common, "岗位", "耗时", "详情"]; // all
+      return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
+    return ["时间", "姓名", "手机号", "项目", "岗位", "耗时", "详情"]; // all
   }, [project]);
 
   // 当前 project 的中文显示（标题用）
@@ -295,7 +300,11 @@ function AdminReportsContent() {
         open={!!transferRow}
         row={transferRow}
         me={me}
-        onClose={() => setTransferRow(null)}
+        onClose={() => {
+          setTransferRow(null);
+          // dialog 关闭（成功/取消都触发）后重拉列表，刷新转服务状态列
+          fetch_();
+        }}
       />
       <div className="max-w-7xl mx-auto space-y-5">
         {/* 标题 — 单色装饰条 + 项目色点 */}
@@ -529,6 +538,11 @@ function TodayStrip({
   project: ProjectFilter;
   loading: boolean;
 }) {
+  // nav 项目：本月新增 / 本周新增 / 已转服务（三栏并列）
+  if (project === "nav") {
+    return <NavStatStrip data={data} loading={loading} />;
+  }
+
   const todayCount = data?.stats.todayCount;
   const total = data?.stats.total;
   const resumeRate = data?.stats.resumeRate;
@@ -591,6 +605,51 @@ function TodayStrip({
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** nav 项目专属统计卡：本月新增 / 本周新增 / 已转服务（按北京时间自然月、周一为始） */
+function NavStatStrip({
+  data,
+  loading,
+}: {
+  data: ApiResponse | null;
+  loading: boolean;
+}) {
+  const monthCount = data?.stats.monthCount;
+  const weekCount = data?.stats.weekCount;
+  const transferredCount = data?.stats.transferredCount;
+  const skeleton = loading && data === null;
+
+  const Cell = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: number | undefined;
+  }) => (
+    <div>
+      <div className="text-[11px] text-gray-500 font-medium tracking-wider uppercase">
+        {label}
+      </div>
+      {skeleton ? (
+        <div className="h-10 w-20 bg-gray-100 rounded animate-pulse mt-2" />
+      ) : (
+        <div className="text-3xl md:text-4xl font-semibold tabular-nums tracking-tight leading-none mt-2 text-[var(--navy-900)]">
+          {value ?? "—"}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="bg-white rounded-xl ring-1 ring-[var(--report-border)] shadow-sm p-5">
+      <div className="grid grid-cols-3 gap-4 md:gap-8">
+        <Cell label="本月新增" value={monthCount} />
+        <Cell label="本周新增" value={weekCount} />
+        <Cell label="转服务数量" value={transferredCount} />
       </div>
     </div>
   );
@@ -818,7 +877,10 @@ function ReportRowItem({
     );
   }
 
-  // tab=nav：去掉耗时列（用户要求）
+  // tab=nav：HR 关心节奏 + 用户身份 + 服务转化状态
+  // 列：时间 / 姓名 / 手机号 / 服务项目 / 意向岗位 / 用户身份 / 转服务状态 / 操作
+  const navMeta = PROJECTS.nav;
+  const transferred = row.tracking_id != null;
   return (
     <TableRow className="text-sm hover:bg-[var(--blue-50)]/40 transition-colors duration-150">
       <TableCell className="tabular-nums text-xs text-gray-500 whitespace-nowrap">
@@ -830,8 +892,12 @@ function ReportRowItem({
       <TableCell className="tabular-nums text-xs text-gray-600 whitespace-nowrap">
         {row.user_phone || "—"}
       </TableCell>
+      {/* 服务项目：完整名称"职业导航"（不再用 shortLabel 缩写） */}
       <TableCell>
-        <ProjectBadge project={row.project} />
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--semantic-positive)]">
+          <span className="size-1.5 rounded-full bg-[var(--semantic-positive)]" />
+          {navMeta.label}
+        </span>
       </TableCell>
       <TableCell className="font-medium max-w-[140px] truncate">
         {row.target_position}
@@ -841,14 +907,36 @@ function ReportRowItem({
           ? IDENTITY_LABELS[row.user_identity] ?? row.user_identity
           : "—"}
       </TableCell>
-      <TableCell className="text-gray-600">{eduLabel(row.target_education)}</TableCell>
-      <TableCell className="text-gray-600">{workYearsLabel(row.work_years)}</TableCell>
+      {/* 转服务状态：已转入服务 / 未转入 */}
+      <TableCell>
+        {transferred ? (
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--semantic-positive)]">
+            <span className="size-1.5 rounded-full bg-[var(--semantic-positive)]" />
+            已转入服务
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-400">
+            <span className="size-1.5 rounded-full bg-gray-300" />
+            未转入
+          </span>
+        )}
+      </TableCell>
       <TableCell className="text-right">
         <RowActions row={row} onTransfer={onTransfer} navReady={navReady} />
       </TableCell>
     </TableRow>
   );
 }
+
+// 统一的操作按钮基础类（简历/档案/转服务共用，保证设计一致性）
+const ACTION_BTN_BASE =
+  "inline-flex items-center gap-1 min-h-[28px] sm:min-h-0 text-xs px-2.5 py-1 rounded-md ring-1 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2";
+const ACTION_BTN_NEUTRAL =
+  "ring-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:ring-gray-300 focus-visible:ring-[var(--blue-400)]";
+const ACTION_BTN_POSITIVE =
+  "ring-[var(--semantic-positive)]/30 text-[var(--semantic-positive)] bg-[var(--semantic-positive)]/12 hover:bg-[var(--semantic-positive)]/18 focus-visible:ring-[var(--semantic-positive)]/50";
+const ACTION_BTN_DISABLED =
+  "ring-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed";
 
 function RowActions({
   row,
@@ -861,38 +949,46 @@ function RowActions({
 }) {
   // 只在 nav 行显示「转服务」按钮（plan §8，V1 决策）
   const canTransfer = row.project === "nav" && navReady;
+  const transferred = row.tracking_id != null;
   return (
-    <div className="flex items-center justify-end gap-3">
+    <div className="flex items-center justify-end gap-2">
       {row.has_resume ? (
         <a
           href={`/api/admin/reports/${row.id}/resume?project=${row.project}`}
           download
-          className="text-xs text-[var(--blue-700)] hover:text-[var(--blue-600)] hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)] rounded"
+          className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
         >
           简历
         </a>
       ) : null}
       <Link
         href={`/admin/reports/${row.id}?project=${row.project}`}
-        className="inline-flex items-center justify-center min-h-[28px] sm:min-h-0 text-xs px-2.5 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+        className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
       >
-        详情
+        档案
       </Link>
       {row.project === "nav" && (
-        <button
-          type="button"
-          onClick={() => canTransfer && onTransfer(row)}
-          disabled={!canTransfer}
-          title={canTransfer ? "转入服务跟踪" : "数据库暂不可用"}
-          className={`inline-flex items-center gap-1 min-h-[28px] sm:min-h-0 text-xs px-2.5 py-1 rounded-md ring-1 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--semantic-positive)]/50 ${
-            canTransfer
-              ? "ring-[var(--semantic-positive)]/30 text-[var(--semantic-positive)] bg-[var(--semantic-positive)]/8 hover:bg-[var(--semantic-positive)]/12"
-              : "ring-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
-          }`}
-        >
-          <ArrowRightCircle className="size-3" />
-          转服务
-        </button>
+        transferred ? (
+          <Link
+            href={`/admin/service-tracking/${row.tracking_id}`}
+            title="查看服务跟踪记录"
+            className={`${ACTION_BTN_BASE} ${ACTION_BTN_POSITIVE}`}
+          >
+            <ArrowRightCircle className="size-3" />
+            已转服务
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => canTransfer && onTransfer(row)}
+            disabled={!canTransfer}
+            title={canTransfer ? "转入服务跟踪" : "数据库暂不可用"}
+            className={`${ACTION_BTN_BASE} ${canTransfer ? ACTION_BTN_NEUTRAL : ACTION_BTN_DISABLED}`}
+          >
+            <ArrowRightCircle className="size-3" />
+            转服务
+          </button>
+        )
       )}
     </div>
   );
