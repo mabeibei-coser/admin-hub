@@ -55,7 +55,8 @@ export function AdminSidebar() {
 
   const currentProject = (searchParams.get("project") ?? "report") as ProjectFilter;
 
-  if (pathname === "/admin/login") return null;
+  // trailingSlash:true 时 pathname 是 "/admin/login/"，剥掉尾斜杠再比
+  if (pathname.replace(/\/$/, "") === "/admin/login") return null;
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -249,7 +250,8 @@ export function AdminMobileBar() {
 
   const currentProject = (searchParams.get("project") ?? "report") as ProjectFilter;
 
-  if (pathname === "/admin/login") return null;
+  // trailingSlash:true 时 pathname 是 "/admin/login/"，剥掉尾斜杠再比
+  if (pathname.replace(/\/$/, "") === "/admin/login") return null;
 
   // 在 me 加载前显示骨架（loading 状态）
   const visibleProjects: string[] = me ? me.visibleProjects : ["report", "nav"];
