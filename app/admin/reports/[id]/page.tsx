@@ -5,6 +5,7 @@ import { getAdminDb, isNavDbReady } from "@/lib/db";
 import fs from "fs";
 import path from "path";
 import { ChevronLeft, Download, AlertTriangle } from "lucide-react";
+import { withBase } from "@/lib/url";
 import type { JobFormData, QuizAnswer } from "@/lib/types";
 import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2, QuizBank, QuizQuestion as NavQuizQuestion } from "@/lib/types-nav";
 import { PROJECTS } from "@/lib/projects";
@@ -229,7 +230,7 @@ export default async function ReportDetailPage({
               (row.has_resume as number) ? (
                 hasResumeFile ? (
                   <a
-                    href={`/api/admin/reports/${String(row.id as number)}/resume?project=${project}`}
+                    href={withBase(`/api/admin/reports/${String(row.id as number)}/resume?project=${project}`)}
                     download
                     className="inline-flex items-center gap-1 text-blue-600 hover:underline"
                   >
