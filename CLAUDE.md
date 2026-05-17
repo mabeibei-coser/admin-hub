@@ -55,6 +55,18 @@ shadcn 的 `components/ui/` 也各一份。
 4. **iron-session 密钥与 career-report 共用** —— 但不要在 admin-hub 改这个值；任何 cookie 行为变化要同步两个项目
 5. **客户端 URL 必须用 `lib/url.ts` 的 `withBase()` 包装** —— Next.js 的 basePath 不会自动作用到 `fetch()` / `window.location.href` / `window.open` / 原生 `<a href>` / proxy.ts 里 `new URL(path, req.url)`。`<Link>` / `router.push` / `next/navigation` 的 `redirect()` 会自动加 basePath，不用包。漏了 withBase 会让客户端请求剥离 `/b100`，详见 commit `3256262`
 
+## 历史踩坑 / 早期警报
+
+完整复盘见 `.planning/postmortems/2026-05-17-basepath-leak.md`（搬家比喻 + 时间线 + 7 条避免清单）。
+
+**这个项目下次再碰到这 5 种情况，必须立刻停下：**
+
+1. **改了 basePath / 路由前缀 / cookie path 这类全局配置** → 别只看代码 / curl，**打开浏览器 DevTools Network，确认一个 fetch 调用的真实 URL 带前缀**。今天的 5 小时坑就是因为这一步没做。
+2. **修同一个问题改了 2 次还没好** → 不要继续试，走 `/investigate` 系统化找根因。"再试一个"是反 pattern。
+3. **新路径能用 + 老路径也能用** → 这往往是兜底掩盖 bug，不是兼容。**新通 + 老 404 才算切干净**。
+4. **凌晨做架构改动** → 疲劳决策，第二天准翻车，留到第二天早上做。
+5. **同一天想做 ≥ 2 件大事**（架构切割 / 全局配置 / 上生产）→ 拆开做，每件吃一天。
+
 ## 与全局规则的关系
 
 继承 `~/.claude/CLAUDE.md`（用户全局偏好）和 `D:\_workspace\01_项目-Coding\CLAUDE.md`（Coding 项目 Karpathy 原则）。
