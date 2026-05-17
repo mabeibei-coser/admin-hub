@@ -11,6 +11,7 @@ import {
   type ServiceCategory,
   maskPhone,
 } from "@/lib/service-tracking";
+import { withBase } from "@/lib/url";
 
 interface MeData {
   adminId: number;
@@ -64,7 +65,7 @@ export function TransferServiceDialog({
     setAdmins(null);
     setAdminsError(false);
     setLoadingAdmins(true);
-    fetch("/api/admin/admins/picker")
+    fetch(withBase("/api/admin/admins/picker"))
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((d: { admins: PickerAdmin[] }) => setAdmins(d.admins))
       .catch(() => setAdminsError(true))
@@ -83,7 +84,7 @@ export function TransferServiceDialog({
     setDuplicate(null);
     setSubmitting(true);
     try {
-      const res = await fetch("/api/admin/service-tracking/transfer", {
+      const res = await fetch(withBase("/api/admin/service-tracking/transfer"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

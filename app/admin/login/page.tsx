@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { isValidCnMobile } from "@/lib/phone";
+import { withBase } from "@/lib/url";
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState("");
@@ -27,7 +28,7 @@ export default function AdminLoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/login", {
+      const res = await fetch(withBase("/api/admin/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -39,7 +40,7 @@ export default function AdminLoginPage() {
         return;
       }
       // Full page navigation — 避免 Next.js 客户端路由与 middleware 重定向冲突
-      window.location.href = "/admin/reports";
+      window.location.href = withBase("/admin/reports");
     } catch {
       setError("网络错误，请重试");
       setLoading(false);

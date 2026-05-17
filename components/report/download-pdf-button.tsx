@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Download, Loader2, RotateCw } from "lucide-react";
 import type { ReportData } from "@/lib/types";
+import { withBase } from "@/lib/url";
 
 interface Props {
   report: ReportData;
@@ -27,7 +28,7 @@ export function DownloadPDFButton({ report }: Props) {
 
     (async () => {
       try {
-        const res = await fetch("/api/report/pdf/prepare", {
+        const res = await fetch(withBase("/api/report/pdf/prepare"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ reportData: report }),
@@ -62,7 +63,7 @@ export function DownloadPDFButton({ report }: Props) {
     if (status !== "ready" || !token) return;
     setStatus("downloading");
 
-    const url = `/api/report/pdf?token=${encodeURIComponent(token)}`;
+    const url = withBase(`/api/report/pdf?token=${encodeURIComponent(token)}`);
 
     // 同步打开新窗口（token 已有，window.open 是第一个语句，仍在用户手势内）
     const popup = window.open(url, "_blank");

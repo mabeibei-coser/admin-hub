@@ -25,6 +25,7 @@ import {
   type ServiceStatus,
 } from "@/lib/service-tracking";
 import { SERVICE_PROJECT_LABELS } from "@/lib/service-tracking";
+import { withBase } from "@/lib/url";
 
 interface ListRow {
   id: number;
@@ -110,7 +111,7 @@ function ListContent() {
       if (categoryParam) sp.set("category", categoryParam);
       sp.set("page", String(pageParam));
       sp.set("pageSize", String(pageSize));
-      const res = await fetch(`/api/admin/service-tracking?${sp}`);
+      const res = await fetch(withBase(`/api/admin/service-tracking?${sp}`));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setData((await res.json()) as ListResponse);
     } catch (e) {

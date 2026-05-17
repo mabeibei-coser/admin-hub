@@ -17,6 +17,7 @@ import {
   type ServiceCategory,
   type ServiceStatus,
 } from "@/lib/service-tracking";
+import { withBase } from "@/lib/url";
 
 interface PickerAdmin {
   id: number;
@@ -80,7 +81,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
     if (!editing) return;
     setAdmins(null);
     setAdminsError(false);
-    fetch("/api/admin/admins/picker")
+    fetch(withBase("/api/admin/admins/picker"))
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d: { admins: PickerAdmin[] }) => setAdmins(d.admins))
       .catch(() => setAdminsError(true));
@@ -118,7 +119,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/admin/service-tracking/${trackingId}`, {
+      const res = await fetch(withBase(`/api/admin/service-tracking/${trackingId}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

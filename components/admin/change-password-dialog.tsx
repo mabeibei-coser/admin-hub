@@ -5,6 +5,7 @@ import { X, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { withBase } from "@/lib/url";
 
 interface ChangePasswordDialogProps {
   open: boolean;
@@ -49,7 +50,7 @@ export function ChangePasswordDialog({ open, onClose }: ChangePasswordDialogProp
 
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/me/password", {
+      const res = await fetch(withBase("/api/admin/me/password"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ oldPassword, newPassword }),
@@ -63,7 +64,7 @@ export function ChangePasswordDialog({ open, onClose }: ChangePasswordDialogProp
       // 成功：显示提示，1.5s 后跳转登录页（session 已失效）
       setSuccessMsg("密码已更新，请用新密码重新登录");
       setTimeout(() => {
-        window.location.href = "/admin/login";
+        window.location.href = withBase("/admin/login");
       }, 1500);
     } catch {
       setError("网络错误，请重试");

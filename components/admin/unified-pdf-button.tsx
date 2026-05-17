@@ -2,6 +2,7 @@
 
 import { Printer } from "lucide-react";
 import type { ProjectId } from "@/lib/projects";
+import { withBase } from "@/lib/url";
 
 interface Props {
   project: ProjectId;
@@ -19,7 +20,7 @@ export function UnifiedPDFButton({ project, reportId, hasData }: Props) {
 
   const handleClick = () => {
     if (project === "report") {
-      window.open(`/admin/reports/${reportId}/preview`, "_blank", "noopener,noreferrer");
+      window.open(withBase(`/admin/reports/${reportId}/preview`), "_blank", "noopener,noreferrer");
     } else {
       window.print();
     }
