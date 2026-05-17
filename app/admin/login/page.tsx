@@ -53,7 +53,8 @@ export default function AdminLoginPage() {
     "focus-visible:!bg-white/[0.07] focus-visible:!border-[var(--blue-400)] focus-visible:!ring-[oklch(0.7_0.16_245_/_0.25)]";
 
   return (
-    <div className="login-brand-panel relative min-h-dvh flex items-center justify-center p-6">
+    /* 移动端居中；md+ 把 form 推到左 1/3 位置 — 避开右侧 mesh 亮区 + 反对称构图（taste-skill variance=8 反居中规则） */
+    <div className="login-brand-panel relative min-h-dvh flex items-center justify-center md:justify-start md:pl-[max(3rem,14vw)] p-6">
       {/* 左上 logo */}
       <header className="absolute top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2.5 z-10">
         <div className="size-9 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-[0_4px_12px_oklch(0_0_0_/_0.3)]">
@@ -79,11 +80,17 @@ export default function AdminLoginPage() {
       <div className="relative z-10 w-full max-w-[400px]">
         <div className="rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-2xl shadow-[0_30px_60px_-20px_oklch(0_0_0_/_0.5),inset_0_1px_0_oklch(1_0_0_/_0.08)] p-8 sm:p-10">
           <div className="mb-7">
+            <div className="mb-3 flex items-center gap-2">
+              <span aria-hidden className="h-px w-8 bg-gradient-to-r from-[var(--blue-400)] to-transparent" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--blue-300)]">
+                谨世&nbsp;ATA&nbsp;·&nbsp;后台
+              </span>
+            </div>
             <h1 className="text-[28px] font-semibold tracking-tight text-white leading-tight">
               欢迎回来
             </h1>
             <p className="mt-2 text-sm text-white/55">
-              登录后管理报告与服务跟进
+              让每一份报告都被认真对待
             </p>
           </div>
 

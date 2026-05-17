@@ -34,15 +34,19 @@ const PROJECT_ICONS: Record<string, React.ComponentType<{ className?: string; st
   nav: Compass,
 };
 
-/** 从 /api/admin/me 获取当前用户数据。加载中返回 null。 */
+/** 从 /api/admin/me 获取当前用户数据。加载中返回 null。
+ *  登录页跳过 fetch — 避免匿名用户的 401 console 噪音 + 多一次 RT。 */
 function useAdminMe() {
+  const pathname = usePathname();
+  const onLoginPage = pathname.replace(/\/$/, "") === "/admin/login";
   const [data, setData] = useState<MeData | null>(null);
   useEffect(() => {
+    if (onLoginPage) return;
     fetch(withBase("/api/admin/me"))
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setData(d))
       .catch(() => setData(null));
-  }, []);
+  }, [onLoginPage]);
   return data;
 }
 
