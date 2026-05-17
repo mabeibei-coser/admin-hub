@@ -95,20 +95,24 @@ export default function AdminLoginPage() {
       {/* —— 中央 form 卡片：glassmorphism —— */}
       <div className="relative z-10 w-full max-w-[400px]">
         <div className="rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-2xl shadow-[0_30px_60px_-20px_oklch(0_0_0_/_0.5),inset_0_1px_0_oklch(1_0_0_/_0.08)] p-8 sm:p-10">
-          <div className="mb-7">
-            <div className="mb-3 flex items-center gap-2">
+          <div className="mb-7 text-center">
+            <div className="mb-3 flex items-center justify-center gap-2.5">
               <span
                 aria-hidden
-                className="h-px w-8 bg-gradient-to-r from-[var(--blue-400)] to-transparent"
+                className="h-px w-8 bg-gradient-to-r from-transparent to-[var(--blue-400)]"
               />
               <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--blue-300)]">
                 谨世&nbsp;ATA&nbsp;·&nbsp;后台
               </span>
+              <span
+                aria-hidden
+                className="h-px w-8 bg-gradient-to-l from-transparent to-[var(--blue-400)]"
+              />
             </div>
-            <h1 className="text-[28px] font-semibold tracking-tight text-white leading-tight">
+            <h1 className="text-[30px] font-semibold tracking-tight text-white leading-tight">
               欢迎回来
             </h1>
-            <p className="mt-2 text-sm text-white/55">
+            <p className="mt-2 text-sm text-white/50">
               让每一份报告都被认真对待
             </p>
           </div>

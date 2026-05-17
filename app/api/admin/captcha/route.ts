@@ -14,12 +14,12 @@ export async function GET() {
   const captcha = svgCaptcha.create({
     size: 4,
     ignoreChars: "0o1ilI", // 视觉易混淆的字符
-    noise: 2,
-    color: true,
-    background: "#1e293b", // navy 调，匹配登录页深色背景
+    noise: 1,
+    color: false,
+    background: "#f1f5f9", // 浅灰底，深色字，高对比度，防复制截图传播
     width: 120,
     height: 44,
-    fontSize: 50,
+    fontSize: 46,
   });
 
   const s = await getCaptchaSession();
