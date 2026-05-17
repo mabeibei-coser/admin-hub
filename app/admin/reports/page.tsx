@@ -193,6 +193,11 @@ function AdminReportsContent() {
   const [to, setTo] = useState("");
   const [position, setPosition] = useState("");
   const [hasResume, setHasResume] = useState<"" | "1" | "0">("");
+  // nav 专属筛选
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [userIdentity, setUserIdentity] = useState("");
+  const [transferStatus, setTransferStatus] = useState<"" | "1" | "0">("");
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
@@ -218,10 +223,15 @@ function AdminReportsContent() {
     });
   }, []);
 
-  // 切 project 时重置分页 + 收起 expand
+  // 切 project 时重置分页 + 收起 expand + 清空 tab 专属筛选（保留通用的 from/to/position）
   useEffect(() => {
     setPage(1);
     setExpandedRow(null);
+    setHasResume("");
+    setName("");
+    setPhone("");
+    setUserIdentity("");
+    setTransferStatus("");
   }, [project]);
 
   // localStorage 记最近一次（侧栏未来可用作 default）
@@ -240,6 +250,10 @@ function AdminReportsContent() {
       if (to) params.set("to", to);
       if (position) params.set("position", position);
       if (hasResume) params.set("hasResume", hasResume);
+      if (name) params.set("name", name);
+      if (phone) params.set("phone", phone);
+      if (userIdentity) params.set("userIdentity", userIdentity);
+      if (transferStatus) params.set("transferStatus", transferStatus);
       params.set("project", project);
       params.set("page", String(page));
       params.set("pageSize", String(pageSize));
@@ -252,7 +266,7 @@ function AdminReportsContent() {
     } finally {
       setLoading(false);
     }
-  }, [from, to, position, hasResume, project, page]);
+  }, [from, to, position, hasResume, name, phone, userIdentity, transferStatus, project, page]);
 
   useEffect(() => {
     fetch_();
@@ -270,10 +284,23 @@ function AdminReportsContent() {
     setTo("");
     setPosition("");
     setHasResume("");
+    setName("");
+    setPhone("");
+    setUserIdentity("");
+    setTransferStatus("");
     setPage(1);
   }
 
-  const hasFilters = !!(from || to || position || hasResume);
+  const hasFilters = !!(
+    from ||
+    to ||
+    position ||
+    hasResume ||
+    name ||
+    phone ||
+    userIdentity ||
+    transferStatus
+  );
 
   // 表格列模式：tab=all 时只显示通用列 + 展开按钮；单项目时显示项目专属列
   const showProjectSpecific = project !== "all";
@@ -371,30 +398,94 @@ function AdminReportsContent() {
               className="h-8 text-sm w-36 bg-white ring-1 ring-[var(--report-border)]"
             />
           </div>
-          <div>
-            <div className="text-xs text-gray-500 mb-1">意向岗位</div>
-            <Input
-              placeholder="关键词"
-              value={position}
-              onChange={(e) => setPosition(e.target.value)}
-              className="h-8 text-sm w-36 bg-white ring-1 ring-[var(--report-border)]"
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            />
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 mb-1">简历</div>
-            <select
-              value={hasResume}
-              onChange={(e) =>
-                setHasResume(e.target.value as "" | "1" | "0")
-              }
-              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
-            >
-              <option value="">全部</option>
-              <option value="1">有简历</option>
-              <option value="0">无简历</option>
-            </select>
-          </div>
+          {project === "nav" ? (
+            <>
+              <div>
+                <div className="text-xs text-gray-500 mb-1">姓名</div>
+                <Input
+                  placeholder="关键词"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-8 text-sm w-32 bg-white ring-1 ring-[var(--report-border)]"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 mb-1">手机号</div>
+                <Input
+                  placeholder="关键词"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-8 text-sm w-32 bg-white ring-1 ring-[var(--report-border)]"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 mb-1">用户身份</div>
+                <select
+                  value={userIdentity}
+                  onChange={(e) => setUserIdentity(e.target.value)}
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                >
+                  <option value="">全部</option>
+                  <option value="recent_grad">应届毕业生</option>
+                  <option value="young_unemployed">35岁以下求职者</option>
+                  <option value="general_unemployed">35岁以上求职者</option>
+                </select>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 mb-1">意向岗位</div>
+                <Input
+                  placeholder="关键词"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  className="h-8 text-sm w-32 bg-white ring-1 ring-[var(--report-border)]"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 mb-1">转服务状态</div>
+                <select
+                  value={transferStatus}
+                  onChange={(e) =>
+                    setTransferStatus(e.target.value as "" | "1" | "0")
+                  }
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                >
+                  <option value="">全部</option>
+                  <option value="1">已转入服务</option>
+                  <option value="0">未转入</option>
+                </select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div className="text-xs text-gray-500 mb-1">意向岗位</div>
+                <Input
+                  placeholder="关键词"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  className="h-8 text-sm w-36 bg-white ring-1 ring-[var(--report-border)]"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 mb-1">简历</div>
+                <select
+                  value={hasResume}
+                  onChange={(e) =>
+                    setHasResume(e.target.value as "" | "1" | "0")
+                  }
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                >
+                  <option value="">全部</option>
+                  <option value="1">有简历</option>
+                  <option value="0">无简历</option>
+                </select>
+              </div>
+            </>
+          )}
           <div className="flex gap-1.5 ml-auto sm:ml-0">
             <Button
               size="sm"

@@ -69,6 +69,11 @@ export async function GET(req: NextRequest) {
     const to = searchParams.get("to");
     const position = searchParams.get("position");
     const hasResume = searchParams.get("hasResume");
+    // nav 专属筛选（姓名/手机号/用户身份/转服务状态）—— 列只存在于 nav 库或 service_tracking
+    const name = searchParams.get("name");
+    const phone = searchParams.get("phone");
+    const userIdentity = searchParams.get("userIdentity");
+    const transferStatus = searchParams.get("transferStatus"); // "1"=已转 "0"=未转
     const project = clampProject(parseProject(searchParams.get("project")), session);
 
     const db = getAdminDb();
@@ -77,7 +82,7 @@ export async function GET(req: NextRequest) {
     // 如果 nav 库不可用，自动降级到 report-only
     const effectiveProject: ProjectFilter = !navReady && project !== "report" ? "report" : project;
 
-    // 构建 filter 条件（应用到 UNION 两侧）
+    // 通用 conditions（应用到 report 和 nav 两侧）
     const conditions: string[] = [];
     const params: (string | number)[] = [];
 
@@ -100,10 +105,34 @@ export async function GET(req: NextRequest) {
     }
     const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
+    // nav 专属 conditions（已带 n./st. prefix，只用于 navSelect 和 nav count）
+    const navOnlyConditions: string[] = [];
+    const navOnlyParams: (string | number)[] = [];
+    if (name) {
+      navOnlyConditions.push("json_extract(n.form_data_json, '$.name') LIKE ?");
+      navOnlyParams.push(`%${name}%`);
+    }
+    if (phone) {
+      navOnlyConditions.push("json_extract(n.form_data_json, '$.phone') LIKE ?");
+      navOnlyParams.push(`%${phone}%`);
+    }
+    if (userIdentity) {
+      navOnlyConditions.push("n.user_identity = ?");
+      navOnlyParams.push(userIdentity);
+    }
+    if (transferStatus === "1") {
+      navOnlyConditions.push("st.id IS NOT NULL");
+    } else if (transferStatus === "0") {
+      navOnlyConditions.push("st.id IS NULL");
+    }
+
     // navSelect 用 LEFT JOIN service_tracking，nav.reports 起别名 n. —— WHERE 列名要 prefix
-    const conditionsNav = conditions.map((c) =>
-      c.replace(/^(created_at|target_position|has_resume)\b/, "n.$1")
-    );
+    const conditionsNav = [
+      ...conditions.map((c) =>
+        c.replace(/^(created_at|target_position|has_resume)\b/, "n.$1")
+      ),
+      ...navOnlyConditions,
+    ];
     const whereNav = conditionsNav.length > 0 ? `WHERE ${conditionsNav.join(" AND ")}` : "";
 
     // 列对齐：report 库没有 user_identity / uuid / work_years / user_name / user_phone / tracking_id，select NULL 占位
@@ -138,26 +167,37 @@ export async function GET(req: NextRequest) {
       ${whereNav}
     `;
 
+    // nav count 也要 LEFT JOIN service_tracking，否则 transferStatus filter 用不了
+    const navCountFrom = `
+      FROM nav.reports n
+      LEFT JOIN main.service_tracking st
+        ON st.source_project = 'nav' AND st.source_report_id = n.id
+    `;
+
     // 根据 project filter 决定查哪一侧或两侧 UNION
     let listQuery: string;
     let countQuery: string;
     let queryParams: (string | number)[];
+    let countParams: (string | number)[];
     if (effectiveProject === "report") {
       listQuery = `${reportSelect} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
       countQuery = `SELECT COUNT(*) AS c FROM main.reports ${where}`;
       queryParams = [...params];
+      countParams = [...params];
     } else if (effectiveProject === "nav") {
       listQuery = `${navSelect} ORDER BY n.created_at DESC LIMIT ? OFFSET ?`;
-      countQuery = `SELECT COUNT(*) AS c FROM nav.reports ${where}`;
-      queryParams = [...params];
+      countQuery = `SELECT COUNT(*) AS c ${navCountFrom} ${whereNav}`;
+      queryParams = [...params, ...navOnlyParams];
+      countParams = [...params, ...navOnlyParams];
     } else {
-      // all: UNION ALL，参数复制一遍
+      // all: UNION ALL，report 用 params，nav 用 params + navOnlyParams
       listQuery = `${reportSelect} UNION ALL ${navSelect} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
-      countQuery = `SELECT (SELECT COUNT(*) FROM main.reports ${where}) + (SELECT COUNT(*) FROM nav.reports ${where}) AS c`;
-      queryParams = [...params, ...params];
+      countQuery = `SELECT (SELECT COUNT(*) FROM main.reports ${where}) + (SELECT COUNT(*) ${navCountFrom} ${whereNav}) AS c`;
+      queryParams = [...params, ...params, ...navOnlyParams];
+      countParams = [...params, ...params, ...navOnlyParams];
     }
 
-    const total = (db.prepare(countQuery).get(...(effectiveProject === "all" ? [...params, ...params] : params)) as { c: number }).c;
+    const total = (db.prepare(countQuery).get(...countParams) as { c: number }).c;
     const rows = db.prepare(listQuery).all(...queryParams, pageSize, offset) as ReportRow[];
 
     // 统计卡片：按 project filter
