@@ -8,6 +8,7 @@ import {
   maskPhone,
   type ServiceCategory,
   type ServiceStatus,
+  type ServiceRecordAttachment,
 } from "@/lib/service-tracking";
 import { ServiceTrackingEditor } from "@/components/admin/service-tracking-editor";
 import { ServiceRecordsList } from "@/components/admin/service-records-list";
@@ -42,8 +43,19 @@ interface RecordRow {
   note: string | null;
   recorder_admin_id: number;
   recorder_name: string | null;
+  attachments_json: string | null;
   created_at: number;
   updated_at: number;
+}
+
+function parseAttachments(s: string | null): ServiceRecordAttachment[] {
+  if (!s) return [];
+  try {
+    const parsed = JSON.parse(s) as ServiceRecordAttachment[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 export default async function ServiceTrackingDetailPage({
@@ -123,17 +135,15 @@ export default async function ServiceTrackingDetailPage({
           trackingId={row.id}
           adminId={session.adminId!}
           initial={{
-            source_project: row.source_project,
-            target_position: row.target_position,
+            user_name: row.user_name,
+            user_phone: row.user_phone,
             service_category: row.service_category,
             status: row.status,
-            overall_note: row.overall_note,
             first_service_at: row.first_service_at,
             staff1_admin_id: row.staff1_admin_id,
             staff2_admin_id: row.staff2_admin_id,
             staff1_name: row.staff1_name,
             staff2_name: row.staff2_name,
-            recorder_name: row.recorder_name,
           }}
         />
 
@@ -147,6 +157,7 @@ export default async function ServiceTrackingDetailPage({
             note: r.note,
             recorder_admin_id: r.recorder_admin_id,
             recorder_name: r.recorder_name,
+            attachments: parseAttachments(r.attachments_json),
           }))}
         />
       </div>

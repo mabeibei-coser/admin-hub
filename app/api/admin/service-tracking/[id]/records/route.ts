@@ -1,7 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMenu } from "@/lib/admin-session";
 import { getDb } from "@/lib/db";
-import { touchLastServiceAt } from "@/lib/service-tracking";
+import {
+  touchLastServiceAt,
+  type ServiceRecordAttachment,
+} from "@/lib/service-tracking";
+
+/** 校验客户端传来的 attachments 数组（只信关键字段，其它丢掉）。无效 → 返回空数组。 */
+function sanitizeAttachments(input: unknown): ServiceRecordAttachment[] {
+  if (!Array.isArray(input)) return [];
+  const out: ServiceRecordAttachment[] = [];
+  for (const item of input) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    if (typeof o.id !== "string" || !/^[a-f0-9-]{36}$/i.test(o.id)) continue;
+    if (typeof o.filename !== "string" || !o.filename) continue;
+    if (typeof o.mime !== "string") continue;
+    if (typeof o.size !== "number" || !Number.isFinite(o.size)) continue;
+    out.push({ id: o.id, filename: o.filename, mime: o.mime, size: o.size });
+  }
+  return out;
+}
 
 /**
  * POST /api/admin/service-tracking/[id]/records
@@ -38,6 +57,7 @@ export async function POST(
   const note = body.note === null || body.note === undefined
     ? null
     : String(body.note);
+  const attachments = sanitizeAttachments(body.attachments);
 
   const db = getDb();
   const now = Date.now();
@@ -63,10 +83,19 @@ export async function POST(
         .prepare(
           `INSERT INTO service_records (
              tracking_id, service_at, content, note, recorder_admin_id,
-             created_at, updated_at
-           ) VALUES (?, ?, ?, ?, ?, ?, ?)`
+             attachments_json, created_at, updated_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
         )
-        .run(trackingId, serviceAt, content, note, adminId, now, now);
+        .run(
+          trackingId,
+          serviceAt,
+          content,
+          note,
+          adminId,
+          attachments.length ? JSON.stringify(attachments) : null,
+          now,
+          now,
+        );
       insertedId = Number(r.lastInsertRowid);
       touchLastServiceAt(db, trackingId);
     })();

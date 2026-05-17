@@ -188,6 +188,39 @@ export interface ServiceRecordRow {
   content: string | null;
   note: string | null;
   recorder_admin_id: number;
+  attachments_json: string | null;
   created_at: number;
   updated_at: number;
 }
+
+/**
+ * 服务记录附件元数据（存于 service_records.attachments_json）。
+ * 实际文件在磁盘上的位置由 `id` 派生：<DATA_DIR>/service-attachments/<id>/<filename>
+ */
+export interface ServiceRecordAttachment {
+  /** UUID，与磁盘目录同名 */
+  id: string;
+  filename: string;
+  mime: string;
+  /** byte */
+  size: number;
+}
+
+export const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+/** 允许上传的扩展名（小写带点），按 HR 业务常用文档类型白名单 */
+export const ATTACHMENT_ALLOWED_EXT = new Set([
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".ppt",
+  ".pptx",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".txt",
+  ".csv",
+]);

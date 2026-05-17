@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, AlertTriangle, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, X, AlertTriangle, Loader2, Paperclip, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  ATTACHMENT_MAX_BYTES,
+  type ServiceRecordAttachment,
+} from "@/lib/service-tracking";
+import { withBase } from "@/lib/url";
 
 export interface RecordItem {
   id: number;
@@ -15,12 +20,19 @@ export interface RecordItem {
   note: string | null;
   recorder_admin_id: number;
   recorder_name: string | null;
+  attachments: ServiceRecordAttachment[];
 }
 
 interface Props {
   trackingId: number;
   adminId: number;
   initial: RecordItem[];
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function tsToInput(ms: number): string {
@@ -86,9 +98,12 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
           还没有服务记录，点上面「新增记录」开始记录
         </p>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div className="space-y-3">
           {initial.map((r) => (
-            <div key={r.id} className="py-4 group">
+            <div
+              key={r.id}
+              className="group rounded-lg border border-gray-200 bg-gray-50/40 p-4 transition-colors hover:bg-gray-50"
+            >
               {editingId === r.id ? (
                 <RecordForm
                   trackingId={trackingId}
@@ -104,7 +119,7 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
                 <>
                   <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-sm font-medium text-gray-900 tabular-nums whitespace-nowrap">
+                      <span className="text-sm font-semibold text-gray-900 tabular-nums whitespace-nowrap">
                         {formatTs(r.service_at)}
                       </span>
                       <span className="text-xs text-gray-500 truncate">
@@ -129,14 +144,36 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
                     </div>
                   </div>
                   {r.content && (
-                    <p className="mt-1 text-sm text-gray-700 whitespace-pre-wrap">
+                    <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap">
                       {r.content}
                     </p>
                   )}
                   {r.note && (
-                    <p className="mt-1 text-xs text-gray-500 italic">
+                    <p className="mt-2 text-xs text-gray-500 italic">
                       备注：{r.note}
                     </p>
+                  )}
+                  {r.attachments.length > 0 && (
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {r.attachments.map((a) => (
+                        <a
+                          key={a.id}
+                          href={withBase(
+                            `/api/admin/service-tracking/${trackingId}/records/${r.id}/attachments/${a.id}`,
+                          )}
+                          download={a.filename}
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-white ring-1 ring-gray-200 text-gray-700 hover:bg-blue-50 hover:ring-blue-300 hover:text-blue-700 transition-colors max-w-[18rem]"
+                          title={`${a.filename} (${formatSize(a.size)})`}
+                        >
+                          <Paperclip className="size-3 shrink-0" />
+                          <span className="truncate">{a.filename}</span>
+                          <span className="text-gray-400 tabular-nums shrink-0">
+                            {formatSize(a.size)}
+                          </span>
+                          <Download className="size-3 shrink-0 text-gray-400" />
+                        </a>
+                      ))}
+                    </div>
                   )}
                 </>
               )}
@@ -178,8 +215,50 @@ function RecordForm({
   );
   const [content, setContent] = useState(initial?.content ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
+  const [attachments, setAttachments] = useState<ServiceRecordAttachment[]>(
+    initial?.attachments ?? [],
+  );
+  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setError(null);
+    setUploading(true);
+    const uploaded: ServiceRecordAttachment[] = [];
+    try {
+      for (const file of Array.from(files)) {
+        if (file.size > ATTACHMENT_MAX_BYTES) {
+          setError(`${file.name} 超过 ${Math.round(ATTACHMENT_MAX_BYTES / 1024 / 1024)} MB 上限`);
+          continue;
+        }
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch(withBase("/api/admin/service-tracking/upload"), {
+          method: "POST",
+          body: fd,
+        });
+        const json = (await res.json()) as ServiceRecordAttachment & { error?: string };
+        if (!res.ok) {
+          setError(json.error ?? `上传失败：${file.name}`);
+          continue;
+        }
+        uploaded.push(json);
+      }
+      if (uploaded.length > 0) {
+        setAttachments((prev) => [...prev, ...uploaded]);
+      }
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function removeAttachment(id: string) {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  }
 
   async function submit() {
     setError(null);
@@ -192,8 +271,10 @@ function RecordForm({
     try {
       const url =
         mode === "create"
-          ? `/api/admin/service-tracking/${trackingId}/records`
-          : `/api/admin/service-tracking/${trackingId}/records/${initial!.id}`;
+          ? withBase(`/api/admin/service-tracking/${trackingId}/records`)
+          : withBase(
+              `/api/admin/service-tracking/${trackingId}/records/${initial!.id}`,
+            );
       const method = mode === "create" ? "POST" : "PATCH";
       const res = await fetch(url, {
         method,
@@ -202,6 +283,7 @@ function RecordForm({
           service_at: ts,
           content: content || null,
           note: note || null,
+          attachments,
         }),
       });
       const json = (await res.json()) as { error?: string };
@@ -218,7 +300,7 @@ function RecordForm({
   }
 
   return (
-    <div className="bg-gray-50/60 p-4 rounded-lg space-y-3 border border-gray-100">
+    <div className="bg-white p-4 rounded-lg space-y-3 border border-blue-200 ring-1 ring-blue-100/40">
       <div className="space-y-1.5">
         <Label htmlFor="service-at">服务时间</Label>
         <Input
@@ -253,6 +335,63 @@ function RecordForm({
           style={{ fontSize: "16px" }}
         />
       </div>
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <Label>附件</Label>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || submitting}
+            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-colors disabled:opacity-50"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="size-3 animate-spin" />
+                上传中…
+              </>
+            ) : (
+              <>
+                <Upload className="size-3" />
+                选择文件
+              </>
+            )}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFiles(e.target.files)}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.txt,.csv"
+          />
+        </div>
+        {attachments.length > 0 ? (
+          <ul className="space-y-1">
+            {attachments.map((a) => (
+              <li
+                key={a.id}
+                className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md bg-gray-50 ring-1 ring-gray-200"
+              >
+                <Paperclip className="size-3 shrink-0 text-gray-400" />
+                <span className="flex-1 truncate text-gray-700">{a.filename}</span>
+                <span className="text-gray-400 tabular-nums shrink-0">
+                  {formatSize(a.size)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeAttachment(a.id)}
+                  className="size-5 flex items-center justify-center rounded text-gray-400 hover:text-red-600 hover:bg-red-50 shrink-0"
+                  aria-label="移除"
+                >
+                  <X className="size-3" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-gray-400">可附 PDF / Word / Excel / 图片（10 MB 内）</p>
+        )}
+      </div>
       {error && (
         <p className="text-sm text-red-600 bg-red-50 rounded px-2 py-1.5">
           {error}
@@ -271,7 +410,7 @@ function RecordForm({
         <Button
           type="button"
           onClick={submit}
-          disabled={submitting}
+          disabled={submitting || uploading}
           className="flex-1 bg-blue-600 hover:bg-blue-700"
         >
           {submitting ? (
@@ -307,7 +446,7 @@ function ConfirmDelete({
     setSubmitting(true);
     try {
       const res = await fetch(
-        `/api/admin/service-tracking/${trackingId}/records/${record.id}`,
+        withBase(`/api/admin/service-tracking/${trackingId}/records/${record.id}`),
         { method: "DELETE" }
       );
       const json = (await res.json().catch(() => ({}))) as { error?: string };

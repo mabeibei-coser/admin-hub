@@ -92,11 +92,22 @@ export function getDb(): Database.Database {
       content             TEXT,
       note                TEXT,
       recorder_admin_id   INTEGER NOT NULL,
+      attachments_json    TEXT,
       created_at          INTEGER NOT NULL,
       updated_at          INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_sr_tracking_at ON service_records(tracking_id, service_at DESC);
   `);
+
+  // 老库补列：SQLite 不支持 ADD COLUMN IF NOT EXISTS
+  const srCols = new Set(
+    (_db.prepare("PRAGMA table_info(service_records)").all() as Array<{ name: string }>).map(
+      (c) => c.name,
+    ),
+  );
+  if (!srCols.has("attachments_json")) {
+    _db.exec("ALTER TABLE service_records ADD COLUMN attachments_json TEXT");
+  }
 
   return _db;
 }
