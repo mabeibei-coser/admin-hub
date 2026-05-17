@@ -3,9 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAdminDb, isNavDbReady } from "@/lib/db";
 import fs from "fs";
+import path from "path";
 import { ChevronLeft, Download, AlertTriangle } from "lucide-react";
 import type { JobFormData, QuizAnswer } from "@/lib/types";
-import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2 } from "@/lib/types-nav";
+import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2, QuizBank } from "@/lib/types-nav";
 import { PROJECTS } from "@/lib/projects";
 
 type ProjectId = "report" | "nav";
@@ -105,6 +106,7 @@ export default async function ReportDetailPage({
   let interviewQ1Q2: InterviewQ1Q2 | null = null;
   let navFormData: NavJobFormData | null = null;
   let navQuizAnswers: NavQuizAnswer[] | null = null;
+  let navQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
   let reportFormData: JobFormData | null = null;
   let reportQuizAnswers: QuizAnswer[] = [];
 
@@ -113,6 +115,15 @@ export default async function ReportDetailPage({
     try { interviewQ1Q2 = JSON.parse(row.interview_q1q2_json as string) as InterviewQ1Q2; } catch { /* empty */ }
     try { navFormData = JSON.parse(row.form_data_json as string) as NavJobFormData; } catch { /* empty */ }
     try { navQuizAnswers = JSON.parse(row.quiz_answers_json as string) as NavQuizAnswer[]; } catch { /* empty */ }
+    const navDbPath = process.env.NAV_DB_PATH;
+    if (navDbPath) {
+      try {
+        const bank = JSON.parse(fs.readFileSync(path.join(path.dirname(navDbPath), "quiz-bank.json"), "utf-8")) as QuizBank;
+        for (const q of bank.fixedQuestions) {
+          navQuizBankMap.set(q.id, { text: q.text, options: q.options.map((o) => ({ label: o.label, text: o.text })) });
+        }
+      } catch { /* quiz bank missing or unreadable */ }
+    }
   } else {
     const storagePath = row.report_storage_path as string | null;
     if (storagePath) {
@@ -188,7 +199,6 @@ export default async function ReportDetailPage({
                 label="用户身份"
                 value={IDENTITY_LABELS[row.user_identity as string] ?? (row.user_identity as string | null)}
               />
-              <Row label="UUID" value={row.uuid as string | null} />
             </>
           ) : (
             <>
@@ -259,16 +269,26 @@ export default async function ReportDetailPage({
         {/* ── 量表作答（nav 侧） ─────────────────────────────────────── */}
         {project === "nav" && navQuizAnswers && navQuizAnswers.length > 0 && (
           <Card title={`量表作答（${navQuizAnswers.length} 题）`}>
-            <div className="space-y-2">
-              {navQuizAnswers.map((a, i) => (
-                <div key={a.questionId} className="text-sm">
-                  <span className="text-gray-400 text-xs mr-2">Q{i + 1}</span>
-                  <span className="text-gray-700 text-xs font-mono">{a.questionId}</span>
-                  <div className="ml-6 mt-0.5 text-xs text-blue-700 bg-blue-50 inline-block px-2 py-0.5 rounded">
-                    {a.selectedLabel}
+            <div className="divide-y divide-gray-50">
+              {navQuizAnswers.map((a, i) => {
+                const q = navQuizBankMap.get(a.questionId);
+                const opt = q?.options.find((o) => o.label === a.selectedLabel);
+                return (
+                  <div key={a.questionId} className="py-2.5">
+                    <div className="flex items-start gap-2 mb-1.5">
+                      <span className="text-gray-400 text-xs shrink-0 mt-0.5">Q{i + 1}</span>
+                      <div>
+                        <span className="text-xs font-mono text-gray-400 mr-1.5">{a.questionId}</span>
+                        <span className="text-sm text-gray-700">{q?.text ?? "—"}</span>
+                      </div>
+                    </div>
+                    <div className="ml-6 text-xs text-blue-700 bg-blue-50 inline-flex items-center gap-1 px-2 py-0.5 rounded">
+                      <span className="font-semibold">{a.selectedLabel}.</span>
+                      <span>{opt?.text ?? a.selectedLabel}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Card>
         )}
