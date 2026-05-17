@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Inbox, RefreshCw, ArrowRightCircle } from "lucide-react";
+import { Inbox, RefreshCw, ArrowRightCircle, FileText, FolderOpen, Pencil, AlertTriangle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -30,6 +30,7 @@ import { withBase } from "@/lib/url";
 interface ListRow {
   id: number;
   source_project: "report" | "nav";
+  source_report_id: number;
   user_name: string | null;
   user_phone: string | null;
   target_position: string | null;
@@ -49,6 +50,13 @@ interface ListResponse {
   pageSize: number;
 }
 
+interface StatsResponse {
+  total: number;
+  monthNew: number;
+  inProgress: number;
+  warning: number;
+}
+
 const COLUMNS = [
   "姓名",
   "手机号",
@@ -60,6 +68,20 @@ const COLUMNS = [
   "转入人",
   "操作",
 ] as const;
+
+/** yyyy-mm-dd → ms (本机时区当日 00:00 / 23:59:59.999) */
+function dayStartMs(s: string): number | null {
+  if (!s) return null;
+  const [y, m, d] = s.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+}
+function dayEndMs(s: string): number | null {
+  if (!s) return null;
+  const [y, m, d] = s.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d, 23, 59, 59, 999).getTime();
+}
 
 function formatTs(ms: number) {
   return new Date(ms).toLocaleString("zh-CN", {
@@ -95,10 +117,20 @@ function ListContent() {
 
   const statusParam = searchParams.get("status") as ServiceStatus | null;
   const categoryParam = searchParams.get("category") as ServiceCategory | null;
+  const nameParam = searchParams.get("name") ?? "";
+  const dateFromParam = searchParams.get("date_from") ?? "";
+  const dateToParam = searchParams.get("date_to") ?? "";
   const pageParam = Number(searchParams.get("page") ?? "1") || 1;
   const pageSize = 20;
 
+  // 姓名搜索本地态：URL 同步走 onBlur / Enter，不打字时同步避免每按一键 fetch
+  const [nameInput, setNameInput] = useState(nameParam);
+  useEffect(() => {
+    setNameInput(nameParam);
+  }, [nameParam]);
+
   const [data, setData] = useState<ListResponse | null>(null);
+  const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,17 +141,27 @@ function ListContent() {
       const sp = new URLSearchParams();
       if (statusParam) sp.set("status", statusParam);
       if (categoryParam) sp.set("category", categoryParam);
+      if (nameParam) sp.set("name", nameParam);
+      const dateFromMs = dayStartMs(dateFromParam);
+      const dateToMs = dayEndMs(dateToParam);
+      if (dateFromMs !== null) sp.set("date_from", String(dateFromMs));
+      if (dateToMs !== null) sp.set("date_to", String(dateToMs));
       sp.set("page", String(pageParam));
       sp.set("pageSize", String(pageSize));
-      const res = await fetch(withBase(`/api/admin/service-tracking?${sp}`));
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setData((await res.json()) as ListResponse);
+      const [listRes, statsRes] = await Promise.all([
+        fetch(withBase(`/api/admin/service-tracking?${sp}`)),
+        fetch(withBase(`/api/admin/service-tracking/stats`)),
+      ]);
+      if (!listRes.ok) throw new Error(`HTTP ${listRes.status}`);
+      setData((await listRes.json()) as ListResponse);
+      // stats 失败不阻塞列表
+      if (statsRes.ok) setStats((await statsRes.json()) as StatsResponse);
     } catch (e) {
       setError(e instanceof Error ? e.message : "加载失败");
     } finally {
       setLoading(false);
     }
-  }, [statusParam, categoryParam, pageParam]);
+  }, [statusParam, categoryParam, nameParam, dateFromParam, dateToParam, pageParam]);
 
   useEffect(() => {
     fetch_();
@@ -133,6 +175,17 @@ function ListContent() {
     router.replace(`/admin/service-tracking?${sp.toString()}`);
   }
 
+  function commitNameSearch() {
+    if (nameInput.trim() !== nameParam) {
+      updateParam("name", nameInput.trim());
+    }
+  }
+
+  function resetFilters() {
+    setNameInput("");
+    router.replace(`/admin/service-tracking`);
+  }
+
   function goPage(p: number) {
     const sp = new URLSearchParams(Array.from(searchParams.entries()));
     sp.set("page", String(p));
@@ -140,6 +193,7 @@ function ListContent() {
   }
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / pageSize)) : 1;
+  const hasAnyFilter = !!(statusParam || categoryParam || nameParam || dateFromParam || dateToParam);
 
   return (
     <div className="p-6">
@@ -161,6 +215,20 @@ function ListContent() {
               {loading ? "加载中…" : data ? `共 ${data.total} 条` : "—"}
             </p>
           </div>
+        </div>
+
+        {/* 数据看板 */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard label="总数" value={stats?.total} loading={loading} accent="blue" />
+          <StatCard label="本月新增" value={stats?.monthNew} loading={loading} accent="emerald" />
+          <StatCard label="进行中" value={stats?.inProgress} loading={loading} accent="sky" />
+          <StatCard
+            label="预警"
+            value={stats?.warning}
+            loading={loading}
+            accent="rose"
+            hint="状态跟进中 且 14 天未新增服务记录"
+          />
         </div>
 
         {/* 筛选 */}
@@ -195,6 +263,53 @@ function ListContent() {
               ))}
             </select>
           </div>
+          <div>
+            <div className="text-xs text-gray-500 mb-1">首次服务起始</div>
+            <input
+              type="date"
+              value={dateFromParam}
+              max={dateToParam || undefined}
+              onChange={(e) => updateParam("date_from", e.target.value)}
+              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+            />
+          </div>
+          <div>
+            <div className="text-xs text-gray-500 mb-1">首次服务截止</div>
+            <input
+              type="date"
+              value={dateToParam}
+              min={dateFromParam || undefined}
+              onChange={(e) => updateParam("date_to", e.target.value)}
+              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+            />
+          </div>
+          <div>
+            <div className="text-xs text-gray-500 mb-1">姓名</div>
+            <input
+              type="text"
+              value={nameInput}
+              placeholder="输入姓名"
+              onChange={(e) => setNameInput(e.target.value)}
+              onBlur={commitNameSearch}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitNameSearch();
+                }
+              }}
+              className="h-8 w-32 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+            />
+          </div>
+          {hasAnyFilter && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 text-xs text-gray-500 hover:text-gray-700"
+              onClick={resetFilters}
+            >
+              清空
+            </Button>
+          )}
         </div>
 
         {/* 桌面 Table */}
@@ -269,12 +384,35 @@ function ListContent() {
                       {row.recorder_name || "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link
-                        href={`/admin/service-tracking/${row.id}`}
-                        className="inline-flex items-center justify-center min-h-[28px] sm:min-h-0 text-xs px-2.5 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
-                      >
-                        服务详情
-                      </Link>
+                      <div className="inline-flex items-center gap-1.5">
+                        <a
+                          href={withBase(
+                            `/api/admin/reports/${row.source_report_id}/resume?project=${row.source_project}`,
+                          )}
+                          download
+                          title="下载简历"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                        >
+                          <FileText className="size-3" />
+                          简历
+                        </a>
+                        <Link
+                          href={`/admin/reports/${row.source_report_id}?project=${row.source_project}`}
+                          title="查看用户档案"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                        >
+                          <FolderOpen className="size-3" />
+                          档案
+                        </Link>
+                        <Link
+                          href={`/admin/service-tracking/${row.id}`}
+                          title="编辑服务跟踪记录"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:ring-blue-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                        >
+                          <Pencil className="size-3" />
+                          服务编辑
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -388,6 +526,47 @@ function ListContent() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+const STAT_ACCENT: Record<string, { ring: string; label: string; value: string; icon?: string }> = {
+  blue:    { ring: "ring-blue-100",    label: "text-blue-700",    value: "text-blue-900" },
+  emerald: { ring: "ring-emerald-100", label: "text-emerald-700", value: "text-emerald-900" },
+  sky:     { ring: "ring-sky-100",     label: "text-sky-700",     value: "text-sky-900" },
+  rose:    { ring: "ring-rose-100",    label: "text-rose-700",    value: "text-rose-900" },
+};
+
+function StatCard({
+  label,
+  value,
+  loading,
+  accent,
+  hint,
+}: {
+  label: string;
+  value: number | undefined;
+  loading: boolean;
+  accent: "blue" | "emerald" | "sky" | "rose";
+  hint?: string;
+}) {
+  const a = STAT_ACCENT[accent];
+  return (
+    <div
+      className={`relative rounded-xl bg-white ring-1 ${a.ring} shadow-sm shadow-gray-200/60 px-4 py-3`}
+      title={hint}
+    >
+      <div className={`flex items-center gap-1.5 text-xs ${a.label}`}>
+        {accent === "rose" && <AlertTriangle className="size-3.5" />}
+        <span>{label}</span>
+      </div>
+      <div className={`mt-1 text-2xl font-semibold tabular-nums ${a.value}`}>
+        {loading || value === undefined ? (
+          <span className="inline-block h-7 w-12 rounded bg-gray-100 animate-pulse" />
+        ) : (
+          value
+        )}
       </div>
     </div>
   );

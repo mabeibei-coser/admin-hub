@@ -12,6 +12,7 @@ import {
 interface ListRow {
   id: number;
   source_project: "report" | "nav";
+  source_report_id: number;
   user_name: string | null;
   user_phone: string | null;
   target_position: string | null;
@@ -29,7 +30,8 @@ interface ListRow {
  * 列表：行级权限 = staff1 / staff2 之一 = 当前用户（超管看全部）
  *
  * Query：
- *   status, category, page, pageSize
+ *   status, category, name, date_from (ms), date_to (ms), page, pageSize
+ *   date_from / date_to 作用于 first_service_at（首次服务时间）。
  */
 export async function GET(req: NextRequest) {
   const session = await requireMenu("service");
@@ -40,6 +42,9 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const status = url.searchParams.get("status");
   const category = url.searchParams.get("category");
+  const name = url.searchParams.get("name")?.trim() || "";
+  const dateFromRaw = url.searchParams.get("date_from");
+  const dateToRaw = url.searchParams.get("date_to");
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
   const pageSize = Math.min(
     100,
@@ -64,6 +69,25 @@ export async function GET(req: NextRequest) {
     conditions.push("service_category = ?");
     params.push(category);
   }
+  if (name) {
+    conditions.push("user_name LIKE ?");
+    params.push(`%${name}%`);
+  }
+  // 日期范围：传入的是当地日历 yyyy-mm-dd 已被前端转 ms（含开始当日 00:00、结束当日 23:59:59.999）
+  if (dateFromRaw) {
+    const v = Number(dateFromRaw);
+    if (Number.isFinite(v)) {
+      conditions.push("first_service_at >= ?");
+      params.push(v);
+    }
+  }
+  if (dateToRaw) {
+    const v = Number(dateToRaw);
+    if (Number.isFinite(v)) {
+      conditions.push("first_service_at <= ?");
+      params.push(v);
+    }
+  }
 
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
@@ -80,6 +104,7 @@ export async function GET(req: NextRequest) {
       `SELECT
          st.id,
          st.source_project,
+         st.source_report_id,
          st.user_name,
          st.user_phone,
          st.target_position,
