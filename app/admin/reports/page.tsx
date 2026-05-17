@@ -521,7 +521,7 @@ function AdminReportsContent() {
                 {columns.map((c) => (
                   <TableHead
                     key={c}
-                    className={c === "操作" || c === "详情" ? "text-right" : ""}
+                    className={c === "操作" || c === "详情" ? "text-center" : ""}
                   >
                     {c}
                   </TableHead>
@@ -852,8 +852,8 @@ function ReportRowItem({
           <TableCell className="tabular-nums text-xs text-gray-500 whitespace-nowrap">
             {durationCell}
           </TableCell>
-          <TableCell className="text-right">
-            <div className="flex items-center justify-end gap-2">
+          <TableCell>
+            <div className="flex items-center justify-center gap-2">
               <Link
                 href={`/admin/reports/${row.id}?project=${row.project}`}
                 className="inline-flex items-center justify-center min-h-[28px] sm:min-h-0 text-xs px-2.5 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
@@ -916,7 +916,7 @@ function ReportRowItem({
         <TableCell className="tabular-nums text-xs text-gray-500">
           {durationCell}
         </TableCell>
-        <TableCell className="text-right">
+        <TableCell>
           <RowActions row={row} onTransfer={onTransfer} navReady={navReady} />
         </TableCell>
       </TableRow>
@@ -953,21 +953,14 @@ function ReportRowItem({
           ? IDENTITY_LABELS[row.user_identity] ?? row.user_identity
           : "—"}
       </TableCell>
-      {/* 转服务状态：已转入服务 / 未转入 */}
-      <TableCell>
-        {transferred ? (
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--semantic-positive)]">
-            <span className="size-1.5 rounded-full bg-[var(--semantic-positive)]" />
-            已转入服务
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-400">
-            <span className="size-1.5 rounded-full bg-gray-300" />
-            未转入
-          </span>
-        )}
+      {/* 转服务状态：纯色点（绿=已转入 灰=未转入） */}
+      <TableCell className="text-center">
+        <span
+          title={transferred ? "已转入服务" : "未转入"}
+          className={`inline-block size-3 rounded-full ${transferred ? "bg-[var(--semantic-positive)] shadow-[0_0_0_3px_oklch(0.72_0.18_155_/_0.22)]" : "bg-gray-300"}`}
+        />
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell>
         <RowActions row={row} onTransfer={onTransfer} navReady={navReady} />
       </TableCell>
     </TableRow>
@@ -997,16 +990,31 @@ function RowActions({
   const canTransfer = row.project === "nav" && navReady;
   const transferred = row.tracking_id != null;
   return (
-    <div className="flex items-center justify-end gap-2">
-      {row.has_resume ? (
-        <a
-          href={withBase(`/api/admin/reports/${row.id}/resume?project=${row.project}`)}
-          download
-          className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
-        >
-          简历
-        </a>
-      ) : null}
+    <div className="flex items-center justify-center gap-2">
+      {/* 简历：有则显示，无则不可见占位（保证档案/转服务列位置固定） */}
+      {row.project === "nav" ? (
+        row.has_resume ? (
+          <a
+            href={withBase(`/api/admin/reports/${row.id}/resume?project=${row.project}`)}
+            download
+            className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
+          >
+            简历
+          </a>
+        ) : (
+          <span aria-hidden className={`${ACTION_BTN_BASE} invisible`}>简历</span>
+        )
+      ) : (
+        row.has_resume ? (
+          <a
+            href={withBase(`/api/admin/reports/${row.id}/resume?project=${row.project}`)}
+            download
+            className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
+          >
+            简历
+          </a>
+        ) : null
+      )}
       <Link
         href={`/admin/reports/${row.id}?project=${row.project}`}
         className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
@@ -1021,7 +1029,7 @@ function RowActions({
             className={`${ACTION_BTN_BASE} ${ACTION_BTN_POSITIVE}`}
           >
             <ArrowRightCircle className="size-3" />
-            已转服务
+            转服务
           </Link>
         ) : (
           <button
