@@ -22,7 +22,11 @@ export async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const normalized = pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
 
-  if (normalized === "/admin/login" || normalized === "/api/admin/login") {
+  if (
+    normalized === "/admin/login" ||
+    normalized === "/api/admin/login" ||
+    normalized === "/api/admin/captcha"
+  ) {
     return NextResponse.next();
   }
 
