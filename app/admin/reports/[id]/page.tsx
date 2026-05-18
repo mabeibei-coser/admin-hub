@@ -4,11 +4,15 @@ import { notFound } from "next/navigation";
 import { getAdminDb, isNavDbReady } from "@/lib/db";
 import fs from "fs";
 import path from "path";
-import { ChevronLeft, Download, AlertTriangle } from "lucide-react";
+import { Download, FileText, Compass, Briefcase } from "lucide-react";
 import { withBase } from "@/lib/url";
 import type { JobFormData, QuizAnswer } from "@/lib/types";
 import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2, QuizBank, QuizQuestion as NavQuizQuestion } from "@/lib/types-nav";
 import { PROJECTS } from "@/lib/projects";
+import { PageHeader } from "@/components/admin/page-header";
+import { Breadcrumb } from "@/components/admin/breadcrumb";
+import { Alert } from "@/components/admin/alert";
+import { StatusPill } from "@/components/admin/status-pill";
 
 type ProjectId = "report" | "nav";
 
@@ -18,7 +22,7 @@ function parseProject(v: string | undefined): ProjectId {
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex gap-3 py-2 border-b border-gray-50 last:border-0">
+    <div className="flex gap-3 py-2 border-b border-[var(--report-divider)] last:border-0">
       <span className="shrink-0 w-28 text-xs text-gray-500 pt-0.5">{label}</span>
       <span className="text-sm text-gray-800 break-all">{value ?? "—"}</span>
     </div>
@@ -27,8 +31,8 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-      <h2 className="text-sm font-semibold text-gray-700 mb-3">{title}</h2>
+    <div className="surface-panel p-5">
+      <h2 className="text-sm font-semibold text-[var(--navy-800)] mb-3">{title}</h2>
       {children}
     </div>
   );
@@ -81,14 +85,15 @@ export default async function ReportDetailPage({
 
   if (project === "nav" && !isNavDbReady()) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="max-w-3xl mx-auto space-y-5">
-          <Link href="/admin/reports" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-            <ChevronLeft className="size-4" />报告列表
-          </Link>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-            职业导航数据库暂不可用，无法加载此报告。
-          </div>
+          <Breadcrumb
+            items={[
+              { label: "报告列表", href: "/admin/reports" },
+              { label: "职业导航报告" },
+            ]}
+          />
+          <Alert tone="warning">职业导航数据库暂不可用，无法加载此报告。</Alert>
         </div>
       </div>
     );
@@ -160,28 +165,46 @@ export default async function ReportDetailPage({
 
   const hasReportData = project === "nav" ? !!reportData : !!reportFormData;
 
+  // 用户友好的页头副信息：「张三 · 13800138001」或仅项目名
+  const userName = project === "nav" ? navFormData?.name : null;
+  const userPhone = project === "nav" ? navFormData?.phone : null;
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6 print:bg-white print:p-0">
+    <div className="min-h-screen bg-background p-6 print:bg-white print:p-0">
       <div className="max-w-3xl mx-auto space-y-5">
-        {/* 返回 + 面包屑 */}
-        <div className="flex items-center gap-2 print:hidden">
-          <Link
-            href="/admin/reports"
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
-          >
-            <ChevronLeft className="size-4" />
-            报告列表
-          </Link>
-          <span className="text-gray-300">/</span>
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-              project === "nav"
-                ? "bg-green-100 text-green-700"
-                : "bg-blue-100 text-blue-700"
-            }`}
-          >
-            {projectMeta.label}
-          </span>
+        <div className="print:hidden">
+          <Breadcrumb
+            items={[
+              { label: "报告列表", href: "/admin/reports" },
+              {
+                label: (
+                  <StatusPill tone={project === "nav" ? "success" : "info"}>
+                    {projectMeta.label}
+                  </StatusPill>
+                ),
+              },
+            ]}
+          />
+        </div>
+
+        {/* 页头 */}
+        <div className="print:hidden">
+          <PageHeader
+            icon={project === "nav" ? Compass : Briefcase}
+            eyebrow={`${projectMeta.label} · 报告 #${row.id as number}`}
+            title={
+              userName
+                ? `${userName} · ${row.target_position as string}`
+                : (row.target_position as string)
+            }
+            subtitle={
+              <span className="tabular-nums">
+                {new Date(row.created_at as number).toLocaleString("zh-CN")}
+                {userPhone ? ` · ${userPhone}` : ""}
+              </span>
+            }
+            accentColor={project === "nav" ? "green" : "blue"}
+          />
         </div>
 
         {/* ── 基本信息 ─────────────────────────────────────────────────── */}
@@ -232,7 +255,7 @@ export default async function ReportDetailPage({
                   <a
                     href={withBase(`/api/admin/reports/${String(row.id as number)}/resume?project=${project}`)}
                     download
-                    className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                    className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
                   >
                     <Download className="size-3.5" />
                     {row.resume_filename as string}
@@ -274,8 +297,10 @@ export default async function ReportDetailPage({
                 <div key={a.questionId} className="text-sm">
                   <span className="text-gray-400 text-xs mr-2">Q{i + 1}</span>
                   <span className="text-gray-700">{a.questionText}</span>
-                  <div className="ml-6 mt-0.5 text-xs text-blue-700 bg-blue-50 inline-block px-2 py-0.5 rounded">
-                    {a.selectedKey}. {a.selectedLabel}
+                  <div className="ml-6 mt-0.5 inline-flex">
+                    <span className="report-chip">
+                      {a.selectedKey}. {a.selectedLabel}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -286,7 +311,7 @@ export default async function ReportDetailPage({
         {/* ── 量表作答（nav 侧） ─────────────────────────────────────── */}
         {project === "nav" && navQuizAnswers && navQuizAnswers.length > 0 && (
           <Card title={`量表作答（${navQuizAnswers.length} 题）`}>
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-[var(--report-divider)]">
               {navQuizAnswers.map((a, i) => {
                 const q = navQuizBankMap.get(a.questionId);
                 const opt = q?.options.find((o) => o.label === a.selectedLabel);
@@ -299,9 +324,11 @@ export default async function ReportDetailPage({
                         <span className="text-sm text-gray-700">{q?.text ?? "—"}</span>
                       </div>
                     </div>
-                    <div className="ml-6 text-xs text-blue-700 bg-blue-50 inline-flex items-center gap-1 px-2 py-0.5 rounded">
-                      <span className="font-semibold">{a.selectedLabel}.</span>
-                      <span>{opt?.text ?? a.selectedLabel}</span>
+                    <div className="ml-6">
+                      <span className="report-chip">
+                        <span className="font-semibold">{a.selectedLabel}.</span>
+                        <span>{opt?.text ?? a.selectedLabel}</span>
+                      </span>
                     </div>
                   </div>
                 );
@@ -316,22 +343,21 @@ export default async function ReportDetailPage({
           (interviewQ1Q2.Q1 || interviewQ1Q2.Q2) && (
             <Card title="访谈内容（Q1 / Q2）">
               <div className="space-y-3">
-                <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 flex items-start gap-1.5">
-                  <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                <Alert tone="warning">
                   以下内容为用户访谈原始回答，含个人陈述、PII 敏感信息。请勿截图传播或对外汇报。
-                </div>
+                </Alert>
                 {interviewQ1Q2.Q1 && (
                   <div>
                     <div className="text-xs font-medium text-gray-500 mb-1.5">
                       Q1 动态访谈（AI 生成题）
                     </div>
                     {interviewQuestions?.Q1 && (
-                      <div className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-1.5 leading-relaxed">
-                        <span className="text-blue-600 font-medium mr-1">题：</span>
+                      <div className="text-sm text-[var(--navy-800)] bg-[var(--blue-50)] border border-[var(--blue-200)]/60 rounded-lg px-3 py-2 mb-1.5 leading-relaxed">
+                        <span className="text-[var(--blue-700)] font-medium mr-1">题：</span>
                         {interviewQuestions.Q1}
                       </div>
                     )}
-                    <pre className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap leading-relaxed">
+                    <pre className="text-sm text-gray-700 bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
                       {interviewQ1Q2.Q1}
                     </pre>
                   </div>
@@ -342,12 +368,12 @@ export default async function ReportDetailPage({
                       Q2 动态访谈（AI 生成题）
                     </div>
                     {interviewQuestions?.Q2 && (
-                      <div className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-1.5 leading-relaxed">
-                        <span className="text-blue-600 font-medium mr-1">题：</span>
+                      <div className="text-sm text-[var(--navy-800)] bg-[var(--blue-50)] border border-[var(--blue-200)]/60 rounded-lg px-3 py-2 mb-1.5 leading-relaxed">
+                        <span className="text-[var(--blue-700)] font-medium mr-1">题：</span>
                         {interviewQuestions.Q2}
                       </div>
                     )}
-                    <pre className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap leading-relaxed">
+                    <pre className="text-sm text-gray-700 bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
                       {interviewQ1Q2.Q2}
                     </pre>
                   </div>
