@@ -7,7 +7,6 @@ import {
   FileText,
   ChevronDown,
   ChevronRight,
-  AlertTriangle,
   RefreshCw,
   Inbox,
   ArrowRightCircle,
@@ -18,7 +17,6 @@ import {
   Clock,
   Calendar,
   CalendarDays,
-  type LucideIcon,
 } from "lucide-react";
 import {
   Table,
@@ -36,6 +34,9 @@ import {
   type TransferTargetRow,
 } from "@/components/admin/transfer-service-dialog";
 import { PageHeader } from "@/components/admin/page-header";
+import { DataCard } from "@/components/admin/data-card";
+import { Alert } from "@/components/admin/alert";
+import { Pagination } from "@/components/admin/pagination";
 import { withBase } from "@/lib/url";
 
 interface MeData {
@@ -359,13 +360,10 @@ function AdminReportsContent() {
 
         {/* nav 降级提示 */}
         {navDegraded && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 flex items-start gap-2">
-            <AlertTriangle className="size-4 mt-0.5 shrink-0" />
-            <div>
-              「职业导航」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
-              <code>NAV_DB_PATH</code>。
-            </div>
-          </div>
+          <Alert tone="warning">
+            「职业导航」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
+            <code>NAV_DB_PATH</code>。
+          </Alert>
         )}
 
         {/* KPI 卡片 4 张 — 顶部工作台 */}
@@ -573,39 +571,13 @@ function AdminReportsContent() {
           </Table>
 
           {/* 分页 */}
-          {data && totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--report-border)]">
-              <div className="text-xs text-gray-500 tabular-nums">
-                共{" "}
-                <span className="font-medium text-gray-700">{data.total}</span>{" "}
-                条
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs px-2.5 hover:bg-[var(--blue-50)]/40"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  上一页
-                </Button>
-                <div className="px-2 text-xs text-gray-600 tabular-nums whitespace-nowrap">
-                  <span className="font-semibold text-gray-900">{page}</span>
-                  <span className="text-gray-300 mx-1">/</span>
-                  <span>{totalPages}</span>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs px-2.5 hover:bg-[var(--blue-50)]/40"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  下一页
-                </Button>
-              </div>
-            </div>
+          {data && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={data.total}
+              onPageChange={setPage}
+            />
           )}
         </div>
       </div>
@@ -613,7 +585,7 @@ function AdminReportsContent() {
   );
 }
 
-/** —— 4 张独立 KPI 卡片 — report / nav 分流 —— */
+/** —— 4 张数据卡片 — report / nav 分流，用统一 DataCard —— */
 function KpiStrip({
   data,
   project,
@@ -629,26 +601,26 @@ function KpiStrip({
   if (project === "nav") {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard
+        <DataCard
           label="总报告数"
           value={data?.stats.total}
           icon={FileText}
           loading={skeleton}
           highlight
         />
-        <KpiCard
+        <DataCard
           label="本月新增"
           value={data?.stats.monthCount}
           icon={Calendar}
           loading={skeleton}
         />
-        <KpiCard
+        <DataCard
           label="本周新增"
           value={data?.stats.weekCount}
           icon={CalendarDays}
           loading={skeleton}
         />
-        <KpiCard
+        <DataCard
           label="转服务数量"
           value={data?.stats.transferredCount}
           icon={ArrowRightCircle}
@@ -664,91 +636,31 @@ function KpiStrip({
   const avgDur = data?.stats.avgDurationSec;
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <KpiCard
+      <DataCard
         label="今日新增"
         value={data?.stats.todayCount}
         icon={Sparkles}
         loading={skeleton}
         highlight
       />
-      <KpiCard
+      <DataCard
         label={project === "all" ? "累计 (两项目合计)" : "累计总数"}
         value={data?.stats.total}
         icon={Inbox}
         loading={skeleton}
       />
-      <KpiCard
+      <DataCard
         label="简历上传率"
         value={resumeRate !== undefined ? `${resumeRate}%` : undefined}
         icon={FileText}
         loading={skeleton}
       />
-      <KpiCard
+      <DataCard
         label="平均耗时"
         value={avgDur ? `${avgDur}s` : undefined}
         icon={Clock}
         loading={skeleton}
       />
-    </div>
-  );
-}
-
-/** 单张 KPI 卡 — 独立 surface，可 hover lift + accent 主色 */
-function KpiCard({
-  label,
-  value,
-  icon: Icon,
-  loading,
-  accent = "blue",
-  highlight,
-}: {
-  label: string;
-  value: number | string | undefined;
-  icon: LucideIcon;
-  loading: boolean;
-  accent?: "blue" | "green";
-  highlight?: boolean;
-}) {
-  const iconBg =
-    accent === "green"
-      ? "bg-gradient-to-br from-[oklch(0.94_0.06_155)] to-[oklch(0.97_0.03_155)] text-[var(--semantic-positive)] ring-[oklch(0.85_0.08_155)]/40"
-      : "bg-gradient-to-br from-[var(--blue-100)] to-[var(--blue-50)] text-[var(--blue-700)] ring-[var(--blue-200)]/50";
-  const glowColor =
-    accent === "green"
-      ? "oklch(0.65_0.16_155_/_0.1)"
-      : "oklch(0.7_0.16_245_/_0.1)";
-
-  return (
-    <div className="surface-panel relative overflow-hidden p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_oklch(0.3_0.06_252_/_0.08),0_18px_36px_oklch(0.55_0.2_252_/_0.12)] group">
-      {/* 右上角微弱渐变 — hover 时加强 */}
-      <div
-        aria-hidden
-        className="absolute -top-10 -right-10 size-32 rounded-full pointer-events-none opacity-70 group-hover:opacity-100 transition-opacity"
-        style={{
-          background: `radial-gradient(circle, ${glowColor}, transparent 65%)`,
-        }}
-      />
-      <div className="relative flex items-start justify-between gap-3">
-        <div className="text-[10.5px] text-gray-500 font-semibold tracking-[0.16em] uppercase pt-0.5 min-w-0 truncate">
-          {label}
-        </div>
-        <div
-          className={`shrink-0 size-9 rounded-xl flex items-center justify-center ring-1 shadow-[0_2px_6px_oklch(0.55_0.2_252_/_0.08)] ${iconBg}`}
-        >
-          <Icon className="size-4.5" strokeWidth={2.2} />
-        </div>
-      </div>
-      {loading ? (
-        <div className="h-10 w-20 bg-gray-100 rounded animate-pulse mt-4" />
-      ) : (
-        <div
-          className={`${
-            highlight ? "kpi-number" : "text-[var(--navy-800)]"
-          } text-[34px] md:text-[40px] font-semibold tabular-nums tracking-tight leading-none mt-4`}
-        >
-          {value ?? "—"}
-        </div>
-      )}
     </div>
   );
 }
