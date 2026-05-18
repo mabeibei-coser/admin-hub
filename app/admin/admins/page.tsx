@@ -65,6 +65,8 @@ export default function AdminsPage() {
   }, []);
 
   useEffect(() => {
+    // mount 时拉一次列表（fetchAdmins 内部会 setState；这是初始数据加载，没有别的写法）
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAdmins();
   }, [fetchAdmins]);
 

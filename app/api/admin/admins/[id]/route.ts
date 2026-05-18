@@ -50,7 +50,8 @@ export async function PATCH(
   const isSelf = session.adminId === targetId;
 
   // 防自锁：自己不能改自己的 is_super 和 is_active
-  let { name, password, note, menus, is_active, is_super } = body;
+  const { name, password, note, menus } = body;
+  let { is_active, is_super } = body;
   if (isSelf) {
     is_super = undefined;
     is_active = undefined;

@@ -58,6 +58,8 @@ export function TransferServiceDialog({
   // 打开时重置 + 拉 admins
   useEffect(() => {
     if (!open) return;
+    // 弹窗每次打开都要重置表单 + 拉一次 admins 列表，响应 open 切换是最直接的写法
+    /* eslint-disable react-hooks/set-state-in-effect */
     setCategory("");
     setStaff2("");
     setError(null);
@@ -65,6 +67,7 @@ export function TransferServiceDialog({
     setAdmins(null);
     setAdminsError(false);
     setLoadingAdmins(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
     fetch(withBase("/api/admin/admins/picker"))
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((d: { admins: PickerAdmin[] }) => setAdmins(d.admins))

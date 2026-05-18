@@ -203,12 +203,15 @@ function AdminReportsContent() {
 
   // 切 project 时重置分页 + 清空 tab 专属筛选（保留通用的 from/to/position）
   useEffect(() => {
+    // 跨 tab 切换时的状态重置（备选：parent 给 <Component key={project} /> 重新挂载，代价更大）
+    /* eslint-disable react-hooks/set-state-in-effect */
     setPage(1);
     setHasResume("");
     setName("");
     setPhone("");
     setUserIdentity("");
     setTransferStatus("");
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [project]);
 
   // localStorage 记最近一次（侧栏未来可用作 default）
@@ -246,6 +249,8 @@ function AdminReportsContent() {
   }, [from, to, position, hasResume, name, phone, userIdentity, transferStatus, project, page]);
 
   useEffect(() => {
+    // 筛选条件变化时重新拉列表
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetch_();
   }, [fetch_]);
 

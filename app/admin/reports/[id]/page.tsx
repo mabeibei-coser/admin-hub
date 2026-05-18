@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getAdminDb, isNavDbReady } from "@/lib/db";
 import fs from "fs";
 import path from "path";
-import { Download, FileText, Compass, Briefcase } from "lucide-react";
+import { Download, Compass, Briefcase } from "lucide-react";
 import { withBase } from "@/lib/url";
 import type { JobFormData, QuizAnswer } from "@/lib/types";
 import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2, QuizBank, QuizQuestion as NavQuizQuestion } from "@/lib/types-nav";
@@ -106,7 +106,7 @@ export default async function ReportDetailPage({
   let interviewQuestions: { Q1?: string; Q2?: string } | null = null;
   let navFormData: NavJobFormData | null = null;
   let navQuizAnswers: NavQuizAnswer[] | null = null;
-  let navQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
+  const navQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
   let reportFormData: JobFormData | null = null;
   let reportQuizAnswers: QuizAnswer[] = [];
 

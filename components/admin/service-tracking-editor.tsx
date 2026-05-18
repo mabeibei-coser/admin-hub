@@ -87,8 +87,11 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
   // 进入编辑模式时拉 admins
   useEffect(() => {
     if (!editing) return;
+    // 进入编辑模式时重置 + 拉数据，需要响应 editing 切换
+    /* eslint-disable react-hooks/set-state-in-effect */
     setAdmins(null);
     setAdminsError(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
     fetch(withBase("/api/admin/admins/picker"))
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d: { admins: PickerAdmin[] }) => setAdmins(d.admins))

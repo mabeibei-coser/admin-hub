@@ -31,6 +31,8 @@ export default function AdminLoginPage() {
   }, []);
 
   useEffect(() => {
+    // mount 时取一张新验证码（必须在 effect 里：URL 带时间戳防缓存，得拿到 Date.now()）
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshCaptcha();
   }, [refreshCaptcha]);
 

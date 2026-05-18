@@ -211,8 +211,8 @@ function RecordForm({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [serviceAtStr, setServiceAtStr] = useState(
-    tsToInput(initial?.service_at ?? Date.now())
+  const [serviceAtStr, setServiceAtStr] = useState(() =>
+    tsToInput(initial?.service_at ?? Date.now()),
   );
   const [content, setContent] = useState(initial?.content ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
