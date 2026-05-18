@@ -102,18 +102,18 @@ export function SalarySection({
 
       {/* 意向行业 · 星标卡 */}
       {userInd && userInd.avgSalary > 0 && (
-        <div className="relative rounded-xl border-2 border-amber-300/80 bg-gradient-to-br from-amber-50 to-white p-4 sm:p-5 mb-4 break-inside-avoid shadow-sm">
+        <div className="relative rounded-xl border-2 border-[oklch(0.85_0.12_80)]/80 bg-gradient-to-br from-[oklch(0.98_0.04_80)] to-card p-4 sm:p-5 mb-4 break-inside-avoid shadow-sm">
           <div className="flex items-start gap-3">
             <div className="shrink-0 size-9 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 shadow-md flex items-center justify-center">
               <Star className="size-4 text-white fill-white" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-amber-700 bg-amber-100 rounded px-1.5 py-0.5">
+                <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--semantic-warning)] bg-[oklch(0.95_0.06_80)] rounded px-1.5 py-0.5">
                   你的意向行业
                 </span>
                 {userRankInTop5 >= 0 && (
-                  <span className="text-[10px] text-amber-700/80">
+                  <span className="text-[10px] text-[var(--semantic-warning)]/80">
                     · 在 top 5 中排名第 {userRankInTop5 + 1}
                   </span>
                 )}
@@ -122,7 +122,7 @@ export function SalarySection({
                 <span className="text-base sm:text-lg font-bold text-[var(--navy-900)]">
                   {userInd.industry}
                 </span>
-                <span className="tabular-nums text-lg font-bold text-amber-700">
+                <span className="tabular-nums text-lg font-bold text-[var(--semantic-warning)]">
                   {formatMoney(userInd.avgSalary)}
                   <span className="ml-1 text-xs font-normal text-[var(--report-ink-muted)]">
                     {unit}
@@ -142,7 +142,7 @@ export function SalarySection({
 
       {/* 行业对比 · 前 5（严格按薪资排序） */}
       {ranked.length > 0 && (
-      <div className="rounded-xl border border-[var(--blue-100)] bg-white p-4 sm:p-5 mb-5 break-inside-avoid">
+      <div className="rounded-xl border border-[var(--blue-100)] bg-card p-4 sm:p-5 mb-5 break-inside-avoid">
         <div className="flex items-center gap-2 mb-4">
           <Factory className="size-4 text-[var(--blue-600)]" />
           <span className="text-sm font-semibold text-[var(--navy-800)]">
@@ -164,7 +164,7 @@ export function SalarySection({
                 <span
                   className={
                     isTop
-                      ? "tabular-nums w-5 h-5 inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold shrink-0"
+                      ? "tabular-nums w-5 h-5 inline-flex items-center justify-center rounded-full bg-[oklch(0.95_0.06_80)] text-[var(--semantic-warning)] text-[11px] font-bold shrink-0"
                       : "tabular-nums text-[var(--report-ink-muted)] w-5 text-center shrink-0"
                   }
                 >
@@ -174,13 +174,13 @@ export function SalarySection({
                   className={
                     "font-medium w-20 sm:w-28 shrink-0 flex items-center gap-1 " +
                     (isUserInd
-                      ? "text-amber-700"
+                      ? "text-[var(--semantic-warning)]"
                       : "text-[var(--navy-800)]")
                   }
                 >
                   {row.industry}
                   {isUserInd && (
-                    <Star className="size-3 fill-amber-400 text-amber-400 shrink-0" />
+                    <Star className="size-3 fill-[oklch(0.82_0.18_80)] text-[oklch(0.82_0.18_80)] shrink-0" />
                   )}
                 </span>
                 <div
@@ -230,7 +230,7 @@ function QuartileTile({
       className={
         highlight
           ? "rounded-xl border-2 border-[var(--blue-500)] bg-[var(--blue-500)]/5 p-2.5 sm:p-4 flex flex-col items-start min-w-0"
-          : "rounded-xl border border-[var(--blue-100)] bg-white p-2.5 sm:p-4 flex flex-col items-start min-w-0"
+          : "rounded-xl border border-[var(--blue-100)] bg-card p-2.5 sm:p-4 flex flex-col items-start min-w-0"
       }
     >
       <Coins className="size-3.5 sm:size-4 text-[var(--blue-600)] mb-1.5 sm:mb-2" />

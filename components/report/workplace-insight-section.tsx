@@ -29,14 +29,14 @@ export function WorkplaceInsightSection({
       takeaway={`${data.companyInsight?.targetLabel ?? "意向公司"}发展动向 · 网友现场观察 ${Array.isArray(data.companyInsight?.observations) ? data.companyInsight.observations.length : 0} 条 · 行业共性速览`}
       meta={<span>公司 · 现场 · 行业 · 综合</span>}
     >
-      <div className="rounded-md border border-amber-200/80 bg-amber-50/60 px-3 py-2 text-[12px] leading-relaxed text-amber-800 mb-5 break-inside-avoid">
+      <div className="rounded-md border border-[oklch(0.87_0.1_80)]/80 bg-[oklch(0.97_0.05_80)]/60 px-3 py-2 text-[12px] leading-relaxed text-[var(--semantic-warning)] mb-5 break-inside-avoid">
         <strong className="font-semibold">说明：</strong>
         以下观察整理自招聘信息、脉脉、小红书、知乎、校招贴吧等公开反馈，仅供择业参考；观点属于公开网络发声者，不代表本报告立场。
       </div>
 
       {/* Block 1 · 意向公司 · 发展现状 */}
       {data.companyInsight && (
-        <div className="rounded-xl border border-[var(--blue-100)] bg-white p-4 sm:p-5 mb-4 break-inside-avoid">
+        <div className="rounded-xl border border-[var(--blue-100)] bg-card p-4 sm:p-5 mb-4 break-inside-avoid">
           <div className="flex items-center gap-2 mb-3">
             <Building2 className="size-4 text-[var(--blue-600)]" />
             <span className="text-sm font-semibold text-[var(--navy-900)]">
@@ -51,7 +51,7 @@ export function WorkplaceInsightSection({
 
       {/* Block 2 · 意向公司 · 小红书 / 脉脉 现场速记 */}
       {data.companyInsight && (
-        <div className="rounded-xl border border-[var(--blue-100)] bg-white p-4 sm:p-5 mb-4 break-inside-avoid">
+        <div className="rounded-xl border border-[var(--blue-100)] bg-card p-4 sm:p-5 mb-4 break-inside-avoid">
           <div className="flex items-center gap-2 mb-2">
             <MessageSquareQuote className="size-4 text-[var(--blue-600)]" />
             <span className="text-sm font-semibold text-[var(--navy-900)]">
@@ -108,7 +108,7 @@ export function WorkplaceInsightSection({
       )}
 
       {/* Block 3 · 行业共性关注要点 */}
-      <div className="rounded-xl border border-[var(--blue-100)] bg-white p-4 sm:p-5 mb-4 break-inside-avoid">
+      <div className="rounded-xl border border-[var(--blue-100)] bg-card p-4 sm:p-5 mb-4 break-inside-avoid">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="size-4 text-[var(--blue-600)]" />
           <span className="text-sm font-semibold text-[var(--navy-900)]">

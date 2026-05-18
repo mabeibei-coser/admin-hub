@@ -90,9 +90,9 @@ export function ResumeDiagnosisSection({
       meta={<span>{recs.length} 条建议</span>}
     >
       {/* Score hero */}
-      <div className="rounded-xl border border-[var(--blue-200)] bg-gradient-to-br from-[var(--blue-50)] to-white p-4 sm:p-5 mb-5 break-inside-avoid">
+      <div className="rounded-xl border border-[var(--blue-200)] bg-gradient-to-br from-[var(--blue-50)] to-card p-4 sm:p-5 mb-5 break-inside-avoid">
         <div className="flex items-center gap-4 mb-3">
-          <div className="rounded-full bg-white p-2.5 border border-[var(--blue-200)] shrink-0">
+          <div className="rounded-full bg-card p-2.5 border border-[var(--blue-200)] shrink-0">
             <FileSearch className="size-5" style={{ color: tier.main }} />
           </div>
           <div className="flex-1 min-w-0">
@@ -148,7 +148,7 @@ export function ResumeDiagnosisSection({
           />
           {/* 70 分合格线刻度（装饰） */}
           <span
-            className="absolute top-0 bottom-0 w-px bg-white/70"
+            className="absolute top-0 bottom-0 w-px bg-card/70"
             style={{ left: "70%" }}
             aria-hidden
           />
@@ -179,7 +179,7 @@ export function ResumeDiagnosisSection({
             return (
               <li
                 key={i}
-                className="rounded-xl border border-[var(--blue-100)] bg-white p-4 break-inside-avoid"
+                className="rounded-xl border border-[var(--blue-100)] bg-card p-4 break-inside-avoid"
               >
                 <div className="flex items-start gap-3 mb-2">
                   <span className="shrink-0 tabular-nums text-sm font-bold text-[var(--blue-500)] w-5 pt-0.5">
@@ -209,13 +209,13 @@ export function ResumeDiagnosisSection({
 
                 <div className="ml-8 space-y-1.5 text-[13.5px] leading-[1.75]">
                   <p>
-                    <span className="inline-block w-10 text-[11px] font-semibold tracking-wider uppercase text-amber-700 align-baseline">
+                    <span className="inline-block w-10 text-[11px] font-semibold tracking-wider uppercase text-[var(--semantic-warning)] align-baseline">
                       问题
                     </span>
                     <span className="text-[var(--navy-800)]">{issue}</span>
                   </p>
                   <p>
-                    <span className="inline-block w-10 text-[11px] font-semibold tracking-wider uppercase text-emerald-700 align-baseline">
+                    <span className="inline-block w-10 text-[11px] font-semibold tracking-wider uppercase text-[var(--semantic-positive)] align-baseline">
                       建议
                     </span>
                     <span className="text-[var(--navy-800)]">{suggestion}</span>

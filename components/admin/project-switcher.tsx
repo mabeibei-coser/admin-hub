@@ -23,7 +23,7 @@ export function ProjectSwitcher({ value, options, onChange, className }: Props) 
     <div
       role="tablist"
       className={cn(
-        "inline-flex items-center gap-1 rounded-lg bg-gray-100 p-1 text-sm",
+        "inline-flex items-center gap-1 rounded-lg bg-muted p-1 text-sm",
         className
       )}
     >
@@ -39,8 +39,8 @@ export function ProjectSwitcher({ value, options, onChange, className }: Props) 
             className={cn(
               "px-3 py-1.5 rounded-md transition-colors text-sm font-medium",
               active
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {opt.label}

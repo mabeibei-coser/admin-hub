@@ -163,7 +163,7 @@ export function AdminForm(props: AdminFormProps) {
             value={(props as EditProps).defaultValues.username ?? ""}
             readOnly
             disabled
-            className="bg-gray-50 text-gray-500"
+            className="bg-muted text-muted-foreground"
             style={{ fontSize: "16px" }}
           />
         ) : (
@@ -178,7 +178,7 @@ export function AdminForm(props: AdminFormProps) {
               style={{ fontSize: "16px" }}
             />
             {errors.username && (
-              <p className="text-xs text-red-600">{errors.username.message as string}</p>
+              <p className="text-xs text-[var(--semantic-danger)]">{errors.username.message as string}</p>
             )}
           </>
         )}
@@ -194,7 +194,7 @@ export function AdminForm(props: AdminFormProps) {
           style={{ fontSize: "16px" }}
         />
         {errors.name && (
-          <p className="text-xs text-red-600">{errors.name.message as string}</p>
+          <p className="text-xs text-[var(--semantic-danger)]">{errors.name.message as string}</p>
         )}
       </div>
 
@@ -213,10 +213,10 @@ export function AdminForm(props: AdminFormProps) {
       {/* 菜单权限 */}
       <div className="space-y-2">
         <Label>菜单权限</Label>
-        <p className="text-[11px] text-gray-400">
+        <p className="text-[11px] text-muted-foreground">
           每个勾选项独立控制对应菜单的可见性，互不联动。
         </p>
-        <div className="space-y-2 rounded-lg border border-gray-200 p-3">
+        <div className="space-y-2 rounded-lg border border-border p-3">
           {ASSIGNABLE_MENUS.map((m) => {
             const checked = selectedMenus.includes(m.key);
             return (
@@ -228,13 +228,13 @@ export function AdminForm(props: AdminFormProps) {
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggleMenu(m.key)}
-                  className="mt-0.5 size-4 rounded border-gray-300 accent-blue-600"
+                  className="mt-0.5 size-4 rounded border-border accent-[var(--blue-600)]"
                 />
                 <div className="leading-tight">
-                  <span className="text-sm font-medium text-gray-800 group-hover:text-blue-700">
+                  <span className="text-sm font-medium text-foreground group-hover:text-[var(--blue-700)]">
                     {m.label}
                   </span>
-                  <p className="text-[11px] text-gray-400 mt-0.5">{m.description}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{m.description}</p>
                 </div>
               </label>
             );
@@ -256,7 +256,7 @@ export function AdminForm(props: AdminFormProps) {
           style={{ fontSize: "16px" }}
         />
         {errors.password && (
-          <p className="text-xs text-red-600">{errors.password.message as string}</p>
+          <p className="text-xs text-[var(--semantic-danger)]">{errors.password.message as string}</p>
         )}
       </div>
       <div className="space-y-1.5">
@@ -270,7 +270,7 @@ export function AdminForm(props: AdminFormProps) {
           style={{ fontSize: "16px" }}
         />
         {errors.confirmPassword && (
-          <p className="text-xs text-red-600">{errors.confirmPassword.message as string}</p>
+          <p className="text-xs text-[var(--semantic-danger)]">{errors.confirmPassword.message as string}</p>
         )}
       </div>
 
@@ -282,8 +282,8 @@ export function AdminForm(props: AdminFormProps) {
             <label
               className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer transition-all border ${
                 isActive
-                  ? "ring-2 ring-emerald-500 bg-emerald-50 text-emerald-800 border-transparent"
-                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                  ? "ring-2 ring-[var(--semantic-positive)] bg-[oklch(0.96_0.04_155)] dark:bg-[oklch(0.3_0.08_155)] text-[var(--semantic-positive)] border-transparent"
+                  : "border-border bg-card text-foreground hover:bg-muted"
               }`}
             >
               <input
@@ -301,8 +301,8 @@ export function AdminForm(props: AdminFormProps) {
             <label
               className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer transition-all border ${
                 !isActive
-                  ? "ring-2 ring-amber-500 bg-amber-50 text-amber-800 border-transparent"
-                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                  ? "ring-2 ring-[var(--semantic-warning)] bg-[oklch(0.97_0.06_70)] dark:bg-[oklch(0.3_0.08_65)] text-[var(--semantic-warning)] border-transparent"
+                  : "border-border bg-card text-foreground hover:bg-muted"
               }`}
             >
               <input
@@ -319,7 +319,7 @@ export function AdminForm(props: AdminFormProps) {
             </label>
           </div>
           {!isActive && (
-            <p className="text-[11px] text-amber-600">
+            <p className="text-[11px] text-[var(--semantic-warning)]">
               停用后该管理员将无法登录，已登录的 session 也会立即失效。
             </p>
           )}
@@ -327,7 +327,7 @@ export function AdminForm(props: AdminFormProps) {
       )}
 
       {serverError && (
-        <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{serverError}</p>
+        <p className="text-sm text-[var(--semantic-danger)] bg-[oklch(0.97_0.04_25)] dark:bg-[oklch(0.3_0.08_25)] rounded-lg px-3 py-2">{serverError}</p>
       )}
 
       <div className="flex gap-2 pt-1">

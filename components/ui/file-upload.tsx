@@ -210,7 +210,7 @@ export function FileUpload({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <span className="truncate">{value.fileName}</span>
-                <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                <CheckCircle2 className="size-4 shrink-0 text-[var(--semantic-positive)]" />
               </div>
               <div className="mt-0.5 text-xs text-muted-foreground">
                 已解析
@@ -218,7 +218,7 @@ export function FileUpload({
                   <span className="ml-1">· 约 {value.charCount} 字</span>
                 )}
                 {value.truncated && (
-                  <span className="ml-1 text-amber-600">
+                  <span className="ml-1 text-[var(--semantic-warning)]">
                     （超长内容已自动截取）
                   </span>
                 )}

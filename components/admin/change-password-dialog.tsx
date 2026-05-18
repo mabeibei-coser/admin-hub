@@ -89,21 +89,21 @@ export function ChangePasswordDialog({ open, onClose }: ChangePasswordDialogProp
       />
 
       {/* Panel */}
-      <div className="relative z-10 w-full max-w-sm bg-white rounded-xl shadow-xl p-6">
+      <div className="relative z-10 w-full max-w-sm bg-card text-card-foreground border border-border rounded-xl shadow-xl p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
             <div className="flex size-8 items-center justify-center rounded-full bg-[var(--blue-100)]">
               <KeyRound className="size-4 text-[var(--blue-700)]" />
             </div>
-            <h2 id="change-pwd-title" className="text-base font-semibold text-gray-900">
+            <h2 id="change-pwd-title" className="text-base font-semibold text-foreground">
               修改密码
             </h2>
           </div>
           <button
             onClick={handleClose}
             disabled={loading}
-            className="size-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+            className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
             aria-label="关闭"
           >
             <X className="size-4" />
@@ -111,7 +111,7 @@ export function ChangePasswordDialog({ open, onClose }: ChangePasswordDialogProp
         </div>
 
         {successMsg ? (
-          <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 text-center">
+          <div className="rounded-lg bg-[oklch(0.96_0.04_155)] dark:bg-[oklch(0.3_0.08_155)] border border-[oklch(0.85_0.08_155)] dark:border-[oklch(0.5_0.1_155)] px-4 py-3 text-sm text-[var(--semantic-positive)] text-center">
             {successMsg}
           </div>
         ) : (
@@ -156,7 +156,7 @@ export function ChangePasswordDialog({ open, onClose }: ChangePasswordDialogProp
             </div>
 
             {error && (
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-[var(--semantic-danger)]">{error}</p>
             )}
 
             <div className="flex gap-2 pt-1">

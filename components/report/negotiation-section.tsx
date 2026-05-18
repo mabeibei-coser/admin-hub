@@ -43,7 +43,7 @@ export function NegotiationSection({
           return (
             <div
               key={t.label}
-              className="rounded-xl border border-[var(--blue-100)] bg-white p-4 sm:p-5 break-inside-avoid"
+              className="rounded-xl border border-[var(--blue-100)] bg-card p-4 sm:p-5 break-inside-avoid"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">

@@ -68,9 +68,9 @@ export default function ReportPreviewPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[var(--blue-50)]/60 to-white px-6">
         <div className="max-w-md text-center space-y-3">
-          <AlertTriangle className="mx-auto size-10 text-amber-500" />
-          <div className="text-lg font-semibold text-gray-800">报告数据不可用</div>
-          <div className="text-sm text-gray-500">{error ?? "报告文件缺失或已损坏"}</div>
+          <AlertTriangle className="mx-auto size-10 text-[var(--semantic-warning)]" />
+          <div className="text-lg font-semibold text-foreground">报告数据不可用</div>
+          <div className="text-sm text-muted-foreground">{error ?? "报告文件缺失或已损坏"}</div>
         </div>
       </div>
     );
@@ -83,7 +83,7 @@ export default function ReportPreviewPage() {
     : "—";
 
   const banner = (
-    <div className="sticky top-0 z-50 bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-800 flex items-center gap-2">
+    <div className="sticky top-0 z-50 bg-[oklch(0.97_0.06_70)] dark:bg-[oklch(0.3_0.08_65)] border-b border-[oklch(0.85_0.1_70)] dark:border-[oklch(0.4_0.1_65)] px-4 py-2 text-xs text-[var(--semantic-warning)] flex items-center gap-2">
       <AlertTriangle className="size-3.5 shrink-0" />
       <span>
         管理员预览 · 报告 #{id} · 岗位：{position} · 生成时间：{createdAt}

@@ -12,6 +12,7 @@ import {
   type ServiceRecordAttachment,
 } from "@/lib/service-tracking";
 import { withBase } from "@/lib/url";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 export interface RecordItem {
   id: number;
@@ -65,7 +66,7 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
   return (
     <div className="surface-panel p-5">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-700">
+        <h2 className="text-sm font-semibold text-foreground">
           服务记录（{initial.length} 条）
         </h2>
         {!adding && (
@@ -94,7 +95,7 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
       )}
 
       {initial.length === 0 && !adding ? (
-        <p className="text-center py-10 text-sm text-gray-400">
+        <p className="text-center py-10 text-sm text-muted-foreground">
           还没有服务记录，点上面「新增记录」开始记录
         </p>
       ) : (
@@ -102,7 +103,7 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
           {initial.map((r) => (
             <div
               key={r.id}
-              className="group rounded-lg border border-gray-200 bg-gray-50/40 p-4 transition-colors hover:bg-gray-50"
+              className="group rounded-lg border border-border bg-muted/40 p-4 transition-colors hover:bg-muted"
             >
               {editingId === r.id ? (
                 <RecordForm
@@ -119,24 +120,24 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
                 <>
                   <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-sm font-semibold text-gray-900 tabular-nums whitespace-nowrap">
+                      <span className="text-sm font-semibold text-foreground tabular-nums whitespace-nowrap">
                         {formatTs(r.service_at)}
                       </span>
-                      <span className="text-xs text-gray-500 truncate">
+                      <span className="text-xs text-muted-foreground truncate">
                         记录人：{r.recorder_name || "—"}
                       </span>
                     </div>
                     <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => setEditingId(r.id)}
-                        className="size-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                         aria-label="编辑"
                       >
                         <Pencil className="size-3.5" />
                       </button>
                       <button
                         onClick={() => setConfirmDelete(r)}
-                        className="size-7 flex items-center justify-center rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-[var(--semantic-danger)] hover:bg-[oklch(0.97_0.04_25)] dark:hover:bg-[oklch(0.3_0.08_25)] transition-colors"
                         aria-label="删除"
                       >
                         <Trash2 className="size-3.5" />
@@ -144,12 +145,12 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
                     </div>
                   </div>
                   {r.content && (
-                    <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap">
+                    <p className="mt-2 text-sm text-foreground whitespace-pre-wrap">
                       {r.content}
                     </p>
                   )}
                   {r.note && (
-                    <p className="mt-2 text-xs text-gray-500 italic">
+                    <p className="mt-2 text-xs text-muted-foreground italic">
                       备注：{r.note}
                     </p>
                   )}
@@ -162,15 +163,15 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
                             `/api/admin/service-tracking/${trackingId}/records/${r.id}/attachments/${a.id}`,
                           )}
                           download={a.filename}
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-white ring-1 ring-gray-200 text-gray-700 hover:bg-[var(--blue-50)] hover:ring-[var(--blue-300)] hover:text-[var(--blue-700)] transition-colors max-w-[18rem]"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-card ring-1 ring-border text-foreground hover:bg-[var(--blue-50)] hover:ring-[var(--blue-300)] hover:text-[var(--blue-700)] transition-colors max-w-[18rem]"
                           title={`${a.filename} (${formatSize(a.size)})`}
                         >
                           <Paperclip className="size-3 shrink-0" />
                           <span className="truncate">{a.filename}</span>
-                          <span className="text-gray-400 tabular-nums shrink-0">
+                          <span className="text-muted-foreground tabular-nums shrink-0">
                             {formatSize(a.size)}
                           </span>
-                          <Download className="size-3 shrink-0 text-gray-400" />
+                          <Download className="size-3 shrink-0 text-muted-foreground" />
                         </a>
                       ))}
                     </div>
@@ -300,7 +301,7 @@ function RecordForm({
   }
 
   return (
-    <div className="bg-white p-4 rounded-lg space-y-3 border border-blue-200 ring-1 ring-blue-100/40">
+    <div className="bg-card p-4 rounded-lg space-y-3 border border-[var(--blue-200)] ring-1 ring-[var(--blue-100)]/40">
       <div className="space-y-1.5">
         <Label htmlFor="service-at">服务时间</Label>
         <Input
@@ -308,7 +309,7 @@ function RecordForm({
           type="datetime-local"
           value={serviceAtStr}
           onChange={(e) => setServiceAtStr(e.target.value)}
-          className="bg-white"
+          className="bg-card"
           style={{ fontSize: "16px" }}
         />
       </div>
@@ -320,7 +321,7 @@ function RecordForm({
           onChange={(e) => setContent(e.target.value)}
           placeholder="本次沟通要点、关键进展、下一步动作"
           rows={3}
-          className="bg-white resize-none"
+          className="bg-card resize-none"
           style={{ fontSize: "16px" }}
         />
       </div>
@@ -331,7 +332,7 @@ function RecordForm({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="可选"
-          className="bg-white"
+          className="bg-card"
           style={{ fontSize: "16px" }}
         />
       </div>
@@ -342,7 +343,7 @@ function RecordForm({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading || submitting}
-            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-border text-foreground hover:bg-muted hover:ring-muted-foreground/30 transition-colors disabled:opacity-50"
           >
             {uploading ? (
               <>
@@ -370,17 +371,17 @@ function RecordForm({
             {attachments.map((a) => (
               <li
                 key={a.id}
-                className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md bg-gray-50 ring-1 ring-gray-200"
+                className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md bg-muted ring-1 ring-border"
               >
-                <Paperclip className="size-3 shrink-0 text-gray-400" />
-                <span className="flex-1 truncate text-gray-700">{a.filename}</span>
-                <span className="text-gray-400 tabular-nums shrink-0">
+                <Paperclip className="size-3 shrink-0 text-muted-foreground" />
+                <span className="flex-1 truncate text-foreground">{a.filename}</span>
+                <span className="text-muted-foreground tabular-nums shrink-0">
                   {formatSize(a.size)}
                 </span>
                 <button
                   type="button"
                   onClick={() => removeAttachment(a.id)}
-                  className="size-5 flex items-center justify-center rounded text-gray-400 hover:text-red-600 hover:bg-red-50 shrink-0"
+                  className="size-5 flex items-center justify-center rounded text-muted-foreground hover:text-[var(--semantic-danger)] hover:bg-[oklch(0.97_0.04_25)] dark:hover:bg-[oklch(0.3_0.08_25)] shrink-0"
                   aria-label="移除"
                 >
                   <X className="size-3" />
@@ -389,11 +390,11 @@ function RecordForm({
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-gray-400">可附 PDF / Word / Excel / 图片（10 MB 内）</p>
+          <p className="text-xs text-muted-foreground">可附 PDF / Word / Excel / 图片（10 MB 内）</p>
         )}
       </div>
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 rounded px-2 py-1.5">
+        <p className="text-sm text-[var(--semantic-danger)] bg-[oklch(0.97_0.04_25)] dark:bg-[oklch(0.3_0.08_25)] rounded px-2 py-1.5">
           {error}
         </p>
       )}
@@ -447,7 +448,7 @@ function ConfirmDelete({
     try {
       const res = await fetch(
         withBase(`/api/admin/service-tracking/${trackingId}/records/${record.id}`),
-        { method: "DELETE" }
+        { method: "DELETE" },
       );
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -462,58 +463,25 @@ function ConfirmDelete({
     }
   }
 
+  // record 参数用于将来扩展（显示被删记录的预览信息），当前只作幂等占位
+  void record;
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      role="dialog"
-      aria-modal="true"
+    <ConfirmDialog
+      icon={AlertTriangle}
+      tone="danger"
+      title="删除记录"
+      confirmLabel="确认删除"
+      busy={submitting}
+      onCancel={onCancel}
+      onConfirm={doDelete}
     >
-      <div
-        className="fixed inset-0 bg-black/40"
-        onClick={submitting ? undefined : onCancel}
-      />
-      <div className="relative z-10 w-full max-w-xs bg-white rounded-xl shadow-xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-full bg-red-100">
-              <AlertTriangle className="size-4 text-red-600" />
-            </div>
-            <h3 className="text-base font-semibold text-gray-900">删除记录</h3>
-          </div>
-          <button
-            onClick={onCancel}
-            disabled={submitting}
-            className="size-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        <p className="text-sm text-gray-700">
-          删除后无法恢复，确认删除这条服务记录？
+      <p>删除后无法恢复，确认删除这条服务记录？</p>
+      {error && (
+        <p className="mt-3 text-sm text-[var(--semantic-danger)] bg-[oklch(0.97_0.04_25)] dark:bg-[oklch(0.3_0.08_25)] rounded px-2 py-1.5">
+          {error}
         </p>
-        {error && (
-          <p className="mt-3 text-sm text-red-600 bg-red-50 rounded px-2 py-1.5">
-            {error}
-          </p>
-        )}
-        <div className="flex gap-2 mt-5">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={onCancel}
-            disabled={submitting}
-          >
-            取消
-          </Button>
-          <Button
-            className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-            onClick={doDelete}
-            disabled={submitting}
-          >
-            {submitting ? "删除中…" : "确认删除"}
-          </Button>
-        </div>
-      </div>
-    </div>
+      )}
+    </ConfirmDialog>
   );
 }

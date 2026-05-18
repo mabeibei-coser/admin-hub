@@ -70,7 +70,9 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        // 列标题语义：偏小字号 + 半重 + 微 tracking + muted color，
+        // 让 header 退到二级，body cell 才是主角
+        "h-10 px-2 text-left align-middle text-[11.5px] font-semibold tracking-wide whitespace-nowrap text-muted-foreground [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}

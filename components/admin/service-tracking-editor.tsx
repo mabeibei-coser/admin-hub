@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Loader2, AlertTriangle, UserCog, X } from "lucide-react";
+import { Pencil, Loader2, AlertTriangle, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import {
   SERVICE_CATEGORIES,
   SERVICE_STATUSES,
@@ -15,6 +16,7 @@ import {
 } from "@/lib/service-tracking";
 import { withBase } from "@/lib/url";
 import { StatusPill, type StatusTone } from "@/components/admin/status-pill";
+import { DataRow } from "@/components/admin/data-row";
 
 const CATEGORY_TONE: Record<ServiceCategory, StatusTone> = {
   easy: "info",
@@ -169,18 +171,18 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
     <div className="surface-panel p-5 relative">
       {/* Toast */}
       {toast && (
-        <div className="absolute top-3 right-3 px-3 py-1.5 bg-gray-900/90 text-white text-xs rounded-md shadow-lg animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="absolute top-3 right-3 px-3 py-1.5 bg-foreground/90 text-background text-xs rounded-md shadow-lg animate-in fade-in slide-in-from-top-1 duration-200">
           {toast}
         </div>
       )}
 
       {/* 标题行 */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-gray-700">服务详情</h2>
+        <h2 className="text-sm font-semibold text-foreground">服务详情</h2>
         {!editing ? (
           <button
             onClick={() => setEditing(true)}
-            className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+            className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md ring-1 ring-border text-foreground hover:bg-muted hover:ring-muted-foreground/30 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
           >
             <Pencil className="size-3" />
             编辑
@@ -216,18 +218,18 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
       </div>
 
       <div>
-        <Row label="服务对象">
-          <span className="text-gray-800">
+        <DataRow label="服务对象">
+          <span className="text-foreground">
             {initial.user_name || "—"}
           </span>
-          <span className="ml-2 text-xs tabular-nums text-gray-500">
+          <span className="ml-2 text-xs tabular-nums text-muted-foreground">
             {maskPhone(initial.user_phone)}
           </span>
-        </Row>
-        <Row label="转服务时间">
+        </DataRow>
+        <DataRow label="转服务时间">
           <span className="tabular-nums">{formatTs(initial.first_service_at)}</span>
-        </Row>
-        <Row label="服务分类">
+        </DataRow>
+        <DataRow label="服务分类">
           {editing ? (
             <div className="flex flex-wrap gap-2">
               {SERVICE_CATEGORIES.map((c) => (
@@ -236,7 +238,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
                   className={`px-3 py-1 rounded-md text-xs cursor-pointer transition-all duration-150 border ${
                     category === c.key
                       ? "ring-2 ring-[var(--blue-500)] bg-[var(--blue-50)] text-[var(--navy-800)] border-transparent"
-                      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                      : "border-border bg-card text-foreground hover:bg-muted"
                   }`}
                 >
                   <input
@@ -256,8 +258,8 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
               {categoryLabel(initial.service_category)}
             </StatusPill>
           )}
-        </Row>
-        <Row label="主服务人员">
+        </DataRow>
+        <DataRow label="主服务人员">
           {editing ? (
             <StaffSelect
               value={staff1Id}
@@ -269,8 +271,8 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
           ) : (
             <span>{initial.staff1_name || "—"}</span>
           )}
-        </Row>
-        <Row label="协同服务人员">
+        </DataRow>
+        <DataRow label="协同服务人员">
           {editing ? (
             <StaffSelect
               value={staff2Id}
@@ -283,13 +285,13 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
           ) : (
             <span>{initial.staff2_name || "—"}</span>
           )}
-        </Row>
-        <Row label="服务状态">
+        </DataRow>
+        <DataRow label="服务状态">
           {editing ? (
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as ServiceStatus)}
-              className="h-8 text-sm border border-input rounded-md px-2.5 bg-white w-full min-w-[5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+              className="h-8 text-sm border border-input rounded-md px-2.5 bg-card text-foreground w-full min-w-[5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             >
               {SERVICE_STATUSES.map((s) => (
                 <option key={s.key} value={s.key}>
@@ -302,53 +304,48 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
               {statusLabel(initial.status)}
             </StatusPill>
           )}
-        </Row>
+        </DataRow>
       </div>
 
       {editing && (
-        <p className="text-xs text-amber-700 mt-3 flex items-start gap-1">
+        <p className="text-xs text-[var(--semantic-warning)] mt-3 flex items-start gap-1">
           <AlertTriangle className="size-3 shrink-0 mt-0.5" />
           若把主/协同服务人员改成他人且你都不在其中，保存后你将立刻失去访问权。
         </p>
       )}
 
       {error && (
-        <p className="mt-3 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+        <p className="mt-3 text-sm text-[var(--semantic-danger)] bg-[oklch(0.97_0.04_25)] dark:bg-[oklch(0.3_0.08_25)] rounded-lg px-3 py-2">
           {error}
         </p>
       )}
 
       {/* 转交确认 modal */}
       {confirmHandoff && (
-        <ConfirmHandoffModal
+        <ConfirmDialog
+          icon={UserCog}
+          tone="warning"
+          title="转交确认"
+          confirmLabel="确认转交"
+          busy={submitting}
           onCancel={() => setConfirmHandoff(null)}
           onConfirm={() => {
             setConfirmHandoff(null);
             performSave({ skipHandoffWarn: true });
           }}
-          newStaff1Name={staffName(confirmHandoff.nextStaff1, null)}
-          newStaff2Name={
-            confirmHandoff.nextStaff2 === null
-              ? null
-              : staffName(confirmHandoff.nextStaff2, null)
-          }
-        />
+        >
+          <p>
+            您即将把这条记录转交给
+            <span className="font-medium text-foreground mx-1">
+              {staffName(confirmHandoff.nextStaff1, null)}
+              {confirmHandoff.nextStaff2 !== null
+                ? ` 与 ${staffName(confirmHandoff.nextStaff2, null)}`
+                : ""}
+            </span>
+            ，转交后您将不再能访问此记录。
+          </p>
+        </ConfirmDialog>
       )}
-    </div>
-  );
-}
-
-function Row({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex gap-3 py-2 border-b border-gray-50 last:border-0">
-      <span className="shrink-0 w-28 text-xs text-gray-500 pt-1">{label}</span>
-      <div className="flex-1 text-sm text-gray-800 break-words">{children}</div>
     </div>
   );
 }
@@ -372,11 +369,11 @@ function StaffSelect({
 }) {
   if (error) {
     return (
-      <span className="text-xs text-red-600">无法加载管理员列表</span>
+      <span className="text-xs text-[var(--semantic-danger)]">无法加载管理员列表</span>
     );
   }
   if (!admins) {
-    return <span className="text-xs text-gray-400">加载中…</span>;
+    return <span className="text-xs text-muted-foreground">加载中…</span>;
   }
   return (
     <select
@@ -384,7 +381,7 @@ function StaffSelect({
       onChange={(e) =>
         onChange(e.target.value === "" ? null : Number(e.target.value))
       }
-      className="h-8 text-sm border border-input rounded-md px-2.5 bg-white w-full min-w-[5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+      className="h-8 text-sm border border-input rounded-md px-2.5 bg-card text-foreground w-full min-w-[5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
     >
       {allowNone && <option value="">不指定</option>}
       {!allowNone && !required && <option value="">—</option>}
@@ -399,59 +396,3 @@ function StaffSelect({
   );
 }
 
-function ConfirmHandoffModal({
-  newStaff1Name,
-  newStaff2Name,
-  onCancel,
-  onConfirm,
-}: {
-  newStaff1Name: string;
-  newStaff2Name: string | null;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="fixed inset-0 bg-black/40" onClick={onCancel} />
-      <div className="relative z-10 w-full max-w-xs bg-white rounded-xl shadow-xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-full bg-amber-100">
-              <UserCog className="size-4 text-amber-600" />
-            </div>
-            <h3 className="text-base font-semibold text-gray-900">转交确认</h3>
-          </div>
-          <button
-            onClick={onCancel}
-            className="size-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        <p className="text-sm text-gray-700 leading-relaxed">
-          您即将把这条记录转交给
-          <span className="font-medium text-gray-900 mx-1">
-            {newStaff1Name}
-            {newStaff2Name ? ` 与 ${newStaff2Name}` : ""}
-          </span>
-          ，转交后您将不再能访问此记录。
-        </p>
-        <div className="flex gap-2 mt-5">
-          <Button variant="outline" className="flex-1" onClick={onCancel}>
-            取消
-          </Button>
-          <Button
-            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
-            onClick={onConfirm}
-          >
-            确认转交
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}

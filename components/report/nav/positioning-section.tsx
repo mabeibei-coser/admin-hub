@@ -146,7 +146,7 @@ function PositionCard({
     <Wrapper
       {...(motionProps as Record<string, unknown>)}
       className={cn(
-        "rounded-xl border bg-white p-5 break-inside-avoid",
+        "rounded-xl border bg-card p-5 break-inside-avoid",
         isPrimary
           ? "border-[var(--blue-500)] ring-1 ring-[var(--blue-500)]"
           : "border-[var(--blue-100)]"
@@ -159,7 +159,7 @@ function PositionCard({
             "shrink-0 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
             isPrimary
               ? "border-[var(--blue-500)] bg-[var(--blue-500)] text-white"
-              : "border-[var(--blue-200)] bg-white text-[var(--navy-700)]"
+              : "border-[var(--blue-200)] bg-card text-[var(--navy-700)]"
           )}
         >
           <Icon className="size-3" />
@@ -236,10 +236,10 @@ function PositionCard({
 
       {/* 特别注意 */}
       {rec.specialNote && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+        <div className="rounded-xl border border-[oklch(0.87_0.1_80)] bg-[oklch(0.97_0.05_80)]/60 p-4">
           <div className="flex items-center gap-1.5 mb-1.5">
             <svg
-              className="size-3.5 text-amber-600"
+              className="size-3.5 text-[var(--semantic-warning)]"
               viewBox="0 0 16 16"
               fill="none"
               aria-hidden
@@ -253,11 +253,11 @@ function PositionCard({
               <path d="M8 6v3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               <circle cx="8" cy="11" r="0.75" fill="currentColor" />
             </svg>
-            <span className="text-[12px] font-bold text-amber-700">
+            <span className="text-[12px] font-bold text-[var(--semantic-warning)]">
               特别注意
             </span>
           </div>
-          <p className="text-[13.5px] leading-[1.75] text-amber-900">
+          <p className="text-[13.5px] leading-[1.75] text-[oklch(0.35_0.12_80)]">
             {rec.specialNote}
           </p>
         </div>

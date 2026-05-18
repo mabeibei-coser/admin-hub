@@ -71,7 +71,7 @@ export function DataCard({
         }}
       />
       <div className="relative flex items-start justify-between gap-3">
-        <div className="text-[10.5px] text-gray-500 font-semibold tracking-[0.16em] uppercase pt-0.5 min-w-0 truncate">
+        <div className="text-[10.5px] text-muted-foreground font-semibold tracking-[0.16em] uppercase pt-0.5 min-w-0 truncate">
           {label}
         </div>
         {Icon && (
@@ -83,7 +83,7 @@ export function DataCard({
         )}
       </div>
       {loading || value === undefined || value === null ? (
-        <div className="h-10 w-20 bg-gray-100 rounded animate-pulse mt-4" />
+        <div className="h-10 w-20 bg-muted rounded animate-pulse mt-4" />
       ) : (
         <div className="flex items-baseline gap-1.5 mt-4">
           <div
@@ -94,7 +94,7 @@ export function DataCard({
             {value}
           </div>
           {trailingHint && (
-            <div className="text-xs text-gray-400 font-medium tabular-nums">
+            <div className="text-xs text-muted-foreground font-medium tabular-nums">
               {trailingHint}
             </div>
           )}
