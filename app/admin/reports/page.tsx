@@ -5,14 +5,11 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   FileText,
-  ChevronDown,
-  ChevronRight,
   RefreshCw,
   Inbox,
   ArrowRightCircle,
   Briefcase,
   Compass,
-  LayoutGrid,
   Sparkles,
   Clock,
   Calendar,
@@ -45,7 +42,11 @@ interface MeData {
   showService: boolean;
 }
 
-type ProjectFilter = ProjectId | "all";
+/**
+ * 「全部」tab 已下线（删除入口；API 仍兼容历史 ?project=all 请求）。
+ * 前端类型收窄为 report | nav，所有 "all" 分支已删除。
+ */
+type ProjectFilter = ProjectId;
 
 interface ReportRow {
   id: number;
@@ -105,33 +106,9 @@ const EDUCATION_LABELS: Record<string, string> = {
   master_plus: "硕士及以上",
 };
 
-const WORK_YEARS_LABELS: Record<string, string> = {
-  lt1: "0-1 年",
-  "1to3": "1-3 年",
-  "3to10": "3-10 年",
-  gt10: "10 年以上",
-};
-
-// 简历 AI 提取时可能把字段标签误当成姓名，过滤掉这些常见误识别值
-const NAME_BLACKLIST = new Set([
-  "投递职位", "邮箱", "手机号", "手机", "电话号码", "电话",
-  "姓名", "地址", "性别", "民族", "学历", "岗位", "邮件", "Email",
-]);
-function cleanName(v: string | null | undefined): string {
-  if (!v) return "—";
-  const trimmed = v.trim();
-  if (NAME_BLACKLIST.has(trimmed)) return "—";
-  return trimmed || "—";
-}
-
 function eduLabel(v: string | null | undefined): string {
   if (!v) return "—";
   return EDUCATION_LABELS[v] ?? v;
-}
-
-function workYearsLabel(v: string | null | undefined): string {
-  if (!v) return "—";
-  return WORK_YEARS_LABELS[v] ?? v;
 }
 
 function formatTs(ms: number) {
@@ -155,7 +132,6 @@ function ProjectBadge({ project }: { project: ProjectId }) {
 }
 
 function readProjectFromUrl(p: string | null): ProjectFilter {
-  // 「全部」tab 已下线（仅删除入口；后端 API 还兼容 project=all）。
   // 历史链接 ?project=all 或不带参数时一律落到职业定位。
   if (p === "report" || p === "nav") return p;
   return "report";
@@ -190,7 +166,6 @@ function AdminReportsContent() {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedRow, setExpandedRow] = useState<string | null>(null); // id+project key
 
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -226,10 +201,9 @@ function AdminReportsContent() {
     });
   }, []);
 
-  // 切 project 时重置分页 + 收起 expand + 清空 tab 专属筛选（保留通用的 from/to/position）
+  // 切 project 时重置分页 + 清空 tab 专属筛选（保留通用的 from/to/position）
   useEffect(() => {
     setPage(1);
-    setExpandedRow(null);
     setHasResume("");
     setName("");
     setPhone("");
@@ -305,25 +279,19 @@ function AdminReportsContent() {
     transferStatus
   );
 
-  // 表格列模式：tab=all 时只显示通用列 + 展开按钮；单项目时显示项目专属列
-  const showProjectSpecific = project !== "all";
   // 只在 navReady===false 时提示（避免 pm2 重启首次请求的短暂 false 污染状态）
   const navDegraded = data && !data.navReady;
 
-  // 列定义（通用 + 项目专属）
-  // 通用列把"姓名"+"手机号"放在"时间"之后（report 项目没这俩字段，显示 "—"）
+  // 列定义（项目专属）
   const columns = useMemo(() => {
     if (project === "report")
       return ["时间", "姓名", "手机号", "项目", "岗位", "学历", "公司", "城市", "简历", "耗时", "操作"];
     // 职业导航：HR 关心节奏 + 用户身份 + 服务转化状态
-    if (project === "nav")
-      return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
-    return ["时间", "姓名", "手机号", "项目", "岗位", "耗时", "详情"]; // all
+    return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
   }, [project]);
 
   // 当前 project 的中文显示（标题用）
-  const currentProjectLabel =
-    project === "all" ? "全部报告" : `${PROJECTS[project as ProjectId].label}报告`;
+  const currentProjectLabel = `${PROJECTS[project].label}报告`;
 
   return (
     <div className="p-6">
@@ -340,22 +308,10 @@ function AdminReportsContent() {
       <div className="max-w-7xl mx-auto space-y-5">
         {/* 标题 — 统一 PageHeader（圆形 icon avatar + 顶部装饰条） */}
         <PageHeader
-          icon={
-            project === "nav"
-              ? Compass
-              : project === "report"
-              ? Briefcase
-              : LayoutGrid
-          }
+          icon={project === "nav" ? Compass : Briefcase}
           title={currentProjectLabel}
-          subtitle={
-            project !== "all"
-              ? PROJECTS[project as ProjectId].description ?? null
-              : "两个项目报告聚合视图"
-          }
-          accentColor={
-            project === "nav" ? "green" : project === "report" ? "blue" : "neutral"
-          }
+          subtitle={PROJECTS[project].description ?? null}
+          accentColor={project === "nav" ? "green" : "blue"}
         />
 
         {/* nav 降级提示 */}
@@ -497,24 +453,25 @@ function AdminReportsContent() {
           </div>
         </div>
 
-        {/* 表格 */}
-        <div className="surface-panel overflow-hidden">
-          {error && (
-            <div className="p-4 text-sm text-red-600 border-b border-red-100 bg-red-50 flex items-center justify-between">
-              <span>加载失败：{error}</span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={fetch_}
-                className="h-7 text-xs"
-              >
+        {/* 错误提示（桌面/移动共用） */}
+        {error && (
+          <Alert
+            tone="error"
+            action={
+              <Button size="sm" variant="outline" onClick={fetch_} className="h-7 text-xs">
                 <RefreshCw className="size-3 mr-1" />
                 重试
               </Button>
-            </div>
-          )}
+            }
+          >
+            加载失败：{error}
+          </Alert>
+        )}
+
+        {/* 桌面表格 */}
+        <div className="surface-panel overflow-hidden hidden md:block">
           <Table>
-            <TableHeader className="sticky top-0 bg-white z-10">
+            <TableHeader>
               <TableRow className="text-xs text-gray-500 border-b border-[var(--report-border)]">
                 {columns.map((c) => (
                   <TableHead
@@ -548,35 +505,65 @@ function AdminReportsContent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                data?.rows.map((row) => {
-                  const rowKey = `${row.project}-${row.id}`;
-                  const expanded = expandedRow === rowKey;
-                  return (
-                    <ReportRowItem
-                      key={rowKey}
-                      row={row}
-                      project={project}
-                      showProjectSpecific={showProjectSpecific}
-                      expanded={expanded}
-                      onToggleExpand={() =>
-                        setExpandedRow((prev) => (prev === rowKey ? null : rowKey))
-                      }
-                      onTransfer={handleTransfer}
-                      navReady={data?.navReady ?? true}
-                    />
-                  );
-                })
+                data?.rows.map((row) => (
+                  <ReportRowItem
+                    key={`${row.project}-${row.id}`}
+                    row={row}
+                    project={project}
+                    onTransfer={handleTransfer}
+                    navReady={data?.navReady ?? true}
+                  />
+                ))
               )}
             </TableBody>
           </Table>
 
-          {/* 分页 */}
           {data && (
             <Pagination
               page={page}
               totalPages={totalPages}
               total={data.total}
               onPageChange={setPage}
+            />
+          )}
+        </div>
+
+        {/* 移动卡片视图 */}
+        <div className="md:hidden surface-panel overflow-hidden">
+          {loading ? (
+            <div className="divide-y divide-[var(--report-divider)]">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-4">
+                  <div className="h-4 w-32 bg-gray-100 rounded animate-pulse mb-2" />
+                  <div className="h-3 w-48 bg-gray-100 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          ) : data?.rows.length === 0 ? (
+            <div className="py-16">
+              <EmptyState
+                hasFilters={hasFilters}
+                project={project}
+                onReset={resetFilters}
+              />
+            </div>
+          ) : (
+            <div className="divide-y divide-[var(--report-divider)]">
+              {data?.rows.map((row) => (
+                <ReportMobileCard
+                  key={`m-${row.project}-${row.id}`}
+                  row={row}
+                />
+              ))}
+            </div>
+          )}
+          {data && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={data.total}
+              onPageChange={setPage}
+              compact
             />
           )}
         </div>
@@ -644,7 +631,7 @@ function KpiStrip({
         highlight
       />
       <DataCard
-        label={project === "all" ? "累计 (两项目合计)" : "累计总数"}
+        label="累计总数"
         value={data?.stats.total}
         icon={Inbox}
         loading={skeleton}
@@ -703,9 +690,7 @@ function EmptyState({
       </div>
       <div className="space-y-0.5">
         <p className="text-sm text-gray-600">
-          {project === "all"
-            ? "还没有人提交报告"
-            : `${PROJECTS[project as ProjectId].label} 暂无报告`}
+          {PROJECTS[project].label} 暂无报告
         </p>
         <p className="text-xs text-gray-400">
           当用户完成测评后，结果会出现在这里
@@ -715,82 +700,21 @@ function EmptyState({
   );
 }
 
-/** 单行：根据 project filter 渲染对应列；tab=all 时只显示通用 + 展开按钮 */
+/** 单行：根据 project filter 渲染对应列 */
 function ReportRowItem({
   row,
   project,
-  showProjectSpecific,
-  expanded,
-  onToggleExpand,
   onTransfer,
   navReady,
 }: {
   row: ReportRow;
   project: ProjectFilter;
-  showProjectSpecific: boolean;
-  expanded: boolean;
-  onToggleExpand: () => void;
   onTransfer: (row: ReportRow) => void;
   navReady: boolean;
 }) {
-  void PROJECTS[row.project]; // 保留 import 引用（meta 此处暂不直接展示）
   const durationCell = row.duration_ms
     ? `${Math.round(row.duration_ms / 1000)}s`
     : "—";
-
-  if (!showProjectSpecific) {
-    // tab=all：通用列（时间/姓名/手机号/项目/岗位/耗时/详情）+ 展开按钮
-    return (
-      <>
-        <TableRow
-          className="text-sm cursor-pointer hover:bg-[var(--blue-50)]/40 transition-colors duration-150"
-          onClick={onToggleExpand}
-        >
-          <TableCell className="tabular-nums text-xs text-gray-500 whitespace-nowrap">
-            {formatTs(row.created_at)}
-          </TableCell>
-          <TableCell className="text-gray-700 max-w-[100px] truncate">
-            {cleanName(row.user_name)}
-          </TableCell>
-          <TableCell className="tabular-nums text-xs text-gray-600 whitespace-nowrap">
-            {row.user_phone || "—"}
-          </TableCell>
-          <TableCell>
-            <ProjectBadge project={row.project} />
-          </TableCell>
-          <TableCell className="font-medium max-w-[180px] truncate">
-            {row.target_position}
-          </TableCell>
-          <TableCell className="tabular-nums text-xs text-gray-500 whitespace-nowrap">
-            {durationCell}
-          </TableCell>
-          <TableCell>
-            <div className="flex items-center justify-center gap-2">
-              <Link
-                href={`/admin/reports/${row.id}?project=${row.project}`}
-                className="inline-flex items-center justify-center min-h-[28px] sm:min-h-0 text-xs px-2.5 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
-                onClick={(e) => e.stopPropagation()}
-              >
-                详情
-              </Link>
-              {expanded ? (
-                <ChevronDown className="size-4 text-gray-400" />
-              ) : (
-                <ChevronRight className="size-4 text-gray-400" />
-              )}
-            </div>
-          </TableCell>
-        </TableRow>
-        {expanded && (
-          <TableRow className="bg-gray-50/50">
-            <TableCell colSpan={7} className="px-4 py-3 text-xs">
-              <ExpandedDetails row={row} />
-            </TableCell>
-          </TableRow>
-        )}
-      </>
-    );
-  }
 
   // tab=report：全列
   if (project === "report") {
@@ -960,74 +884,45 @@ function RowActions({
   );
 }
 
-function ExpandedDetails({ row }: { row: ReportRow }) {
-  if (row.project === "report") {
-    return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-gray-600">
-        <div>
-          <span className="text-gray-400">学历：</span>
-          {eduLabel(row.target_education)}
-        </div>
-        <div>
-          <span className="text-gray-400">公司：</span>
-          {row.target_company ?? "—"}
-        </div>
-        <div>
-          <span className="text-gray-400">城市：</span>
-          {row.target_city_tier ?? "—"}
-        </div>
-        <div>
-          <span className="text-gray-400">简历：</span>
-          {row.has_resume ? (
-            <a
-              href={withBase(`/api/admin/reports/${row.id}/resume?project=${row.project}`)}
-              download
-              className="text-[var(--blue-700)] hover:underline"
-            >
-              下载
-            </a>
-          ) : (
-            "无"
+/** 移动端单卡 — 信息密度压缩，整卡 link 到详情页 */
+function ReportMobileCard({ row }: { row: ReportRow }) {
+  const transferred = row.tracking_id != null;
+  const durationSec = row.duration_ms
+    ? `${Math.round(row.duration_ms / 1000)}s`
+    : null;
+  return (
+    <Link
+      href={`/admin/reports/${row.id}?project=${row.project}`}
+      className="block p-4 hover:bg-[var(--blue-50)]/40 active:bg-[var(--blue-100)]/50 transition-colors"
+    >
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className="font-medium text-gray-900 truncate min-w-0">
+          {row.user_name || "—"}
+        </span>
+        <span className="text-xs text-gray-500 tabular-nums shrink-0">
+          {row.user_phone || "—"}
+        </span>
+      </div>
+      <div className="text-sm text-gray-700 truncate mb-1.5">
+        {row.target_position}
+      </div>
+      <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+        <span className="tabular-nums">{formatTs(row.created_at)}</span>
+        <div className="flex items-center gap-2">
+          {row.has_resume === 1 && (
+            <span className="inline-flex items-center gap-0.5 text-[var(--semantic-positive)]">
+              <FileText className="size-3" />简历
+            </span>
+          )}
+          {durationSec && <span className="tabular-nums">{durationSec}</span>}
+          {row.project === "nav" && (
+            <span
+              aria-label={transferred ? "已转入服务" : "未转入"}
+              className={`size-2 rounded-full ${transferred ? "bg-[var(--semantic-positive)] shadow-[0_0_0_2px_oklch(0.72_0.18_155_/_0.22)]" : "bg-gray-300"}`}
+            />
           )}
         </div>
       </div>
-    );
-  }
-  // nav
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-gray-600">
-      <div>
-        <span className="text-gray-400">用户身份：</span>
-        {row.user_identity
-          ? IDENTITY_LABELS[row.user_identity] ?? row.user_identity
-          : "—"}
-      </div>
-      <div>
-        <span className="text-gray-400">学历：</span>
-        {eduLabel(row.target_education)}
-      </div>
-      <div>
-        <span className="text-gray-400">工作年限：</span>
-        {workYearsLabel(row.work_years)}
-      </div>
-      <div>
-        <span className="text-gray-400">手机号：</span>
-        {row.user_phone || "—"}
-      </div>
-      <div>
-        <span className="text-gray-400">简历：</span>
-        {row.has_resume ? (
-          <a
-            href={withBase(`/api/admin/reports/${row.id}/resume?project=${row.project}`)}
-            download
-            className="text-[var(--blue-700)] hover:underline"
-          >
-            下载
-          </a>
-        ) : (
-          "无"
-        )}
-      </div>
-    </div>
+    </Link>
   );
 }
