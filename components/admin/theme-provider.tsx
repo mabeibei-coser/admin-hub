@@ -56,8 +56,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // 首次 mount: 读 localStorage + 应用
   useEffect(() => {
     const stored = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "system";
+    // SSR 不能访问 localStorage，必须先用默认 light 渲染、mount 后再同步真实主题（见上方注释「先用最简单方案」）
+    /* eslint-disable react-hooks/set-state-in-effect */
     setThemeState(stored);
     setResolvedTheme(applyTheme(stored));
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   // theme=system 时跟随 OS 切换

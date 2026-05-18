@@ -99,7 +99,8 @@ export function AdminForm(props: AdminFormProps) {
     defaultValues: defaultVals as FormValues,
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // react-hook-form's watch() is incompatible with React Compiler; we accept that here.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, react-hooks/incompatible-library
   const selectedMenus: string[] = watch("menus" as any) ?? [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const isActive: boolean = isEdit ? (watch("is_active" as any) ?? true) : true;

@@ -23,8 +23,11 @@ export function DownloadPDFButton({ report }: Props) {
   // 启动 Puppeteer 后台渲染。点击时 GET /pdf?token=xxx，已完成秒出，未完成 hold 住等完成。
   useEffect(() => {
     cancelledRef.current = false;
+    // mount/retry 时重置状态 + 异步 prep，必须响应 prepEpoch（重试按钮）和 report 变化
+    /* eslint-disable react-hooks/set-state-in-effect */
     setStatus("preparing");
     setErrorMsg(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     (async () => {
       try {
@@ -56,7 +59,7 @@ export function DownloadPDFButton({ report }: Props) {
     };
     // 依赖 prepEpoch：点"重试"按钮时自增 → 触发新一轮 prep
     // report 引用变化也会重跑，保证 reportData 最新
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [prepEpoch, report]);
 
   const onClick = () => {

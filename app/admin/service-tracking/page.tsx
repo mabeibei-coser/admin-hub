@@ -156,6 +156,8 @@ function ListContent() {
   // 姓名搜索本地态：URL 同步走 onBlur / Enter，不打字时同步避免每按一键 fetch
   const [nameInput, setNameInput] = useState(nameParam);
   useEffect(() => {
+    // 同步 URL 参数到 input（外部状态 → 内部态），不会形成循环因为只在 nameParam 真变化时触发
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNameInput(nameParam);
   }, [nameParam]);
 
@@ -194,6 +196,8 @@ function ListContent() {
   }, [statusParam, categoryParam, nameParam, dateFromParam, dateToParam, pageParam]);
 
   useEffect(() => {
+    // 筛选条件变化时重新拉列表 + 统计
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetch_();
   }, [fetch_]);
 
