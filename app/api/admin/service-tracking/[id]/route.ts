@@ -86,7 +86,7 @@ export async function GET(
 
 /**
  * PATCH /api/admin/service-tracking/[id]
- * 可改字段：service_category, status, overall_note, staff1_admin_id, staff2_admin_id
+ * 可改字段：user_name, service_category, status, overall_note, staff1_admin_id, staff2_admin_id
  *
  * 采用原子 UPDATE WHERE id = ? AND (staff1 = ? OR staff2 = ?)（EC2），
  * `changes === 0` → 404 (id 不存在) 或 403 (无权)
@@ -114,6 +114,23 @@ export async function PATCH(
   // 收集要改的字段
   const sets: string[] = [];
   const sqlParams: Array<string | number | null> = [];
+
+  if (body.user_name !== undefined) {
+    const raw = body.user_name;
+    if (raw === null) {
+      sets.push("user_name = ?");
+      sqlParams.push(null);
+    } else if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (trimmed.length > 100) {
+        return NextResponse.json({ error: "服务对象名称过长（最多 100 字）" }, { status: 400 });
+      }
+      sets.push("user_name = ?");
+      sqlParams.push(trimmed === "" ? null : trimmed);
+    } else {
+      return NextResponse.json({ error: "服务对象格式错误" }, { status: 400 });
+    }
+  }
 
   if (body.service_category !== undefined) {
     const cat = String(body.service_category);

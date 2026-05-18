@@ -71,6 +71,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
   const [toast, setToast] = useState<string | null>(null);
 
   // 编辑状态字段
+  const [userName, setUserName] = useState<string>(initial.user_name ?? "");
   const [category, setCategory] = useState<ServiceCategory>(initial.service_category);
   const [status, setStatus] = useState<ServiceStatus>(initial.status);
   const [staff1Id, setStaff1Id] = useState<number>(initial.staff1_admin_id);
@@ -101,6 +102,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
   function cancel() {
     setEditing(false);
     setError(null);
+    setUserName(initial.user_name ?? "");
     setCategory(initial.service_category);
     setStatus(initial.status);
     setStaff1Id(initial.staff1_admin_id);
@@ -133,6 +135,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          user_name: userName.trim() === "" ? null : userName.trim(),
           service_category: category,
           status,
           staff1_admin_id: staff1Id,
@@ -222,12 +225,30 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
 
       <div>
         <DataRow label="服务对象">
-          <span className="text-foreground">
-            {initial.user_name || "—"}
-          </span>
-          <span className="ml-2 text-xs tabular-nums text-muted-foreground">
-            {maskPhone(initial.user_phone)}
-          </span>
+          {editing ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                maxLength={100}
+                placeholder="服务对象名称"
+                className="h-8 text-sm border border-input rounded-md px-2.5 bg-card text-foreground flex-1 min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+              />
+              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                {maskPhone(initial.user_phone)}
+              </span>
+            </div>
+          ) : (
+            <>
+              <span className="text-foreground">
+                {initial.user_name || "—"}
+              </span>
+              <span className="ml-2 text-xs tabular-nums text-muted-foreground">
+                {maskPhone(initial.user_phone)}
+              </span>
+            </>
+          )}
         </DataRow>
         <DataRow label="转服务时间">
           <span className="tabular-nums">{formatTs(initial.first_service_at)}</span>
