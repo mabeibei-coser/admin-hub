@@ -25,7 +25,8 @@ export async function proxy(req: NextRequest) {
   if (
     normalized === "/admin/login" ||
     normalized === "/api/admin/login" ||
-    normalized === "/api/admin/captcha"
+    normalized === "/api/admin/captcha" ||
+    normalized === "/api/admin/health"
   ) {
     return NextResponse.next();
   }

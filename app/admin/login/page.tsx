@@ -86,11 +86,9 @@ export default function AdminLoginPage() {
         </div>
       </header>
 
-      {/* 右上角运行状态 */}
-      <div className="absolute top-8 right-8 hidden sm:flex items-center gap-2 text-[11px] text-white/60 z-10">
-        <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_oklch(0.7_0.18_155)]" />
-        <span>系统运行正常</span>
-      </div>
+      {/* 右上角运行状态 — 走 /api/admin/health, 不再是 review L-02 指出的静态装饰 */}
+      <HealthIndicator />
+
 
       {/* —— 中央 form 卡片：glassmorphism —— */}
       <div className="relative z-10 w-full max-w-[400px]">
@@ -251,6 +249,65 @@ export default function AdminLoginPage() {
           </>
         )}
       </footer>
+    </div>
+  );
+}
+
+/**
+ * 健康状态指示器 — 调用 /api/admin/health。
+ * - 加载中：暗灰点 + "检测中…"
+ * - healthy：绿点发光 + "系统运行正常"
+ * - degraded：amber 点 + "部分功能不可用"（nav DB 无）
+ * - unhealthy：rose 点 + "系统异常"
+ *
+ * 不阻塞登录 — 即使 health 失败用户也能提交表单。
+ */
+function HealthIndicator() {
+  const [state, setState] = useState<
+    "loading" | "healthy" | "degraded" | "unhealthy"
+  >("loading");
+
+  useEffect(() => {
+    let alive = true;
+    fetch(withBase("/api/admin/health"))
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((d) => {
+        if (!alive) return;
+        setState(d.status === "healthy" ? "healthy" : "degraded");
+      })
+      .catch(() => alive && setState("unhealthy"));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const cfg = {
+    loading: {
+      dot: "bg-white/30",
+      glow: "",
+      label: "检测中…",
+    },
+    healthy: {
+      dot: "bg-emerald-400",
+      glow: "shadow-[0_0_8px_oklch(0.7_0.18_155)]",
+      label: "系统运行正常",
+    },
+    degraded: {
+      dot: "bg-amber-400",
+      glow: "shadow-[0_0_8px_oklch(0.78_0.16_70)]",
+      label: "部分功能不可用",
+    },
+    unhealthy: {
+      dot: "bg-rose-400",
+      glow: "shadow-[0_0_8px_oklch(0.7_0.18_25)]",
+      label: "系统异常",
+    },
+  }[state];
+
+  return (
+    <div className="absolute top-8 right-8 hidden sm:flex items-center gap-2 text-[11px] text-white/60 z-10">
+      <span className={`size-1.5 rounded-full ${cfg.dot} ${cfg.glow}`} />
+      <span>{cfg.label}</span>
     </div>
   );
 }
