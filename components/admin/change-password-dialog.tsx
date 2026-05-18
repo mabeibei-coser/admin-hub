@@ -93,8 +93,8 @@ export function ChangePasswordDialog({ open, onClose }: ChangePasswordDialogProp
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-full bg-blue-100">
-              <KeyRound className="size-4 text-blue-600" />
+            <div className="flex size-8 items-center justify-center rounded-full bg-[var(--blue-100)]">
+              <KeyRound className="size-4 text-[var(--blue-700)]" />
             </div>
             <h2 id="change-pwd-title" className="text-base font-semibold text-gray-900">
               修改密码
@@ -171,7 +171,7 @@ export function ChangePasswordDialog({ open, onClose }: ChangePasswordDialogProp
               </Button>
               <Button
                 type="submit"
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 btn-primary-glow text-white"
                 disabled={loading || !oldPassword || !newPassword || !confirmPassword}
               >
                 {loading ? "提交中…" : "确认修改"}

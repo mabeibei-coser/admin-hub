@@ -150,7 +150,7 @@ export default function AdminsPage() {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-gray-600">还没有管理员</p>
-              <Link href="/admin/admins/new" className="inline-block text-xs text-blue-600 hover:underline">
+              <Link href="/admin/admins/new" className="inline-block text-xs text-[var(--blue-700)] hover:underline">
                 立即新建第一个
               </Link>
             </div>

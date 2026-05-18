@@ -277,7 +277,7 @@ export default async function ReportDetailPage({
                 <Link
                   href={`/admin/reports/${String(row.id as number)}/preview?project=${project}`}
                   target="_blank"
-                  className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                  className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
                 >
                   <Download className="size-3.5" />
                   {project === "nav" ? "职业导航报告" : "职业定位报告"}

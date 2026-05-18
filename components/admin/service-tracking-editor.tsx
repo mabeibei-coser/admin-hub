@@ -200,7 +200,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
               size="sm"
               onClick={() => performSave()}
               disabled={submitting}
-              className="h-7 text-xs px-2.5 bg-blue-600 hover:bg-blue-700"
+              className="h-7 text-xs px-2.5 btn-primary-glow text-white"
             >
               {submitting ? (
                 <>
@@ -235,7 +235,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
                   key={c.key}
                   className={`px-3 py-1 rounded-md text-xs cursor-pointer transition-all duration-150 border ${
                     category === c.key
-                      ? "ring-2 ring-blue-500 bg-blue-50 text-blue-800 border-transparent"
+                      ? "ring-2 ring-[var(--blue-500)] bg-[var(--blue-50)] text-[var(--navy-800)] border-transparent"
                       : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >

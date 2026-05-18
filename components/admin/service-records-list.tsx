@@ -71,7 +71,7 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
         {!adding && (
           <button
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-blue-700 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+            className="inline-flex items-center gap-1 bg-[var(--blue-700)] text-white text-xs px-3 py-1.5 rounded-md hover:bg-[var(--blue-600)] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
           >
             <Plus className="size-3" />
             新增记录
@@ -162,7 +162,7 @@ export function ServiceRecordsList({ trackingId, initial }: Props) {
                             `/api/admin/service-tracking/${trackingId}/records/${r.id}/attachments/${a.id}`,
                           )}
                           download={a.filename}
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-white ring-1 ring-gray-200 text-gray-700 hover:bg-blue-50 hover:ring-blue-300 hover:text-blue-700 transition-colors max-w-[18rem]"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-white ring-1 ring-gray-200 text-gray-700 hover:bg-[var(--blue-50)] hover:ring-[var(--blue-300)] hover:text-[var(--blue-700)] transition-colors max-w-[18rem]"
                           title={`${a.filename} (${formatSize(a.size)})`}
                         >
                           <Paperclip className="size-3 shrink-0" />
@@ -411,7 +411,7 @@ function RecordForm({
           type="button"
           onClick={submit}
           disabled={submitting || uploading}
-          className="flex-1 bg-blue-600 hover:bg-blue-700"
+          className="flex-1 btn-primary-glow text-white"
         >
           {submitting ? (
             <>

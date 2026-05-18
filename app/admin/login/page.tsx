@@ -239,11 +239,17 @@ export default function AdminLoginPage() {
         </div>
       </div>
 
-      {/* 底部 copyright */}
+      {/* 底部 copyright — 版本号由 next.config.ts 编译时注入 (NEXT_PUBLIC_APP_VERSION) */}
       <footer className="absolute bottom-5 left-0 right-0 flex items-center justify-center gap-3 text-[11px] text-white/35 z-10">
         <span>© {new Date().getFullYear()} 谨世 ATA · admin-hub</span>
-        <span className="hidden sm:inline text-white/20">·</span>
-        <span className="hidden sm:inline tabular-nums">v0.1.19</span>
+        {process.env.NEXT_PUBLIC_APP_VERSION && (
+          <>
+            <span className="hidden sm:inline text-white/20">·</span>
+            <span className="hidden sm:inline tabular-nums">
+              v{process.env.NEXT_PUBLIC_APP_VERSION}
+            </span>
+          </>
+        )}
       </footer>
     </div>
   );

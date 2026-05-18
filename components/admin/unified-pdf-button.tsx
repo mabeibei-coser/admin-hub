@@ -32,7 +32,7 @@ export function UnifiedPDFButton({ project, reportId, hasData }: Props) {
     <button
       type="button"
       onClick={handleClick}
-      className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg font-medium transition-colors print:hidden"
+      className="btn-primary-glow inline-flex items-center gap-1.5 px-4 py-2 text-white text-sm rounded-lg font-medium transition-colors print:hidden"
     >
       <Printer className="size-4" />
       {label}

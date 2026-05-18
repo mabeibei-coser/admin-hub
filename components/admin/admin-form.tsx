@@ -341,7 +341,7 @@ export function AdminForm(props: AdminFormProps) {
         </Button>
         <Button
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700"
+          className="btn-primary-glow text-white"
           disabled={isSubmitting}
         >
           {isSubmitting ? "保存中…" : "保存"}
