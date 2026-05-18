@@ -93,7 +93,7 @@ const COLUMNS = [
   "服务项目",
   "服务分类",
   "首次服务时间",
-  "最新服务记录",
+  "更新日期",
   "服务状态",
   "转入人",
   "操作",
@@ -284,6 +284,26 @@ function ListContent() {
         {/* 筛选 — Tabler 风：包成轻卡 */}
         <div className="surface-panel p-4 flex flex-wrap gap-3 items-end">
           <div>
+            <div className="text-xs text-muted-foreground mb-1">首次服务起始时间</div>
+            <input
+              type="date"
+              value={dateFromParam}
+              max={dateToParam || undefined}
+              onChange={(e) => updateParam("date_from", e.target.value)}
+              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+            />
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">首次服务截止时间</div>
+            <input
+              type="date"
+              value={dateToParam}
+              min={dateFromParam || undefined}
+              onChange={(e) => updateParam("date_to", e.target.value)}
+              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+            />
+          </div>
+          <div>
             <div className="text-xs text-muted-foreground mb-1">服务状态</div>
             <select
               value={statusParam ?? ""}
@@ -312,26 +332,6 @@ function ListContent() {
                 </option>
               ))}
             </select>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground mb-1">首次服务起始</div>
-            <input
-              type="date"
-              value={dateFromParam}
-              max={dateToParam || undefined}
-              onChange={(e) => updateParam("date_from", e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
-            />
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground mb-1">首次服务截止</div>
-            <input
-              type="date"
-              value={dateToParam}
-              min={dateFromParam || undefined}
-              onChange={(e) => updateParam("date_to", e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
-            />
           </div>
           <div>
             <div className="text-xs text-muted-foreground mb-1">姓名</div>
@@ -385,7 +385,7 @@ function ListContent() {
                 {COLUMNS.map((c) => (
                   <TableHead
                     key={c}
-                    className={c === "操作" ? "text-right" : ""}
+                    className={c === "操作" ? "text-center" : ""}
                   >
                     {c}
                   </TableHead>
@@ -430,8 +430,8 @@ function ListContent() {
                     <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
                       {formatTs(row.first_service_at)}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                      {formatRelative(row.last_service_at)}
+                    <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+                      {row.last_service_at ? formatTs(row.last_service_at) : "—"}
                     </TableCell>
                     <TableCell>
                       <StatusBadge value={row.status} />
@@ -439,7 +439,7 @@ function ListContent() {
                     <TableCell className="text-xs text-muted-foreground">
                       {row.recorder_name || "—"}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-center">
                       <div className="inline-flex items-center gap-1.5">
                         <a
                           href={withBase(
