@@ -3,8 +3,24 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Inbox, RefreshCw, ArrowRightCircle, FileText, FolderOpen, Pencil, AlertTriangle, LifeBuoy } from "lucide-react";
+import {
+  Inbox,
+  RefreshCw,
+  ArrowRightCircle,
+  FileText,
+  FolderOpen,
+  Pencil,
+  LifeBuoy,
+  LayoutGrid,
+  CalendarPlus,
+  Activity,
+  AlertCircle,
+} from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
+import { DataCard } from "@/components/admin/data-card";
+import { Alert } from "@/components/admin/alert";
+import { Pagination } from "@/components/admin/pagination";
+import { StatusPill, type StatusTone } from "@/components/admin/status-pill";
 import {
   Table,
   TableBody,
@@ -19,14 +35,27 @@ import {
   SERVICE_STATUSES,
   categoryLabel,
   statusLabel,
-  CATEGORY_BADGE_CLASS,
-  STATUS_BADGE_CLASS,
   formatRelative,
   type ServiceCategory,
   type ServiceStatus,
 } from "@/lib/service-tracking";
 import { SERVICE_PROJECT_LABELS } from "@/lib/service-tracking";
 import { withBase } from "@/lib/url";
+
+/** 服务分类映射到 StatusPill tone。原 CATEGORY_BADGE_CLASS 是 raw tailwind，弃用。 */
+const CATEGORY_TONE: Record<ServiceCategory, StatusTone> = {
+  easy: "info",
+  moderate: "info",
+  hard: "warning",
+  priority: "danger",
+  safety_net: "neutral",
+};
+
+/** 服务状态映射到 StatusPill tone。原 STATUS_BADGE_CLASS 弃用。 */
+const STATUS_TONE: Record<ServiceStatus, StatusTone> = {
+  in_progress: "info",
+  completed: "success",
+};
 
 interface ListRow {
   id: number;
@@ -216,14 +245,34 @@ function ListContent() {
           accentColor="blue"
         />
 
-        {/* 数据看板 */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="总数" value={stats?.total} loading={loading} accent="blue" />
-          <StatCard label="本月新增" value={stats?.monthNew} loading={loading} accent="emerald" />
-          <StatCard label="进行中" value={stats?.inProgress} loading={loading} accent="sky" />
-          <StatCard
+        {/* 数据看板 — 统一 DataCard */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <DataCard
+            label="总数"
+            value={stats?.total}
+            icon={LayoutGrid}
+            loading={loading}
+            accent="blue"
+            highlight
+          />
+          <DataCard
+            label="本月新增"
+            value={stats?.monthNew}
+            icon={CalendarPlus}
+            loading={loading}
+            accent="green"
+          />
+          <DataCard
+            label="进行中"
+            value={stats?.inProgress}
+            icon={Activity}
+            loading={loading}
+            accent="sky"
+          />
+          <DataCard
             label="预警"
             value={stats?.warning}
+            icon={AlertCircle}
             loading={loading}
             accent="rose"
             hint="状态跟进中 且 14 天未新增服务记录"
@@ -237,7 +286,7 @@ function ListContent() {
             <select
               value={statusParam ?? ""}
               onChange={(e) => updateParam("status", e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             >
               <option value="">全部</option>
               {SERVICE_STATUSES.map((s) => (
@@ -252,7 +301,7 @@ function ListContent() {
             <select
               value={categoryParam ?? ""}
               onChange={(e) => updateParam("category", e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             >
               <option value="">全部</option>
               {SERVICE_CATEGORIES.map((c) => (
@@ -269,7 +318,7 @@ function ListContent() {
               value={dateFromParam}
               max={dateToParam || undefined}
               onChange={(e) => updateParam("date_from", e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             />
           </div>
           <div>
@@ -279,7 +328,7 @@ function ListContent() {
               value={dateToParam}
               min={dateFromParam || undefined}
               onChange={(e) => updateParam("date_to", e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             />
           </div>
           <div>
@@ -296,7 +345,7 @@ function ListContent() {
                   commitNameSearch();
                 }
               }}
-              className="h-8 w-32 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+              className="h-8 w-32 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             />
           </div>
           {hasAnyFilter && (
@@ -311,20 +360,26 @@ function ListContent() {
           )}
         </div>
 
-        {/* 桌面 Table */}
-        <div className="surface-panel overflow-hidden hidden md:block">
-          {error && (
-            <div className="p-4 text-sm text-red-600 border-b border-red-100 bg-red-50 flex items-center justify-between">
-              <span>加载失败：{error}</span>
+        {/* 错误提示（桌面/移动共用） */}
+        {error && (
+          <Alert
+            tone="error"
+            action={
               <Button size="sm" variant="outline" onClick={fetch_} className="h-7 text-xs">
                 <RefreshCw className="size-3 mr-1" />
                 重试
               </Button>
-            </div>
-          )}
+            }
+          >
+            加载失败：{error}
+          </Alert>
+        )}
+
+        {/* 桌面 Table */}
+        <div className="surface-panel overflow-hidden hidden md:block">
           <Table>
             <TableHeader>
-              <TableRow className="text-xs text-gray-500">
+              <TableRow className="text-xs text-gray-500 border-b border-[var(--report-border)]">
                 {COLUMNS.map((c) => (
                   <TableHead
                     key={c}
@@ -356,7 +411,7 @@ function ListContent() {
                 data?.rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    className="text-sm hover:bg-gray-50/60 transition-colors"
+                    className="text-sm row-hover"
                   >
                     <TableCell className="text-gray-700 max-w-[120px] truncate">
                       {row.user_name || "—"}
@@ -390,7 +445,7 @@ function ListContent() {
                           )}
                           download
                           title="下载简历"
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
                         >
                           <FileText className="size-3" />
                           简历
@@ -398,7 +453,7 @@ function ListContent() {
                         <Link
                           href={`/admin/reports/${row.source_report_id}?project=${row.source_project}`}
                           title="查看用户档案"
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
                         >
                           <FolderOpen className="size-3" />
                           档案
@@ -406,7 +461,7 @@ function ListContent() {
                         <Link
                           href={`/admin/service-tracking/${row.id}`}
                           title="编辑服务跟踪记录"
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:ring-blue-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-[var(--blue-200)] text-[var(--blue-700)] bg-[var(--blue-50)] hover:bg-[var(--blue-100)] hover:ring-[var(--blue-300)] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
                         >
                           <Pencil className="size-3" />
                           服务编辑
@@ -419,48 +474,20 @@ function ListContent() {
             </TableBody>
           </Table>
 
-          {/* 分页 */}
-          {data && totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-              <div className="text-xs text-gray-500 tabular-nums">
-                共 <span className="font-medium text-gray-700">{data.total}</span> 条
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs px-2.5"
-                  disabled={pageParam <= 1}
-                  onClick={() => goPage(pageParam - 1)}
-                >
-                  上一页
-                </Button>
-                <span className="text-xs text-gray-500 tabular-nums">
-                  {pageParam} / {totalPages}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs px-2.5"
-                  disabled={pageParam >= totalPages}
-                  onClick={() => goPage(pageParam + 1)}
-                >
-                  下一页
-                </Button>
-              </div>
-            </div>
+          {data && (
+            <Pagination
+              page={pageParam}
+              totalPages={totalPages}
+              total={data.total}
+              onPageChange={goPage}
+            />
           )}
         </div>
 
         {/* 移动卡片 */}
         <div className="md:hidden surface-panel overflow-hidden">
-          {error && (
-            <div className="p-4 text-sm text-red-600 border-b border-red-100 bg-red-50">
-              加载失败：{error}
-            </div>
-          )}
           {loading ? (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-[var(--report-divider)]">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="p-4">
                   <div className="h-4 w-32 bg-gray-100 rounded animate-pulse mb-2" />
@@ -473,12 +500,12 @@ function ListContent() {
               <EmptyState />
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-[var(--report-divider)]">
               {data?.rows.map((row) => (
                 <Link
                   key={row.id}
                   href={`/admin/service-tracking/${row.id}`}
-                  className="block p-4 hover:bg-gray-50/60 active:bg-gray-100/60 transition-colors"
+                  className="block p-4 hover:bg-[var(--blue-50)]/40 active:bg-[var(--blue-100)]/50 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-medium text-gray-900 truncate">
@@ -499,30 +526,13 @@ function ListContent() {
               ))}
             </div>
           )}
-          {data && totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs px-2.5"
-                disabled={pageParam <= 1}
-                onClick={() => goPage(pageParam - 1)}
-              >
-                上一页
-              </Button>
-              <span className="text-xs text-gray-500 tabular-nums">
-                {pageParam} / {totalPages}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs px-2.5"
-                disabled={pageParam >= totalPages}
-                onClick={() => goPage(pageParam + 1)}
-              >
-                下一页
-              </Button>
-            </div>
+          {data && (
+            <Pagination
+              page={pageParam}
+              totalPages={totalPages}
+              onPageChange={goPage}
+              compact
+            />
           )}
         </div>
       </div>
@@ -530,69 +540,19 @@ function ListContent() {
   );
 }
 
-const STAT_ACCENT: Record<string, { ring: string; label: string; value: string; icon?: string }> = {
-  blue:    { ring: "ring-blue-100",    label: "text-blue-700",    value: "text-blue-900" },
-  emerald: { ring: "ring-emerald-100", label: "text-emerald-700", value: "text-emerald-900" },
-  sky:     { ring: "ring-sky-100",     label: "text-sky-700",     value: "text-sky-900" },
-  rose:    { ring: "ring-rose-100",    label: "text-rose-700",    value: "text-rose-900" },
-};
-
-function StatCard({
-  label,
-  value,
-  loading,
-  accent,
-  hint,
-}: {
-  label: string;
-  value: number | undefined;
-  loading: boolean;
-  accent: "blue" | "emerald" | "sky" | "rose";
-  hint?: string;
-}) {
-  const a = STAT_ACCENT[accent];
-  return (
-    <div
-      className={`relative rounded-xl bg-white ring-1 ${a.ring} shadow-sm shadow-gray-200/60 px-4 py-3`}
-      title={hint}
-    >
-      <div className={`flex items-center gap-1.5 text-xs ${a.label}`}>
-        {accent === "rose" && <AlertTriangle className="size-3.5" />}
-        <span>{label}</span>
-      </div>
-      <div className={`mt-1 text-2xl font-semibold tabular-nums ${a.value}`}>
-        {loading || value === undefined ? (
-          <span className="inline-block h-7 w-12 rounded bg-gray-100 animate-pulse" />
-        ) : (
-          value
-        )}
-      </div>
-    </div>
-  );
-}
-
 function CategoryBadge({ value }: { value: ServiceCategory }) {
   return (
-    <span
-      className={`inline-flex items-center text-[11px] font-medium px-1.5 py-0.5 rounded border ${CATEGORY_BADGE_CLASS[value]}`}
-    >
+    <StatusPill tone={CATEGORY_TONE[value]} dot={false}>
       {categoryLabel(value)}
-    </span>
+    </StatusPill>
   );
 }
 
 function StatusBadge({ value }: { value: ServiceStatus }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border ${STATUS_BADGE_CLASS[value]}`}
-    >
-      <span
-        className={`size-1.5 rounded-full ${
-          value === "in_progress" ? "bg-blue-500" : "bg-emerald-500"
-        }`}
-      />
+    <StatusPill tone={STATUS_TONE[value]}>
       {statusLabel(value)}
-    </span>
+    </StatusPill>
   );
 }
 
@@ -610,7 +570,7 @@ function EmptyState() {
       </div>
       <Link
         href="/admin/reports?project=nav"
-        className="mt-2 inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-md ring-1 ring-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-all duration-150"
+        className="mt-2 inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-md ring-1 ring-[var(--blue-200)] text-[var(--blue-700)] bg-[var(--blue-50)] hover:bg-[var(--blue-100)] transition-all duration-150"
       >
         <ArrowRightCircle className="size-3" />
         前往职业导航

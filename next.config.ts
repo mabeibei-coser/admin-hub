@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import pkg from "./package.json";
 
 const BASE_PATH = "/b100";
 
@@ -20,6 +21,9 @@ const nextConfig: NextConfig = {
     // window.location.href 等浏览器原生 API 不生效，需要手动通过
     // lib/url.ts 的 withBase() 拼。
     NEXT_PUBLIC_BASE_PATH: BASE_PATH,
+    // 应用版本号 — 编译时从 package.json 注入，避免在源码里写死
+    // (历史曾出现 login footer v0.1.19 实际包已 v0.1.24 的不一致)
+    NEXT_PUBLIC_APP_VERSION: pkg.version,
   },
 };
 

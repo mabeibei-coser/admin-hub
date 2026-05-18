@@ -166,8 +166,8 @@ export function TransferServiceDialog({
 
         {/* 409 重复横条 */}
         {duplicate && (
-          <div className="mb-4 p-3 text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
-            <Info className="size-4 shrink-0 mt-0.5 text-blue-600" />
+          <div className="mb-4 p-3 text-sm text-[var(--navy-800)] bg-[var(--blue-50)] border border-[var(--blue-200)] rounded-lg flex items-start gap-2">
+            <Info className="size-4 shrink-0 mt-0.5 text-[var(--blue-700)]" />
             <div className="flex-1">
               本记录已转过服务
               {duplicate.existingId ? (
@@ -175,7 +175,7 @@ export function TransferServiceDialog({
                   ，
                   <Link
                     href={`/admin/service-tracking/${duplicate.existingId}`}
-                    className="text-blue-700 underline underline-offset-2 hover:text-blue-900"
+                    className="text-[var(--blue-700)] underline underline-offset-2 hover:text-[var(--blue-600)]"
                     onClick={() => onClose()}
                   >
                     前往查看 →
@@ -207,7 +207,7 @@ export function TransferServiceDialog({
               onChange={(e) =>
                 setCategory(e.target.value as ServiceCategory | "")
               }
-              className="w-full h-10 px-3 rounded-md ring-1 ring-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+              className="w-full h-10 px-3 rounded-md ring-1 ring-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
               style={{ fontSize: "16px" }}
             >
               <option value="">请选择服务分类</option>
@@ -227,7 +227,7 @@ export function TransferServiceDialog({
               value={staff2}
               onChange={(e) => setStaff2(e.target.value)}
               disabled={loadingAdmins || adminsError}
-              className="w-full h-10 px-3 rounded-md ring-1 ring-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 disabled:bg-gray-50 disabled:text-gray-400"
+              className="w-full h-10 px-3 rounded-md ring-1 ring-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30 disabled:bg-gray-50 disabled:text-gray-400"
               style={{ fontSize: "16px" }}
             >
               {loadingAdmins ? (
@@ -291,7 +291,7 @@ export function TransferServiceDialog({
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 btn-primary-glow text-white"
               disabled={!canSubmit}
             >
               {submitting ? "提交中…" : "确认转入"}

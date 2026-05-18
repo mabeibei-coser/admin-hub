@@ -10,10 +10,14 @@ import {
   KeyRound,
   ShieldCheck,
   LifeBuoy,
+  Sun,
+  Moon,
+  Laptop,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PROJECTS } from "@/lib/projects";
 import { ChangePasswordDialog } from "./change-password-dialog";
+import { useTheme, type Theme } from "./theme-provider";
 import { withBase } from "@/lib/url";
 
 type ProjectFilter = "all" | "report" | "nav";
@@ -189,6 +193,7 @@ export function AdminSidebar() {
             </div>
           </div>
 
+          <ThemeSwitcher />
           <button
             onClick={() => setPwdDialogOpen(true)}
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-gray-600 hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
@@ -210,11 +215,48 @@ export function AdminSidebar() {
   );
 }
 
+/** 三段切换：浅色 / 暗色 / 跟随系统 */
+function ThemeSwitcher() {
+  const { theme, setTheme } = useTheme();
+  const options: { value: Theme; icon: typeof Sun; title: string }[] = [
+    { value: "light", icon: Sun, title: "浅色" },
+    { value: "dark", icon: Moon, title: "暗色" },
+    { value: "system", icon: Laptop, title: "跟随系统" },
+  ];
+  return (
+    <div
+      role="radiogroup"
+      aria-label="主题"
+      className="mb-1.5 px-2 py-1 grid grid-cols-3 gap-1 rounded-lg bg-[oklch(0.97_0.02_252_/_0.4)] dark:bg-[oklch(1_0_0_/_0.04)]"
+    >
+      {options.map(({ value, icon: Icon, title }) => {
+        const active = theme === value;
+        return (
+          <button
+            key={value}
+            role="radio"
+            aria-checked={active}
+            title={title}
+            onClick={() => setTheme(value)}
+            className={`h-7 flex items-center justify-center rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30 ${
+              active
+                ? "bg-white text-[var(--blue-700)] shadow-sm ring-1 ring-[var(--blue-200)]/60 dark:bg-white/10 dark:text-white dark:ring-white/15"
+                : "text-gray-400 hover:text-gray-600 dark:text-white/50 dark:hover:text-white/80"
+            }`}
+          >
+            <Icon className="size-3.5" strokeWidth={active ? 2.4 : 2} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /** 分组标题 — 全大写小字 + 间距 */
 function SectionHeader({ label }: { label: string }) {
   return (
     <div className="px-5 pt-5 pb-1.5">
-      <div className="text-[10px] uppercase tracking-[0.14em] text-gray-400 font-semibold">
+      <div className="text-[11px] uppercase tracking-[0.14em] text-gray-400 font-semibold">
         {label}
       </div>
     </div>
@@ -289,15 +331,15 @@ export function AdminMobileBar() {
           href="/admin/reports"
           className="flex items-center gap-2 font-semibold shrink-0"
         >
-          <div className="size-6 rounded-lg bg-gradient-to-br from-[var(--blue-600)] to-[var(--blue-700)] flex items-center justify-center shadow-sm">
-            <ShieldCheck className="size-3 text-white" strokeWidth={2.5} />
+          <div className="size-7 rounded-xl bg-gradient-to-br from-[var(--blue-600)] to-[var(--blue-700)] flex items-center justify-center shadow-sm">
+            <ShieldCheck className="size-3.5 text-white" strokeWidth={2.5} />
           </div>
           <span className="text-[13.5px] tracking-tight text-[var(--navy-900)]">
             谨世 ATA
           </span>
         </Link>
         <div className="h-4 w-px bg-gray-200 shrink-0" />
-        <div className="flex gap-1 shrink-0 overflow-x-auto">
+        <div className="flex gap-1.5 shrink-0 overflow-x-auto">
           {visibleProjects.map((pid) => {
             const meta = PROJECTS[pid as keyof typeof PROJECTS];
             if (!meta) return null;

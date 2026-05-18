@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { LifeBuoy } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { requireMenu } from "@/lib/admin-session";
 import {
@@ -12,6 +11,8 @@ import {
 } from "@/lib/service-tracking";
 import { ServiceTrackingEditor } from "@/components/admin/service-tracking-editor";
 import { ServiceRecordsList } from "@/components/admin/service-records-list";
+import { PageHeader } from "@/components/admin/page-header";
+import { Breadcrumb } from "@/components/admin/breadcrumb";
 
 interface DetailRow {
   id: number;
@@ -111,24 +112,35 @@ export default async function ServiceTrackingDetailPage({
     .all(id) as RecordRow[];
 
   return (
-    <div className="p-6 print:bg-white print:p-0">
+    <div className="p-6 bg-background print:bg-white print:p-0">
       <div className="max-w-3xl mx-auto space-y-5">
-        {/* 面包屑 */}
-        <div className="flex items-center gap-2 print:hidden flex-wrap">
-          <Link
-            href="/admin/service-tracking"
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <ChevronLeft className="size-4" />
-            服务跟踪
-          </Link>
-          <span className="text-gray-300">/</span>
-          <span className="text-sm font-medium text-gray-700">
-            {row.user_name || "—"}
-          </span>
-          <span className="text-xs text-gray-400 tabular-nums ml-1">
-            {maskPhone(row.user_phone)}
-          </span>
+        <div className="print:hidden">
+          <Breadcrumb
+            items={[
+              { label: "服务跟踪", href: "/admin/service-tracking" },
+              {
+                label: row.user_name || "—",
+                trailing: maskPhone(row.user_phone),
+              },
+            ]}
+          />
+        </div>
+
+        <div className="print:hidden">
+          <PageHeader
+            icon={LifeBuoy}
+            eyebrow="服务跟踪记录"
+            title={row.user_name || "—"}
+            subtitle={
+              <span className="tabular-nums">
+                {row.target_position ?? "—"}
+                {" · "}
+                首次服务{" "}
+                {new Date(row.first_service_at).toLocaleDateString("zh-CN")}
+              </span>
+            }
+            accentColor="blue"
+          />
         </div>
 
         <ServiceTrackingEditor

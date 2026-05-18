@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Plus, RefreshCw, ShieldCheck, UserCog, Users } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
+import { Alert } from "@/components/admin/alert";
+import { StatusPill } from "@/components/admin/status-pill";
 import {
   Table,
   TableBody,
@@ -13,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { ASSIGNABLE_MENUS } from "@/lib/menus";
 import { withBase } from "@/lib/url";
 
@@ -91,7 +92,7 @@ export default function AdminsPage() {
             </Button>
             <Link
               href="/admin/admins/new"
-              className={buttonVariants({ size: "sm", className: "bg-[var(--blue-700)] hover:bg-[var(--blue-600)] text-white" })}
+              className={buttonVariants({ size: "sm", className: "btn-primary-glow text-white" })}
             >
               <Plus className="size-3.5" />
               新建管理员
@@ -101,14 +102,46 @@ export default function AdminsPage() {
       />
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <Alert
+          tone="error"
+          action={
+            <Button size="sm" variant="outline" onClick={fetchAdmins} className="h-7 text-xs">
+              <RefreshCw className="size-3 mr-1" />
+              重试
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </Alert>
       )}
 
       {/* 列表 */}
       {loading ? (
-        <div className="text-center py-16 text-gray-400 text-sm">加载中…</div>
+        <div className="surface-panel overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="text-xs text-gray-500 border-b border-[var(--report-border)]">
+                <TableHead className="w-28">姓名</TableHead>
+                <TableHead className="w-36">用户名</TableHead>
+                <TableHead>备注</TableHead>
+                <TableHead className="w-48">菜单权限</TableHead>
+                <TableHead className="w-20 text-center">状态</TableHead>
+                <TableHead className="w-28 text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={`skel-${i}`}>
+                  {Array.from({ length: 6 }).map((__, j) => (
+                    <TableCell key={j} className="py-4">
+                      <div className="h-4 bg-gray-100 rounded animate-pulse" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : admins.length === 0 ? (
         <div className="text-center py-16">
           <div className="flex flex-col items-center gap-3 text-gray-400">
@@ -117,7 +150,7 @@ export default function AdminsPage() {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-gray-600">还没有管理员</p>
-              <Link href="/admin/admins/new" className="inline-block text-xs text-blue-600 hover:underline">
+              <Link href="/admin/admins/new" className="inline-block text-xs text-[var(--blue-700)] hover:underline">
                 立即新建第一个
               </Link>
             </div>
@@ -127,7 +160,7 @@ export default function AdminsPage() {
         <div className="surface-panel overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50">
+              <TableRow className="text-xs text-gray-500 border-b border-[var(--report-border)]">
                 <TableHead className="w-28">姓名</TableHead>
                 <TableHead className="w-36">用户名</TableHead>
                 <TableHead>备注</TableHead>
@@ -138,12 +171,12 @@ export default function AdminsPage() {
             </TableHeader>
             <TableBody>
               {admins.map((admin) => (
-                <TableRow key={admin.id} className="hover:bg-gray-50/50">
+                <TableRow key={admin.id} className="row-hover">
                   <TableCell className="font-medium text-gray-900">
                     <div className="flex items-center gap-1.5">
                       {admin.name}
                       {admin.is_super === 1 && (
-                        <ShieldCheck className="size-3.5 text-blue-500 shrink-0" />
+                        <ShieldCheck className="size-3.5 text-[var(--blue-700)] shrink-0" />
                       )}
                     </div>
                   </TableCell>
@@ -157,20 +190,14 @@ export default function AdminsPage() {
                     {menusDisplay(admin.menus_json, admin.is_super)}
                   </TableCell>
                   <TableCell className="text-center">
-                    {admin.is_active ? (
-                      <Badge className="bg-green-100 text-green-700 border-0 text-[11px]">
-                        启用
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-gray-100 text-gray-500 border-0 text-[11px]">
-                        停用
-                      </Badge>
-                    )}
+                    <StatusPill tone={admin.is_active ? "success" : "neutral"}>
+                      {admin.is_active ? "启用" : "停用"}
+                    </StatusPill>
                   </TableCell>
                   <TableCell className="text-right">
                     <Link
                       href={`/admin/admins/${admin.id}/edit`}
-                      className={buttonVariants({ variant: "ghost", size: "xs", className: "focus-visible:ring-2 focus-visible:ring-blue-500/50" })}
+                      className={buttonVariants({ variant: "ghost", size: "xs", className: "focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30" })}
                     >
                       编辑
                     </Link>

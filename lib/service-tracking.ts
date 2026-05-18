@@ -51,19 +51,8 @@ export const SERVICE_PROJECT_LABELS: Record<string, string> = {
   report: "职业定位",
 };
 
-// 5 色分类 badge（同色系，与 §9.2 设计契约对齐）
-export const CATEGORY_BADGE_CLASS: Record<ServiceCategory, string> = {
-  easy: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  moderate: "bg-sky-50 text-sky-700 border-sky-200",
-  hard: "bg-amber-50 text-amber-700 border-amber-200",
-  priority: "bg-orange-50 text-orange-700 border-orange-200",
-  safety_net: "bg-rose-50 text-rose-700 border-rose-200",
-};
-
-export const STATUS_BADGE_CLASS: Record<ServiceStatus, string> = {
-  in_progress: "bg-blue-50 text-blue-700 border-blue-200",
-  completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
-};
+// 分类 / 状态徽章统一走 components/admin/status-pill.tsx (data-tone),
+// 旧的 CATEGORY_BADGE_CLASS / STATUS_BADGE_CLASS 已删除。
 
 // ---------- 行级权限 ----------
 

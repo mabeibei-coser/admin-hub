@@ -9,13 +9,24 @@ import {
   SERVICE_STATUSES,
   categoryLabel,
   statusLabel,
-  CATEGORY_BADGE_CLASS,
-  STATUS_BADGE_CLASS,
   maskPhone,
   type ServiceCategory,
   type ServiceStatus,
 } from "@/lib/service-tracking";
 import { withBase } from "@/lib/url";
+import { StatusPill, type StatusTone } from "@/components/admin/status-pill";
+
+const CATEGORY_TONE: Record<ServiceCategory, StatusTone> = {
+  easy: "info",
+  moderate: "info",
+  hard: "warning",
+  priority: "danger",
+  safety_net: "neutral",
+};
+const STATUS_TONE: Record<ServiceStatus, StatusTone> = {
+  in_progress: "info",
+  completed: "success",
+};
 
 interface PickerAdmin {
   id: number;
@@ -169,7 +180,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
         {!editing ? (
           <button
             onClick={() => setEditing(true)}
-            className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+            className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
           >
             <Pencil className="size-3" />
             编辑
@@ -189,7 +200,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
               size="sm"
               onClick={() => performSave()}
               disabled={submitting}
-              className="h-7 text-xs px-2.5 bg-blue-600 hover:bg-blue-700"
+              className="h-7 text-xs px-2.5 btn-primary-glow text-white"
             >
               {submitting ? (
                 <>
@@ -224,7 +235,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
                   key={c.key}
                   className={`px-3 py-1 rounded-md text-xs cursor-pointer transition-all duration-150 border ${
                     category === c.key
-                      ? "ring-2 ring-blue-500 bg-blue-50 text-blue-800 border-transparent"
+                      ? "ring-2 ring-[var(--blue-500)] bg-[var(--blue-50)] text-[var(--navy-800)] border-transparent"
                       : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >
@@ -241,11 +252,9 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
               ))}
             </div>
           ) : (
-            <span
-              className={`inline-flex items-center text-[11px] font-medium px-1.5 py-0.5 rounded border ${CATEGORY_BADGE_CLASS[initial.service_category]}`}
-            >
+            <StatusPill tone={CATEGORY_TONE[initial.service_category]} dot={false}>
               {categoryLabel(initial.service_category)}
-            </span>
+            </StatusPill>
           )}
         </Row>
         <Row label="主服务人员">
@@ -280,7 +289,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as ServiceStatus)}
-              className="h-8 text-sm border border-input rounded-md px-2.5 bg-white w-full min-w-[5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+              className="h-8 text-sm border border-input rounded-md px-2.5 bg-white w-full min-w-[5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             >
               {SERVICE_STATUSES.map((s) => (
                 <option key={s.key} value={s.key}>
@@ -289,16 +298,9 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
               ))}
             </select>
           ) : (
-            <span
-              className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border ${STATUS_BADGE_CLASS[initial.status]}`}
-            >
-              <span
-                className={`size-1.5 rounded-full ${
-                  initial.status === "in_progress" ? "bg-blue-500" : "bg-emerald-500"
-                }`}
-              />
+            <StatusPill tone={STATUS_TONE[initial.status]}>
               {statusLabel(initial.status)}
-            </span>
+            </StatusPill>
           )}
         </Row>
       </div>
@@ -382,7 +384,7 @@ function StaffSelect({
       onChange={(e) =>
         onChange(e.target.value === "" ? null : Number(e.target.value))
       }
-      className="h-8 text-sm border border-input rounded-md px-2.5 bg-white w-full min-w-[5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+      className="h-8 text-sm border border-input rounded-md px-2.5 bg-white w-full min-w-[5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
     >
       {allowNone && <option value="">不指定</option>}
       {!allowNone && !required && <option value="">—</option>}

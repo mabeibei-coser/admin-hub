@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/admin/theme-provider";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -21,14 +22,39 @@ export const viewport: Viewport = {
   themeColor: "#FAF7F2",
 };
 
+// 预先读取 localStorage 把 .dark class 注入到 <html>，避免暗色 flash
+const themeBootstrap = `
+(function(){
+  try {
+    var t = localStorage.getItem('admin.theme') || 'system';
+    var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (dark) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
+    } else {
+      document.documentElement.style.colorScheme = 'light';
+    }
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" className={`h-full antialiased ${geist.variable}`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html
+      lang="zh-CN"
+      className={`h-full antialiased ${geist.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+      </head>
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }
