@@ -56,7 +56,7 @@ export function ExportActions({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--blue-100)] bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 print:hidden pb-[env(safe-area-inset-bottom)]">
+    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--blue-100)] bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/70 print:hidden pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-5xl mx-auto flex items-center justify-between gap-2 px-4 py-3 sm:px-6">
         <div className="min-w-0 flex-1 text-xs text-[var(--muted-foreground)] truncate">
           {exporting && progressText ? progressText : "生成时间：" + new Date(report.meta.generatedAt).toLocaleString("zh-CN")}

@@ -58,7 +58,7 @@ export function PageHeader({
           {title}
         </h1>
         {subtitle && (
-          <div className="text-sm text-gray-500 mt-1.5 leading-relaxed">
+          <div className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
             {subtitle}
           </div>
         )}

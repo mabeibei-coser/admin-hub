@@ -150,9 +150,9 @@ function PageSkeleton() {
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto space-y-5">
-        <div className="h-6 w-32 bg-gray-100 rounded animate-pulse" />
+        <div className="h-6 w-32 bg-muted rounded animate-pulse" />
         <div className="h-32 surface-panel" />
-        <div className="h-8 w-72 rounded bg-gray-100 animate-pulse" />
+        <div className="h-8 w-72 rounded bg-muted animate-pulse" />
         <div className="h-64 surface-panel" />
       </div>
     </div>
@@ -294,7 +294,9 @@ function AdminReportsContent() {
   const currentProjectLabel = `${PROJECTS[project].label}报告`;
 
   return (
-    <div className="p-6">
+    <div className="relative p-6">
+      {/* 顶部 aurora 装饰带 — 登录页深色玻璃 panel 的轻量内页呼应 */}
+      <div aria-hidden className="list-header-aurora" />
       <TransferServiceDialog
         open={!!transferRow}
         row={transferRow}
@@ -305,7 +307,7 @@ function AdminReportsContent() {
           fetch_();
         }}
       />
-      <div className="max-w-7xl mx-auto space-y-5">
+      <div className="relative max-w-7xl mx-auto space-y-5">
         {/* 标题 — 统一 PageHeader（圆形 icon avatar + 顶部装饰条） */}
         <PageHeader
           icon={project === "nav" ? Compass : Briefcase}
@@ -328,51 +330,51 @@ function AdminReportsContent() {
         {/* 过滤栏 — 包成轻卡 */}
         <div className="surface-panel p-4 flex flex-wrap gap-3 items-end">
           <div>
-            <div className="text-xs text-gray-500 mb-1">开始日期</div>
+            <div className="text-xs text-muted-foreground mb-1">开始日期</div>
             <Input
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="h-8 text-sm w-36 bg-white ring-1 ring-[var(--report-border)]"
+              className="h-8 text-sm w-36 bg-card text-foreground ring-1 ring-[var(--report-border)]"
             />
           </div>
           <div>
-            <div className="text-xs text-gray-500 mb-1">结束日期</div>
+            <div className="text-xs text-muted-foreground mb-1">结束日期</div>
             <Input
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="h-8 text-sm w-36 bg-white ring-1 ring-[var(--report-border)]"
+              className="h-8 text-sm w-36 bg-card text-foreground ring-1 ring-[var(--report-border)]"
             />
           </div>
           {project === "nav" ? (
             <>
               <div>
-                <div className="text-xs text-gray-500 mb-1">姓名</div>
+                <div className="text-xs text-muted-foreground mb-1">姓名</div>
                 <Input
                   placeholder="关键词"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="h-8 text-sm w-32 bg-white ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-gray-500 mb-1">手机号</div>
+                <div className="text-xs text-muted-foreground mb-1">手机号</div>
                 <Input
                   placeholder="关键词"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="h-8 text-sm w-32 bg-white ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-gray-500 mb-1">用户身份</div>
+                <div className="text-xs text-muted-foreground mb-1">用户身份</div>
                 <select
                   value={userIdentity}
                   onChange={(e) => setUserIdentity(e.target.value)}
-                  className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
                 >
                   <option value="">全部</option>
                   <option value="recent_grad">应届毕业生</option>
@@ -381,23 +383,23 @@ function AdminReportsContent() {
                 </select>
               </div>
               <div>
-                <div className="text-xs text-gray-500 mb-1">意向岗位</div>
+                <div className="text-xs text-muted-foreground mb-1">意向岗位</div>
                 <Input
                   placeholder="关键词"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
-                  className="h-8 text-sm w-32 bg-white ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-gray-500 mb-1">转服务状态</div>
+                <div className="text-xs text-muted-foreground mb-1">转服务状态</div>
                 <select
                   value={transferStatus}
                   onChange={(e) =>
                     setTransferStatus(e.target.value as "" | "1" | "0")
                   }
-                  className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
                 >
                   <option value="">全部</option>
                   <option value="1">已转入服务</option>
@@ -408,23 +410,23 @@ function AdminReportsContent() {
           ) : (
             <>
               <div>
-                <div className="text-xs text-gray-500 mb-1">意向岗位</div>
+                <div className="text-xs text-muted-foreground mb-1">意向岗位</div>
                 <Input
                   placeholder="关键词"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
-                  className="h-8 text-sm w-36 bg-white ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-36 bg-card text-foreground ring-1 ring-[var(--report-border)]"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-gray-500 mb-1">简历</div>
+                <div className="text-xs text-muted-foreground mb-1">简历</div>
                 <select
                   value={hasResume}
                   onChange={(e) =>
                     setHasResume(e.target.value as "" | "1" | "0")
                   }
-                  className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
                 >
                   <option value="">全部</option>
                   <option value="1">有简历</option>
@@ -445,7 +447,7 @@ function AdminReportsContent() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 text-gray-500 hover:text-gray-700"
+              className="h-8 text-muted-foreground hover:text-foreground"
               onClick={resetFilters}
             >
               重置
@@ -472,7 +474,7 @@ function AdminReportsContent() {
         <div className="surface-panel overflow-hidden hidden md:block">
           <Table>
             <TableHeader>
-              <TableRow className="text-xs text-gray-500 border-b border-[var(--report-border)]">
+              <TableRow className="text-xs text-muted-foreground border-b border-[var(--report-border)]">
                 {columns.map((c) => (
                   <TableHead
                     key={c}
@@ -489,7 +491,7 @@ function AdminReportsContent() {
                   <TableRow key={`skel-${i}`}>
                     {columns.map((c) => (
                       <TableCell key={c} className="py-4">
-                        <div className="h-4 bg-gray-100 rounded animate-pulse" />
+                        <div className="h-4 bg-muted rounded animate-pulse" />
                       </TableCell>
                     ))}
                   </TableRow>
@@ -534,8 +536,8 @@ function AdminReportsContent() {
             <div className="divide-y divide-[var(--report-divider)]">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="p-4">
-                  <div className="h-4 w-32 bg-gray-100 rounded animate-pulse mb-2" />
-                  <div className="h-3 w-48 bg-gray-100 rounded animate-pulse" />
+                  <div className="h-4 w-32 bg-muted rounded animate-pulse mb-2" />
+                  <div className="h-3 w-48 bg-muted rounded animate-pulse" />
                 </div>
               ))}
             </div>
@@ -664,13 +666,13 @@ function EmptyState({
 }) {
   if (hasFilters) {
     return (
-      <div className="flex flex-col items-center gap-3 text-gray-400">
-        <div className="size-12 rounded-full bg-gray-50 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+        <div className="size-12 rounded-full bg-muted flex items-center justify-center">
           <Inbox className="size-5" />
         </div>
         <div className="space-y-0.5">
-          <p className="text-sm text-gray-600">当前筛选无结果</p>
-          <p className="text-xs text-gray-400">试着调整日期或岗位关键词</p>
+          <p className="text-sm text-muted-foreground">当前筛选无结果</p>
+          <p className="text-xs text-muted-foreground">试着调整日期或岗位关键词</p>
         </div>
         <Button
           size="sm"
@@ -684,15 +686,15 @@ function EmptyState({
     );
   }
   return (
-    <div className="flex flex-col items-center gap-3 text-gray-400">
-      <div className="size-12 rounded-full bg-gray-50 flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3 text-muted-foreground">
+      <div className="size-12 rounded-full bg-muted flex items-center justify-center">
         <Inbox className="size-5" />
       </div>
       <div className="space-y-0.5">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           {PROJECTS[project].label} 暂无报告
         </p>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-muted-foreground">
           当用户完成测评后，结果会出现在这里
         </p>
       </div>
@@ -720,13 +722,13 @@ function ReportRowItem({
   if (project === "report") {
     return (
       <TableRow className="text-sm hover:bg-[var(--blue-50)]/40 transition-colors duration-150">
-        <TableCell className="tabular-nums text-xs text-gray-500 whitespace-nowrap">
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
           {formatTs(row.created_at)}
         </TableCell>
-        <TableCell className="text-gray-700 max-w-[100px] truncate">
+        <TableCell className="text-foreground max-w-[100px] truncate">
           {row.user_name || "—"}
         </TableCell>
-        <TableCell className="tabular-nums text-xs text-gray-600 whitespace-nowrap">
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
           {row.user_phone || "—"}
         </TableCell>
         <TableCell>
@@ -735,21 +737,21 @@ function ReportRowItem({
         <TableCell className="font-medium max-w-[140px] truncate">
           {row.target_position}
         </TableCell>
-        <TableCell className="text-gray-600">{eduLabel(row.target_education)}</TableCell>
-        <TableCell className="text-gray-600 max-w-[120px] truncate">
+        <TableCell className="text-muted-foreground">{eduLabel(row.target_education)}</TableCell>
+        <TableCell className="text-muted-foreground max-w-[120px] truncate">
           {row.target_company || "—"}
         </TableCell>
-        <TableCell className="text-gray-600">{row.target_city_tier || "—"}</TableCell>
+        <TableCell className="text-muted-foreground">{row.target_city_tier || "—"}</TableCell>
         <TableCell>
           {row.has_resume ? (
             <span className="inline-flex items-center gap-1 text-[var(--semantic-positive)] bg-[var(--semantic-positive)]/8 border border-[var(--semantic-positive)]/30 rounded px-1.5 py-0.5 text-[11px]">
               <FileText className="size-3" />有
             </span>
           ) : (
-            <span className="text-gray-400 text-[11px]">无</span>
+            <span className="text-muted-foreground text-[11px]">无</span>
           )}
         </TableCell>
-        <TableCell className="tabular-nums text-xs text-gray-500">
+        <TableCell className="tabular-nums text-xs text-muted-foreground">
           {durationCell}
         </TableCell>
         <TableCell>
@@ -765,13 +767,13 @@ function ReportRowItem({
   const transferred = row.tracking_id != null;
   return (
     <TableRow className="text-sm hover:bg-[var(--blue-50)]/40 transition-colors duration-150">
-      <TableCell className="tabular-nums text-xs text-gray-500 whitespace-nowrap">
+      <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
         {formatTs(row.created_at)}
       </TableCell>
-      <TableCell className="text-gray-700 max-w-[100px] truncate">
+      <TableCell className="text-foreground max-w-[100px] truncate">
         {row.user_name || "—"}
       </TableCell>
-      <TableCell className="tabular-nums text-xs text-gray-600 whitespace-nowrap">
+      <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
         {row.user_phone || "—"}
       </TableCell>
       {/* 服务项目：完整名称"职业导航"（不再用 shortLabel 缩写） */}
@@ -784,7 +786,7 @@ function ReportRowItem({
       <TableCell className="font-medium max-w-[140px] truncate">
         {row.target_position}
       </TableCell>
-      <TableCell className="text-gray-600">
+      <TableCell className="text-muted-foreground">
         {row.user_identity
           ? IDENTITY_LABELS[row.user_identity] ?? row.user_identity
           : "—"}
@@ -793,7 +795,7 @@ function ReportRowItem({
       <TableCell className="text-center">
         <span
           title={transferred ? "已转入服务" : "未转入"}
-          className={`inline-block size-3 rounded-full ${transferred ? "bg-[var(--semantic-positive)] shadow-[0_0_0_3px_oklch(0.72_0.18_155_/_0.22)]" : "bg-gray-300"}`}
+          className={`inline-block size-3 rounded-full ${transferred ? "bg-[var(--semantic-positive)] shadow-[0_0_0_3px_oklch(0.72_0.18_155_/_0.22)]" : "bg-muted-foreground/40"}`}
         />
       </TableCell>
       <TableCell>
@@ -807,11 +809,11 @@ function ReportRowItem({
 const ACTION_BTN_BASE =
   "inline-flex items-center gap-1 min-h-[28px] sm:min-h-0 text-xs px-2.5 py-1 rounded-md ring-1 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2";
 const ACTION_BTN_NEUTRAL =
-  "ring-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:ring-gray-300 focus-visible:ring-[var(--blue-400)]";
+  "ring-border text-foreground bg-card hover:bg-muted hover:ring-muted-foreground/30 focus-visible:ring-[var(--blue-400)]";
 const ACTION_BTN_POSITIVE =
   "ring-[var(--semantic-positive)]/30 text-[var(--semantic-positive)] bg-[var(--semantic-positive)]/12 hover:bg-[var(--semantic-positive)]/18 focus-visible:ring-[var(--semantic-positive)]/50";
 const ACTION_BTN_DISABLED =
-  "ring-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed";
+  "ring-border text-muted-foreground bg-muted cursor-not-allowed";
 
 function RowActions({
   row,
@@ -896,17 +898,17 @@ function ReportMobileCard({ row }: { row: ReportRow }) {
       className="block p-4 hover:bg-[var(--blue-50)]/40 active:bg-[var(--blue-100)]/50 transition-colors"
     >
       <div className="flex items-center justify-between gap-2 mb-1">
-        <span className="font-medium text-gray-900 truncate min-w-0">
+        <span className="font-medium text-foreground truncate min-w-0">
           {row.user_name || "—"}
         </span>
-        <span className="text-xs text-gray-500 tabular-nums shrink-0">
+        <span className="text-xs text-muted-foreground tabular-nums shrink-0">
           {row.user_phone || "—"}
         </span>
       </div>
-      <div className="text-sm text-gray-700 truncate mb-1.5">
+      <div className="text-sm text-foreground truncate mb-1.5">
         {row.target_position}
       </div>
-      <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span className="tabular-nums">{formatTs(row.created_at)}</span>
         <div className="flex items-center gap-2">
           {row.has_resume === 1 && (
@@ -918,7 +920,7 @@ function ReportMobileCard({ row }: { row: ReportRow }) {
           {row.project === "nav" && (
             <span
               aria-label={transferred ? "已转入服务" : "未转入"}
-              className={`size-2 rounded-full ${transferred ? "bg-[var(--semantic-positive)] shadow-[0_0_0_2px_oklch(0.72_0.18_155_/_0.22)]" : "bg-gray-300"}`}
+              className={`size-2 rounded-full ${transferred ? "bg-[var(--semantic-positive)] shadow-[0_0_0_2px_oklch(0.72_0.18_155_/_0.22)]" : "bg-muted-foreground/40"}`}
             />
           )}
         </div>

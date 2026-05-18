@@ -28,7 +28,7 @@ export function NavReportRenderer({ reportData, interviewQ1Q2, formData, scoring
 
   if (!reportData) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+      <div className="rounded-xl border border-[oklch(0.85_0.1_70)] dark:border-[oklch(0.4_0.1_65)] bg-[oklch(0.97_0.06_70)] dark:bg-[oklch(0.3_0.08_65)] px-5 py-4 text-sm text-[var(--semantic-warning)]">
         报告数据不可用（report_json 为空或解析失败）
       </div>
     );

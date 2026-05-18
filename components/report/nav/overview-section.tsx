@@ -91,7 +91,7 @@ export function OverviewSection({ data, index, total }: Props) {
               return (
                 <div
                   key={dim.name}
-                  className="rounded-xl border border-[var(--blue-100)] bg-white p-4 sm:p-5"
+                  className="rounded-xl border border-[var(--blue-100)] bg-card p-4 sm:p-5"
                 >
                   {/* 第一行：维度名 + 倾向标签 */}
                   <div className="flex items-center justify-between mb-2">
@@ -180,7 +180,7 @@ export function OverviewSection({ data, index, total }: Props) {
           <div className="text-[11px] font-semibold tracking-wider uppercase text-[var(--report-ink-muted)] mb-3">
             职业性格解读
           </div>
-          <div className="rounded-xl border border-[var(--blue-100)] bg-white p-5 break-inside-avoid">
+          <div className="rounded-xl border border-[var(--blue-100)] bg-card p-5 break-inside-avoid">
             {/* 纯中文性格定位（不再展示 MBTI 字母代码） */}
             <div className="mb-3">
               <span className="text-[19px] sm:text-[22px] font-bold tracking-tight text-[var(--navy-900)]">

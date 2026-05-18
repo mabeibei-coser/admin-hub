@@ -29,10 +29,10 @@ export function OverviewSection({
 
       <div className="grid gap-4 md:grid-cols-2 mb-4">
         {data.strength && (
-          <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/50 p-4 break-inside-avoid">
+          <div className="rounded-xl border border-[oklch(0.87_0.08_155)]/80 bg-[oklch(0.97_0.04_155)]/50 p-4 break-inside-avoid">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="size-4 text-emerald-600" />
-              <span className="text-[11px] font-semibold tracking-wider uppercase text-emerald-700">
+              <TrendingUp className="size-4 text-[var(--semantic-positive)]" />
+              <span className="text-[11px] font-semibold tracking-wider uppercase text-[var(--semantic-positive)]">
                 核心优势
               </span>
             </div>
@@ -50,10 +50,10 @@ export function OverviewSection({
         )}
 
         {data.improvement && (
-          <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 p-4 break-inside-avoid">
+          <div className="rounded-xl border border-[oklch(0.87_0.1_80)]/80 bg-[oklch(0.97_0.05_80)]/50 p-4 break-inside-avoid">
             <div className="flex items-center gap-2 mb-2">
-              <Wrench className="size-4 text-amber-600" />
-              <span className="text-[11px] font-semibold tracking-wider uppercase text-amber-700">
+              <Wrench className="size-4 text-[var(--semantic-warning)]" />
+              <span className="text-[11px] font-semibold tracking-wider uppercase text-[var(--semantic-warning)]">
                 待补齐
               </span>
             </div>

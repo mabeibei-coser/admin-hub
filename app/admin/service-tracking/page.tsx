@@ -134,7 +134,7 @@ function PageSkeleton() {
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto space-y-5">
-        <div className="h-6 w-32 bg-gray-100 rounded animate-pulse" />
+        <div className="h-6 w-32 bg-muted rounded animate-pulse" />
         <div className="h-64 surface-panel" />
       </div>
     </div>
@@ -226,8 +226,10 @@ function ListContent() {
   const hasAnyFilter = !!(statusParam || categoryParam || nameParam || dateFromParam || dateToParam);
 
   return (
-    <div className="p-6">
-      <div className="max-w-7xl mx-auto space-y-5">
+    <div className="relative p-6">
+      {/* 顶部 aurora 装饰带 — 与报告列表一致的视觉呼应 */}
+      <div aria-hidden className="list-header-aurora" />
+      <div className="relative max-w-7xl mx-auto space-y-5">
         {/* 标题 — 统一 PageHeader */}
         <PageHeader
           icon={LifeBuoy}
@@ -282,11 +284,11 @@ function ListContent() {
         {/* 筛选 — Tabler 风：包成轻卡 */}
         <div className="surface-panel p-4 flex flex-wrap gap-3 items-end">
           <div>
-            <div className="text-xs text-gray-500 mb-1">服务状态</div>
+            <div className="text-xs text-muted-foreground mb-1">服务状态</div>
             <select
               value={statusParam ?? ""}
               onChange={(e) => updateParam("status", e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             >
               <option value="">全部</option>
               {SERVICE_STATUSES.map((s) => (
@@ -297,11 +299,11 @@ function ListContent() {
             </select>
           </div>
           <div>
-            <div className="text-xs text-gray-500 mb-1">服务分类</div>
+            <div className="text-xs text-muted-foreground mb-1">服务分类</div>
             <select
               value={categoryParam ?? ""}
               onChange={(e) => updateParam("category", e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             >
               <option value="">全部</option>
               {SERVICE_CATEGORIES.map((c) => (
@@ -312,27 +314,27 @@ function ListContent() {
             </select>
           </div>
           <div>
-            <div className="text-xs text-gray-500 mb-1">首次服务起始</div>
+            <div className="text-xs text-muted-foreground mb-1">首次服务起始</div>
             <input
               type="date"
               value={dateFromParam}
               max={dateToParam || undefined}
               onChange={(e) => updateParam("date_from", e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             />
           </div>
           <div>
-            <div className="text-xs text-gray-500 mb-1">首次服务截止</div>
+            <div className="text-xs text-muted-foreground mb-1">首次服务截止</div>
             <input
               type="date"
               value={dateToParam}
               min={dateFromParam || undefined}
               onChange={(e) => updateParam("date_to", e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             />
           </div>
           <div>
-            <div className="text-xs text-gray-500 mb-1">姓名</div>
+            <div className="text-xs text-muted-foreground mb-1">姓名</div>
             <input
               type="text"
               value={nameInput}
@@ -345,14 +347,14 @@ function ListContent() {
                   commitNameSearch();
                 }
               }}
-              className="h-8 w-32 text-sm border border-input rounded-md px-2 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+              className="h-8 w-32 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             />
           </div>
           {hasAnyFilter && (
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 text-xs text-gray-500 hover:text-gray-700"
+              className="h-8 text-xs text-muted-foreground hover:text-foreground"
               onClick={resetFilters}
             >
               清空
@@ -379,7 +381,7 @@ function ListContent() {
         <div className="surface-panel overflow-hidden hidden md:block">
           <Table>
             <TableHeader>
-              <TableRow className="text-xs text-gray-500 border-b border-[var(--report-border)]">
+              <TableRow className="text-xs text-muted-foreground border-b border-[var(--report-border)]">
                 {COLUMNS.map((c) => (
                   <TableHead
                     key={c}
@@ -396,7 +398,7 @@ function ListContent() {
                   <TableRow key={`skel-${i}`}>
                     {COLUMNS.map((c) => (
                       <TableCell key={c} className="py-4">
-                        <div className="h-4 bg-gray-100 rounded animate-pulse" />
+                        <div className="h-4 bg-muted rounded animate-pulse" />
                       </TableCell>
                     ))}
                   </TableRow>
@@ -413,28 +415,28 @@ function ListContent() {
                     key={row.id}
                     className="text-sm row-hover"
                   >
-                    <TableCell className="text-gray-700 max-w-[120px] truncate">
+                    <TableCell className="text-foreground max-w-[120px] truncate">
                       {row.user_name || "—"}
                     </TableCell>
-                    <TableCell className="tabular-nums text-xs text-gray-600 whitespace-nowrap">
+                    <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
                       {row.user_phone || "—"}
                     </TableCell>
-                    <TableCell className="text-xs text-gray-600">
+                    <TableCell className="text-xs text-muted-foreground">
                       {SERVICE_PROJECT_LABELS[row.source_project] ?? row.source_project}
                     </TableCell>
                     <TableCell>
                       <CategoryBadge value={row.service_category} />
                     </TableCell>
-                    <TableCell className="tabular-nums text-xs text-gray-500 whitespace-nowrap">
+                    <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
                       {formatTs(row.first_service_at)}
                     </TableCell>
-                    <TableCell className="text-xs text-gray-600 whitespace-nowrap">
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {formatRelative(row.last_service_at)}
                     </TableCell>
                     <TableCell>
                       <StatusBadge value={row.status} />
                     </TableCell>
-                    <TableCell className="text-xs text-gray-600">
+                    <TableCell className="text-xs text-muted-foreground">
                       {row.recorder_name || "—"}
                     </TableCell>
                     <TableCell className="text-right">
@@ -445,7 +447,7 @@ function ListContent() {
                           )}
                           download
                           title="下载简历"
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-border text-foreground hover:bg-muted hover:ring-muted-foreground/30 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
                         >
                           <FileText className="size-3" />
                           简历
@@ -453,7 +455,7 @@ function ListContent() {
                         <Link
                           href={`/admin/reports/${row.source_report_id}?project=${row.source_project}`}
                           title="查看用户档案"
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 hover:ring-gray-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-border text-foreground hover:bg-muted hover:ring-muted-foreground/30 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
                         >
                           <FolderOpen className="size-3" />
                           档案
@@ -490,8 +492,8 @@ function ListContent() {
             <div className="divide-y divide-[var(--report-divider)]">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="p-4">
-                  <div className="h-4 w-32 bg-gray-100 rounded animate-pulse mb-2" />
-                  <div className="h-3 w-48 bg-gray-100 rounded animate-pulse" />
+                  <div className="h-4 w-32 bg-muted rounded animate-pulse mb-2" />
+                  <div className="h-3 w-48 bg-muted rounded animate-pulse" />
                 </div>
               ))}
             </div>
@@ -508,10 +510,10 @@ function ListContent() {
                   className="block p-4 hover:bg-[var(--blue-50)]/40 active:bg-[var(--blue-100)]/50 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-gray-900 truncate">
+                    <span className="font-medium text-foreground truncate">
                       {row.user_name || "—"}
                     </span>
-                    <span className="text-xs text-gray-500 tabular-nums shrink-0 ml-2">
+                    <span className="text-xs text-muted-foreground tabular-nums shrink-0 ml-2">
                       {row.user_phone || "—"}
                     </span>
                   </div>
@@ -519,7 +521,7 @@ function ListContent() {
                     <CategoryBadge value={row.service_category} />
                     <StatusBadge value={row.status} />
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     最新：{formatRelative(row.last_service_at)}
                   </div>
                 </Link>
@@ -558,13 +560,13 @@ function StatusBadge({ value }: { value: ServiceStatus }) {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center gap-3 text-gray-400">
-      <div className="size-12 rounded-full bg-gray-50 flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3 text-muted-foreground">
+      <div className="size-12 rounded-full bg-muted flex items-center justify-center">
         <Inbox className="size-5" />
       </div>
       <div className="space-y-0.5 text-center">
-        <p className="text-sm text-gray-600">还没有转入服务的记录</p>
-        <p className="text-xs text-gray-400">
+        <p className="text-sm text-muted-foreground">还没有转入服务的记录</p>
+        <p className="text-xs text-muted-foreground">
           在「职业导航」列表点击「转服务」即可开始
         </p>
       </div>

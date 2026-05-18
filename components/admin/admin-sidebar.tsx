@@ -171,7 +171,7 @@ export function AdminSidebar() {
                 {me?.name?.slice(0, 1) ?? "—"}
               </div>
               {me?.isSuper && (
-                <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-white shadow-sm flex items-center justify-center ring-1 ring-[var(--blue-200)]/60">
+                <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-card shadow-sm flex items-center justify-center ring-1 ring-[var(--blue-200)]/60">
                   <ShieldCheck className="size-2.5 text-[var(--blue-700)]" strokeWidth={2.5} />
                 </div>
               )}
@@ -185,7 +185,7 @@ export function AdminSidebar() {
                   </span>
                 )}
               </div>
-              <div className="text-[10px] text-gray-400 tabular-nums mt-0.5">
+              <div className="text-[10px] text-muted-foreground tabular-nums mt-0.5">
                 {me?.username
                   ? `${me.username.slice(0, 3)} •••• ${me.username.slice(-4)}`
                   : ""}
@@ -196,17 +196,17 @@ export function AdminSidebar() {
           <ThemeSwitcher />
           <button
             onClick={() => setPwdDialogOpen(true)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-gray-600 hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
           >
-            <KeyRound className="size-4 text-gray-400" />
+            <KeyRound className="size-4 text-muted-foreground" />
             修改密码
           </button>
           <button
             onClick={handleLogout}
             disabled={loggingOut}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-gray-600 hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
           >
-            <LogOut className="size-4 text-gray-400" />
+            <LogOut className="size-4 text-muted-foreground" />
             {loggingOut ? "登出中…" : "登出"}
           </button>
         </div>
@@ -241,7 +241,7 @@ function ThemeSwitcher() {
             className={`h-7 flex items-center justify-center rounded-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30 ${
               active
                 ? "bg-white text-[var(--blue-700)] shadow-sm ring-1 ring-[var(--blue-200)]/60 dark:bg-white/10 dark:text-white dark:ring-white/15"
-                : "text-gray-400 hover:text-gray-600 dark:text-white/50 dark:hover:text-white/80"
+                : "text-muted-foreground hover:text-foreground dark:text-white/50 dark:hover:text-white/80"
             }`}
           >
             <Icon className="size-3.5" strokeWidth={active ? 2.4 : 2} />
@@ -256,7 +256,7 @@ function ThemeSwitcher() {
 function SectionHeader({ label }: { label: string }) {
   return (
     <div className="px-5 pt-5 pb-1.5">
-      <div className="text-[11px] uppercase tracking-[0.14em] text-gray-400 font-semibold">
+      <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
         {label}
       </div>
     </div>
@@ -284,7 +284,7 @@ function SidebarNavItem({
         ${
           active
             ? "bg-[oklch(0.96_0.03_252)] text-[var(--blue-700)] font-medium shadow-[inset_0_0_0_1px_oklch(0.87_0.07_252_/_0.4)]"
-            : "text-gray-600 hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)]"
+            : "text-muted-foreground hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)]"
         }
       `}
     >
@@ -295,7 +295,7 @@ function SidebarNavItem({
         />
       )}
       <Icon
-        className={`size-4 transition-colors ${active ? "text-[var(--blue-700)]" : "text-gray-400 group-hover:text-gray-600"}`}
+        className={`size-4 transition-colors ${active ? "text-[var(--blue-700)]" : "text-muted-foreground group-hover:text-foreground"}`}
         strokeWidth={active ? 2.4 : 2}
       />
       <span className="flex-1">{label}</span>
@@ -338,7 +338,7 @@ export function AdminMobileBar() {
             谨世 ATA
           </span>
         </Link>
-        <div className="h-4 w-px bg-gray-200 shrink-0" />
+        <div className="h-4 w-px bg-border shrink-0" />
         <div className="flex gap-1.5 shrink-0 overflow-x-auto">
           {visibleProjects.map((pid) => {
             const meta = PROJECTS[pid as keyof typeof PROJECTS];
@@ -363,7 +363,7 @@ export function AdminMobileBar() {
         {/* 修改密码 — 右侧图标按钮 */}
         <button
           onClick={() => setPwdDialogOpen(true)}
-          className="ml-auto shrink-0 size-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-[var(--blue-50)]/60"
+          className="ml-auto shrink-0 size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--blue-50)]/60"
           aria-label="修改密码"
         >
           <KeyRound className="size-3.5" />
@@ -388,7 +388,7 @@ function MobilePill({
       className={`px-2.5 py-1 rounded-md text-xs whitespace-nowrap transition-colors ${
         active
           ? "bg-[var(--blue-50)] text-[var(--blue-700)] font-medium ring-1 ring-[var(--blue-200)]/60"
-          : "text-gray-600 hover:bg-gray-50"
+          : "text-muted-foreground hover:bg-muted"
       }`}
     >
       {label}

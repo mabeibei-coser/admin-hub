@@ -60,7 +60,7 @@ export default function ResumeDiagnosisSection({ data, hasResume, index = 4, tot
           data-pdf-section="resume-diagnosis"
           className="rounded-xl border border-dashed border-[var(--blue-200)] bg-[var(--blue-50)]/40 p-5 sm:p-6 flex items-start gap-3"
         >
-          <div className="rounded-full bg-white p-2 border border-[var(--blue-200)] shrink-0">
+          <div className="rounded-full bg-card p-2 border border-[var(--blue-200)] shrink-0">
             <Inbox className="size-5 text-[var(--blue-500)]" />
           </div>
           <div className="min-w-0">
@@ -87,7 +87,7 @@ export default function ResumeDiagnosisSection({ data, hasResume, index = 4, tot
       >
         <div
           data-pdf-section="resume-diagnosis"
-          className="rounded-xl border border-[var(--blue-100)] bg-white p-5 sm:p-6 flex items-center gap-3"
+          className="rounded-xl border border-[var(--blue-100)] bg-card p-5 sm:p-6 flex items-center gap-3"
         >
           <Loader2 className="size-5 text-[var(--blue-500)] animate-spin shrink-0" />
           <p className="text-[13.5px] text-[var(--report-ink-soft)]">
@@ -234,7 +234,7 @@ export default function ResumeDiagnosisSection({ data, hasResume, index = 4, tot
                 return (
                   <Item
                     key={i}
-                    className="rounded-xl border border-[var(--blue-100)] bg-white p-4 break-inside-avoid"
+                    className="rounded-xl border border-[var(--blue-100)] bg-card p-4 break-inside-avoid"
                     {...itemProps}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
@@ -260,11 +260,11 @@ export default function ResumeDiagnosisSection({ data, hasResume, index = 4, tot
                       </div>
                     )}
                     {revisionExample && (
-                      <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3.5 py-3">
-                        <div className="text-[11px] font-semibold tracking-wider uppercase text-emerald-700 mb-1.5">
+                      <div className="mt-3 rounded-lg border border-[oklch(0.87_0.08_155)] bg-[oklch(0.97_0.04_155)]/60 px-3.5 py-3">
+                        <div className="text-[11px] font-semibold tracking-wider uppercase text-[var(--semantic-positive)] mb-1.5">
                           修订示例
                         </div>
-                        <p className="text-[13px] leading-[1.7] text-emerald-900">
+                        <p className="text-[13px] leading-[1.7] text-[oklch(0.35_0.1_155)]">
                           {revisionExample}
                         </p>
                       </div>

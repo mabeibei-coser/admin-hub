@@ -18,7 +18,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
         // Hover — subtle border tint
         "hover:border-[var(--blue-300)]",
         // Focus — modern blue glow ring (replaces stock 3px ring)
-        "focus-visible:border-[var(--blue-500)] focus-visible:ring-[3px] focus-visible:ring-[oklch(0.6_0.18_252_/_0.18)] focus-visible:bg-white",
+        "focus-visible:border-[var(--blue-500)] focus-visible:ring-[3px] focus-visible:ring-[oklch(0.6_0.18_252_/_0.18)] focus-visible:bg-card",
         // Disabled
         "disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50",
         // Invalid

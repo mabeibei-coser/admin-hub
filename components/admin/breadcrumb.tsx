@@ -35,12 +35,12 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
         return (
           <span key={idx} className="inline-flex items-center gap-2">
             {idx > 0 && (
-              <ChevronRight className="size-3 text-gray-300 shrink-0" />
+              <ChevronRight className="size-3 text-muted-foreground/50 shrink-0" />
             )}
             {item.href && !last ? (
               <Link
                 href={item.href}
-                className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
+                className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {first && <ChevronLeft className="size-4" />}
                 {item.label}
@@ -49,15 +49,15 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
               <span
                 className={
                   last
-                    ? "font-medium text-gray-700"
-                    : "text-gray-500"
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground"
                 }
               >
                 {item.label}
               </span>
             )}
             {item.trailing && (
-              <span className="text-xs text-gray-400 tabular-nums ml-0.5">
+              <span className="text-xs text-muted-foreground tabular-nums ml-0.5">
                 {item.trailing}
               </span>
             )}

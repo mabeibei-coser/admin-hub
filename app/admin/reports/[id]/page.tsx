@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { Breadcrumb } from "@/components/admin/breadcrumb";
 import { Alert } from "@/components/admin/alert";
 import { StatusPill } from "@/components/admin/status-pill";
+import { DataRow } from "@/components/admin/data-row";
 
 type ProjectId = "report" | "nav";
 
@@ -20,21 +21,13 @@ function parseProject(v: string | undefined): ProjectId {
   return v === "nav" ? "nav" : "report";
 }
 
-function Row({ label, value }: { label: string; value: ReactNode }) {
+/** 详情页 section 容器 — surface-panel + 内部标题 */
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex gap-3 py-2 border-b border-[var(--report-divider)] last:border-0">
-      <span className="shrink-0 w-28 text-xs text-gray-500 pt-0.5">{label}</span>
-      <span className="text-sm text-gray-800 break-all">{value ?? "—"}</span>
-    </div>
-  );
-}
-
-function Card({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="surface-panel p-5">
+    <section className="surface-panel p-5">
       <h2 className="text-sm font-semibold text-[var(--navy-800)] mb-3">{title}</h2>
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -208,95 +201,86 @@ export default async function ReportDetailPage({
         </div>
 
         {/* ── 基本信息 ─────────────────────────────────────────────────── */}
-        <Card title="基本信息">
-          <Row label="ID" value={String(row.id as number)} />
-          <Row
-            label="创建时间"
-            value={new Date(row.created_at as number).toLocaleString("zh-CN")}
-          />
+        <Section title="基本信息">
+          <DataRow label="ID">{String(row.id as number)}</DataRow>
+          <DataRow label="创建时间">
+            {new Date(row.created_at as number).toLocaleString("zh-CN")}
+          </DataRow>
           {/* 姓名 / 手机号（nav 侧从 form_data_json 取；report 侧暂无） */}
           {project === "nav" && (
             <>
-              <Row label="姓名" value={navFormData?.name ?? null} />
-              <Row label="手机号" value={navFormData?.phone ?? null} />
+              <DataRow label="姓名">{navFormData?.name ?? "—"}</DataRow>
+              <DataRow label="手机号">{navFormData?.phone ?? "—"}</DataRow>
             </>
           )}
-          <Row label="意向岗位" value={row.target_position as string} />
+          <DataRow label="意向岗位">{(row.target_position as string) ?? "—"}</DataRow>
           {/* nav 侧学历优先取 form_data_json，列里的 target_education 总是 NULL */}
-          <Row
-            label="学历"
-            value={
-              project === "nav"
-                ? eduLabel(navFormData?.education)
-                : eduLabel(row.target_education as string | null)
-            }
-          />
+          <DataRow label="学历">
+            {project === "nav"
+              ? eduLabel(navFormData?.education)
+              : eduLabel(row.target_education as string | null)}
+          </DataRow>
 
           {project === "nav" ? (
             <>
-              <Row label="工作年限" value={workYearsLabel(navFormData?.workYears)} />
-              <Row
-                label="用户身份"
-                value={IDENTITY_LABELS[row.user_identity as string] ?? (row.user_identity as string | null)}
-              />
+              <DataRow label="工作年限">{workYearsLabel(navFormData?.workYears)}</DataRow>
+              <DataRow label="用户身份">
+                {IDENTITY_LABELS[row.user_identity as string] ??
+                  (row.user_identity as string | null) ??
+                  "—"}
+              </DataRow>
             </>
           ) : (
             <>
-              <Row label="意向公司" value={row.target_company as string | null} />
-              <Row label="城市能级" value={row.target_city_tier as string | null} />
+              <DataRow label="意向公司">{(row.target_company as string | null) ?? "—"}</DataRow>
+              <DataRow label="城市能级">{(row.target_city_tier as string | null) ?? "—"}</DataRow>
             </>
           )}
 
-          <Row
-            label="简历文件"
-            value={
-              (row.has_resume as number) ? (
-                hasResumeFile ? (
-                  <a
-                    href={withBase(`/api/admin/reports/${String(row.id as number)}/resume?project=${project}`)}
-                    download
-                    className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
-                  >
-                    <Download className="size-3.5" />
-                    {row.resume_filename as string}
-                  </a>
-                ) : (
-                  <span className="text-amber-600 text-xs">
-                    文件已丢失（{row.resume_filename as string}）
-                  </span>
-                )
-              ) : (
-                "未上传"
-              )
-            }
-          />
-          <Row
-            label="报告附件"
-            value={
-              hasReportData ? (
-                <Link
-                  href={`/admin/reports/${String(row.id as number)}/preview?project=${project}`}
-                  target="_blank"
+          <DataRow label="简历文件">
+            {(row.has_resume as number) ? (
+              hasResumeFile ? (
+                <a
+                  href={withBase(`/api/admin/reports/${String(row.id as number)}/resume?project=${project}`)}
+                  download
                   className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
                 >
                   <Download className="size-3.5" />
-                  {project === "nav" ? "职业导航报告" : "职业定位报告"}
-                </Link>
+                  {row.resume_filename as string}
+                </a>
               ) : (
-                <span className="text-gray-400">未生成</span>
+                <span className="text-[var(--semantic-warning)] text-xs">
+                  文件已丢失（{row.resume_filename as string}）
+                </span>
               )
-            }
-          />
-        </Card>
+            ) : (
+              "未上传"
+            )}
+          </DataRow>
+          <DataRow label="报告附件">
+            {hasReportData ? (
+              <Link
+                href={`/admin/reports/${String(row.id as number)}/preview?project=${project}`}
+                target="_blank"
+                className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
+              >
+                <Download className="size-3.5" />
+                {project === "nav" ? "职业导航报告" : "职业定位报告"}
+              </Link>
+            ) : (
+              <span className="text-muted-foreground">未生成</span>
+            )}
+          </DataRow>
+        </Section>
 
         {/* ── 量表作答（report 侧） ───────────────────────────────────── */}
         {project === "report" && reportQuizAnswers.length > 0 && (
-          <Card title={`测评作答（${reportQuizAnswers.length} 题）`}>
+          <Section title={`测评作答（${reportQuizAnswers.length} 题）`}>
             <div className="space-y-2">
               {reportQuizAnswers.map((a, i) => (
                 <div key={a.questionId} className="text-sm">
-                  <span className="text-gray-400 text-xs mr-2">Q{i + 1}</span>
-                  <span className="text-gray-700">{a.questionText}</span>
+                  <span className="text-muted-foreground text-xs mr-2">Q{i + 1}</span>
+                  <span className="text-foreground">{a.questionText}</span>
                   <div className="ml-6 mt-0.5 inline-flex">
                     <span className="report-chip">
                       {a.selectedKey}. {a.selectedLabel}
@@ -305,12 +289,12 @@ export default async function ReportDetailPage({
                 </div>
               ))}
             </div>
-          </Card>
+          </Section>
         )}
 
         {/* ── 量表作答（nav 侧） ─────────────────────────────────────── */}
         {project === "nav" && navQuizAnswers && navQuizAnswers.length > 0 && (
-          <Card title={`量表作答（${navQuizAnswers.length} 题）`}>
+          <Section title={`量表作答（${navQuizAnswers.length} 题）`}>
             <div className="divide-y divide-[var(--report-divider)]">
               {navQuizAnswers.map((a, i) => {
                 const q = navQuizBankMap.get(a.questionId);
@@ -318,10 +302,10 @@ export default async function ReportDetailPage({
                 return (
                   <div key={a.questionId} className="py-2.5">
                     <div className="flex items-start gap-2 mb-1.5">
-                      <span className="text-gray-400 text-xs shrink-0 mt-0.5">Q{i + 1}</span>
+                      <span className="text-muted-foreground text-xs shrink-0 mt-0.5">Q{i + 1}</span>
                       <div>
-                        <span className="text-xs font-mono text-gray-400 mr-1.5">{a.questionId}</span>
-                        <span className="text-sm text-gray-700">{q?.text ?? "—"}</span>
+                        <span className="text-xs font-mono text-muted-foreground mr-1.5">{a.questionId}</span>
+                        <span className="text-sm text-foreground">{q?.text ?? "—"}</span>
                       </div>
                     </div>
                     <div className="ml-6">
@@ -334,21 +318,21 @@ export default async function ReportDetailPage({
                 );
               })}
             </div>
-          </Card>
+          </Section>
         )}
 
         {/* ── 访谈内容（nav 侧）— Q1/Q2 完整展开 ────────────────────── */}
         {project === "nav" &&
           interviewQ1Q2 &&
           (interviewQ1Q2.Q1 || interviewQ1Q2.Q2) && (
-            <Card title="访谈内容（Q1 / Q2）">
+            <Section title="访谈内容（Q1 / Q2）">
               <div className="space-y-3">
                 <Alert tone="warning">
                   以下内容为用户访谈原始回答，含个人陈述、PII 敏感信息。请勿截图传播或对外汇报。
                 </Alert>
                 {interviewQ1Q2.Q1 && (
                   <div>
-                    <div className="text-xs font-medium text-gray-500 mb-1.5">
+                    <div className="text-xs font-medium text-muted-foreground mb-1.5">
                       Q1 动态访谈（AI 生成题）
                     </div>
                     {interviewQuestions?.Q1 && (
@@ -357,14 +341,14 @@ export default async function ReportDetailPage({
                         {interviewQuestions.Q1}
                       </div>
                     )}
-                    <pre className="text-sm text-gray-700 bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
+                    <pre className="text-sm text-foreground bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
                       {interviewQ1Q2.Q1}
                     </pre>
                   </div>
                 )}
                 {interviewQ1Q2.Q2 && (
                   <div>
-                    <div className="text-xs font-medium text-gray-500 mb-1.5">
+                    <div className="text-xs font-medium text-muted-foreground mb-1.5">
                       Q2 动态访谈（AI 生成题）
                     </div>
                     {interviewQuestions?.Q2 && (
@@ -373,13 +357,13 @@ export default async function ReportDetailPage({
                         {interviewQuestions.Q2}
                       </div>
                     )}
-                    <pre className="text-sm text-gray-700 bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
+                    <pre className="text-sm text-foreground bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
                       {interviewQ1Q2.Q2}
                     </pre>
                   </div>
                 )}
               </div>
-            </Card>
+            </Section>
           )}
       </div>
     </div>

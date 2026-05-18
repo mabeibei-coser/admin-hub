@@ -116,7 +116,7 @@ export function DownloadPDFButton({ report }: Props) {
         )}
       </button>
       {status === "error" && errorMsg && (
-        <p className="text-[12px] text-red-600 max-w-md text-center">{errorMsg}</p>
+        <p className="text-[12px] text-[var(--semantic-danger)] max-w-md text-center">{errorMsg}</p>
       )}
     </div>
   );

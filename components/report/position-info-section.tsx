@@ -63,7 +63,7 @@ const PRIORITY_META: Record<
   secondary: {
     label: "次选",
     icon: Star,
-    tone: "border-[var(--blue-300)] bg-white text-[var(--navy-700)]",
+    tone: "border-[var(--blue-300)] bg-card text-[var(--navy-700)]",
   },
 };
 
@@ -85,7 +85,7 @@ function SubPositionCard({
   }));
 
   return (
-    <div className="rounded-xl border border-[var(--blue-100)] bg-white p-4 sm:p-5 break-inside-avoid">
+    <div className="rounded-xl border border-[var(--blue-100)] bg-card p-4 sm:p-5 break-inside-avoid">
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <span
           className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${meta.tone}`}

@@ -21,7 +21,7 @@ const DOT_COLOR: Record<StatusTone, string> = {
   info: "bg-[var(--blue-500)]",
   success: "bg-[var(--semantic-positive)]",
   warning: "bg-[var(--semantic-warning)]",
-  neutral: "bg-gray-400",
+  neutral: "bg-muted-foreground/70",
   danger: "bg-[var(--semantic-danger)]",
 };
 

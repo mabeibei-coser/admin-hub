@@ -120,7 +120,7 @@ export default function AdminsPage() {
         <div className="surface-panel overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="text-xs text-gray-500 border-b border-[var(--report-border)]">
+              <TableRow className="text-xs text-muted-foreground border-b border-[var(--report-border)]">
                 <TableHead className="w-28">姓名</TableHead>
                 <TableHead className="w-36">用户名</TableHead>
                 <TableHead>备注</TableHead>
@@ -134,7 +134,7 @@ export default function AdminsPage() {
                 <TableRow key={`skel-${i}`}>
                   {Array.from({ length: 6 }).map((__, j) => (
                     <TableCell key={j} className="py-4">
-                      <div className="h-4 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-4 bg-muted rounded animate-pulse" />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -144,12 +144,12 @@ export default function AdminsPage() {
         </div>
       ) : admins.length === 0 ? (
         <div className="text-center py-16">
-          <div className="flex flex-col items-center gap-3 text-gray-400">
-            <div className="size-12 rounded-full bg-gray-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <div className="size-12 rounded-full bg-muted flex items-center justify-center">
               <UserCog className="size-5" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-gray-600">还没有管理员</p>
+              <p className="text-sm text-muted-foreground">还没有管理员</p>
               <Link href="/admin/admins/new" className="inline-block text-xs text-[var(--blue-700)] hover:underline">
                 立即新建第一个
               </Link>
@@ -160,7 +160,7 @@ export default function AdminsPage() {
         <div className="surface-panel overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="text-xs text-gray-500 border-b border-[var(--report-border)]">
+              <TableRow className="text-xs text-muted-foreground border-b border-[var(--report-border)]">
                 <TableHead className="w-28">姓名</TableHead>
                 <TableHead className="w-36">用户名</TableHead>
                 <TableHead>备注</TableHead>
@@ -172,7 +172,7 @@ export default function AdminsPage() {
             <TableBody>
               {admins.map((admin) => (
                 <TableRow key={admin.id} className="row-hover">
-                  <TableCell className="font-medium text-gray-900">
+                  <TableCell className="font-medium text-foreground">
                     <div className="flex items-center gap-1.5">
                       {admin.name}
                       {admin.is_super === 1 && (
@@ -180,13 +180,13 @@ export default function AdminsPage() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-gray-600 tabular-nums">
+                  <TableCell className="text-muted-foreground tabular-nums">
                     {admin.username}
                   </TableCell>
-                  <TableCell className="text-gray-500 text-sm max-w-[160px] truncate">
+                  <TableCell className="text-muted-foreground text-sm max-w-[160px] truncate">
                     {admin.note ?? "—"}
                   </TableCell>
-                  <TableCell className="text-sm text-gray-600">
+                  <TableCell className="text-sm text-muted-foreground">
                     {menusDisplay(admin.menus_json, admin.is_super)}
                   </TableCell>
                   <TableCell className="text-center">

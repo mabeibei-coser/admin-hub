@@ -31,8 +31,8 @@ export function Pagination({
       className={`flex items-center justify-between px-4 py-3 border-t border-[var(--report-border)] ${className ?? ""}`}
     >
       {!compact && typeof total === "number" ? (
-        <div className="text-xs text-gray-500 tabular-nums">
-          共 <span className="font-medium text-gray-700">{total}</span> 条
+        <div className="text-xs text-muted-foreground tabular-nums">
+          共 <span className="font-medium text-foreground">{total}</span> 条
         </div>
       ) : (
         <div />
@@ -47,9 +47,9 @@ export function Pagination({
         >
           上一页
         </Button>
-        <div className="px-2 text-xs text-gray-600 tabular-nums whitespace-nowrap">
-          <span className="font-semibold text-gray-900">{page}</span>
-          <span className="text-gray-300 mx-1">/</span>
+        <div className="px-2 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+          <span className="font-semibold text-foreground">{page}</span>
+          <span className="text-muted-foreground/50 mx-1">/</span>
           <span>{totalPages}</span>
         </div>
         <Button

@@ -121,37 +121,154 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* —— Surface (deep navy-tinted, not pure black) —— */
+  --background: oklch(0.16 0.02 252);
+  --foreground: oklch(0.95 0.012 240);
+  --card: oklch(0.21 0.025 252);
+  --card-foreground: oklch(0.95 0.012 240);
+  --popover: oklch(0.21 0.025 252);
+  --popover-foreground: oklch(0.95 0.012 240);
+  /* —— Primary: keep brand blue identity in dark (lifted lightness) —— */
+  --primary: oklch(0.68 0.17 250);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.26 0.03 252);
+  --secondary-foreground: oklch(0.95 0.012 240);
+  --muted: oklch(0.26 0.025 250);
+  --muted-foreground: oklch(0.7 0.02 245);
+  --accent: oklch(0.28 0.04 252);
+  --accent-foreground: oklch(0.95 0.012 240);
+  --destructive: oklch(0.68 0.2 25);
+  --border: oklch(0.3 0.02 252);
+  --input: oklch(0.3 0.025 252);
+  --ring: oklch(0.68 0.17 250);
+  --chart-1: oklch(0.7 0.17 250);
+  --chart-2: oklch(0.75 0.14 230);
+  --chart-3: oklch(0.62 0.16 270);
+  --chart-4: oklch(0.78 0.1 210);
+  --chart-5: oklch(0.55 0.18 252);
+  --sidebar: oklch(0.18 0.025 252);
+  --sidebar-foreground: oklch(0.95 0.012 240);
+  --sidebar-primary: oklch(0.68 0.17 250);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.26 0.04 252);
+  --sidebar-accent-foreground: oklch(0.95 0.012 240);
+  --sidebar-border: oklch(0.28 0.025 252);
+  --sidebar-ring: oklch(0.68 0.17 250);
+
+  /* —— Brand scale (navy/blue) — semantically reversed for dark ——
+     在 dark 模式下，navy-900 用作"主文字色"（接近白），navy-50 作为"最暗背景"。
+     蓝色刻度保留 brand 蓝调，仅调亮 lightness。 */
+  --navy-950: oklch(0.97 0.015 252);
+  --navy-900: oklch(0.95 0.012 240);
+  --navy-800: oklch(0.88 0.02 245);
+  --navy-700: oklch(0.78 0.04 250);
+  --navy-600: oklch(0.66 0.06 250);
+  --blue-700: oklch(0.78 0.13 248);
+  --blue-600: oklch(0.72 0.15 248);
+  --blue-500: oklch(0.65 0.17 248);
+  --blue-400: oklch(0.6 0.18 245);
+  --blue-300: oklch(0.5 0.16 245);
+  --blue-200: oklch(0.4 0.12 248);
+  --blue-100: oklch(0.32 0.08 250);
+  --blue-50: oklch(0.24 0.05 252);
+  --gold-500: oklch(0.78 0.13 75);
+
+  /* —— Tinted surfaces & shadows —— */
+  --surface-tinted: oklch(0.18 0.025 252);
+  --surface-elevated: oklch(0.22 0.025 252);
+  --shadow-tinted: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 24px rgba(0, 0, 0, 0.3);
+  --shadow-tinted-lg: 0 2px 4px rgba(0, 0, 0, 0.5), 0 18px 40px rgba(0, 0, 0, 0.4);
+
+  /* —— Report tokens — reversed for dark —— */
+  --report-ink: oklch(0.95 0.012 240);
+  --report-ink-soft: oklch(0.78 0.04 250);
+  --report-ink-muted: oklch(0.6 0.02 245);
+  --report-border: oklch(0.3 0.02 250);
+  --report-divider: oklch(0.26 0.02 250);
+
+  /* —— Semantic — slightly lifted lightness for dark —— */
+  --semantic-positive: oklch(0.72 0.16 155);
+  --semantic-warning: oklch(0.78 0.14 70);
+  --semantic-danger: oklch(0.7 0.2 25);
+}
+
+/* —— Dark mode 下的 status-pill / report-card / report-shell 等 utility 覆盖 ——
+   只覆盖那些直接 hardcode oklch 颜色的 class（不用 token 引用的）。
+   用 token 引用的 class 自动从上面 --xxx-* 取色，无需在此覆盖。 */
+.dark .status-pill[data-tone="info"] {
+  background: oklch(0.28 0.06 252);
+  color: oklch(0.85 0.12 245);
+  box-shadow: inset 0 0 0 1px oklch(0.5 0.12 245 / 0.5);
+}
+.dark .status-pill[data-tone="success"] {
+  background: oklch(0.3 0.08 155);
+  color: oklch(0.85 0.12 155);
+  box-shadow: inset 0 0 0 1px oklch(0.5 0.12 155 / 0.5);
+}
+.dark .status-pill[data-tone="warning"] {
+  background: oklch(0.3 0.08 65);
+  color: oklch(0.85 0.12 70);
+  box-shadow: inset 0 0 0 1px oklch(0.5 0.12 65 / 0.55);
+}
+.dark .status-pill[data-tone="neutral"] {
+  background: oklch(0.26 0.02 250);
+  color: oklch(0.78 0.02 245);
+  box-shadow: inset 0 0 0 1px oklch(0.35 0.02 250);
+}
+.dark .status-pill[data-tone="danger"] {
+  background: oklch(0.3 0.08 25);
+  color: oklch(0.85 0.14 25);
+  box-shadow: inset 0 0 0 1px oklch(0.5 0.16 25 / 0.5);
+}
+
+/* report-shell / report-card / report-takeaway / report-quote / report-bar
+   都 hardcode 了浅色 → 在 dark 下重写背景 */
+.dark .report-shell {
+  background:
+    linear-gradient(180deg, oklch(0.22 0.04 252) 0%, transparent 40%),
+    radial-gradient(900px 500px at 100% 10%, oklch(0.3 0.06 250 / 0.4), transparent 60%),
+    var(--background);
+}
+.dark .report-card {
+  background: var(--card);
+  border-color: var(--report-border);
+}
+.dark .report-takeaway {
+  background: oklch(0.26 0.06 250);
+  color: oklch(0.92 0.02 245);
+}
+.dark .report-quote {
+  background: oklch(0.22 0.02 250);
+  color: var(--report-ink-soft);
+}
+.dark .report-bar {
+  background: oklch(0.3 0.06 252);
+}
+
+/* surface-panel-soft 在 dark 下不能再走 linear-gradient(浅→稍浅) */
+.dark .surface-panel-soft {
+  background: linear-gradient(180deg, oklch(0.22 0.025 252), oklch(0.2 0.025 252));
+  border-color: var(--border);
+}
+
+/* row-hover 在 dark 下 hover 应该变亮一点而不是再"加蓝" */
+.dark .row-hover:hover {
+  background-color: oklch(0.26 0.04 252 / 0.6);
+}
+
+/* glass-card 在 dark 下用深玻璃 */
+.dark .glass-card {
+  background: linear-gradient(135deg, oklch(0.22 0.025 252 / 0.92), oklch(0.2 0.025 252 / 0.82));
+  border: 1px solid oklch(1 0 0 / 0.08);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 oklch(1 0 0 / 0.08);
+}
+
+/* gradient-border-card 在 dark 下背景跟 card 一致 */
+.dark .gradient-border-card {
+  background: var(--card);
 }
 
 @layer base {
@@ -659,6 +776,35 @@
 }
 .animate-cta-pulse { animation: cta-pulse 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .animate-cta-pulse { animation: none; } }
+
+/* ============================================
+   LIST HEADER · subtle aurora echo
+   登录页深色玻璃在内页的轻量呼应：报告列表 / 服务列表顶部
+   一道 mesh-gradient 横带，让 PageHeader + KPI 卡浮在它上面。
+   ============================================ */
+
+.list-header-aurora {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 260px;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    radial-gradient(ellipse 70% 50% at 25% 30%, oklch(0.75 0.16 250 / 0.18), transparent 60%),
+    radial-gradient(ellipse 55% 60% at 80% 15%, oklch(0.7 0.14 270 / 0.12), transparent 65%),
+    radial-gradient(ellipse 60% 40% at 50% 80%, oklch(0.78 0.1 230 / 0.08), transparent 70%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
+}
+
+.dark .list-header-aurora {
+  opacity: 0.4;
+  background:
+    radial-gradient(ellipse 70% 50% at 25% 30%, oklch(0.5 0.18 250 / 0.45), transparent 60%),
+    radial-gradient(ellipse 55% 60% at 80% 15%, oklch(0.45 0.16 270 / 0.4), transparent 65%),
+    radial-gradient(ellipse 60% 40% at 50% 80%, oklch(0.45 0.14 230 / 0.3), transparent 70%);
+}
 
 /* ============================================
    LOGIN · split-screen brand panel

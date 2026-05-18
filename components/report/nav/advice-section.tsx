@@ -65,7 +65,7 @@ export default function AdviceSection({ data, index, total }: Props) {
               <Wrapper
                 key={i}
                 {...motionProps}
-                className="rounded-xl border bg-white overflow-hidden break-inside-avoid"
+                className="rounded-xl border bg-card overflow-hidden break-inside-avoid"
                 style={{ borderColor: accent.border, borderLeftWidth: 4 }}
               >
                 <div className="p-5">
