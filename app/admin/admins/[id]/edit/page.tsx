@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { UserCog } from "lucide-react";
 import { AdminForm } from "@/components/admin/admin-form";
+import { PageHeader } from "@/components/admin/page-header";
+import { Breadcrumb } from "@/components/admin/breadcrumb";
+import { Alert } from "@/components/admin/alert";
 import { withBase } from "@/lib/url";
 
 interface AdminRow {
@@ -48,9 +50,7 @@ export default function EditAdminPage() {
   if (error) {
     return (
       <div className="p-6 max-w-2xl mx-auto">
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <Alert tone="error">{error}</Alert>
       </div>
     );
   }
@@ -70,20 +70,24 @@ export default function EditAdminPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <Link
-          href="/admin/admins"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3"
-        >
-          <ChevronLeft className="size-3.5" />
-          返回管理员列表
-        </Link>
-        <h1 className="text-xl font-semibold text-gray-900">编辑管理员</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          {isSelf ? "您正在编辑自己的账号（不能修改自己的状态）" : `正在编辑：${admin.name}`}
-        </p>
-      </div>
+    <div className="p-6 max-w-2xl mx-auto space-y-5">
+      <Breadcrumb
+        items={[
+          { label: "管理员管理", href: "/admin/admins" },
+          { label: `编辑 · ${admin.name}` },
+        ]}
+      />
+      <PageHeader
+        icon={UserCog}
+        eyebrow={isSelf ? "编辑自己的账号" : `编辑：${admin.username}`}
+        title={`编辑 ${admin.name}`}
+        subtitle={
+          isSelf
+            ? "您正在编辑自己的账号（不能修改自己的状态）"
+            : `修改后老师下次登录起生效`
+        }
+        accentColor="blue"
+      />
       <AdminForm
         mode="edit"
         adminId={admin.id}
