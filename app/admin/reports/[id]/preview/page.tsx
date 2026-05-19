@@ -11,6 +11,7 @@ import { ResumeDiagnosisSection } from "@/components/report/resume-diagnosis-sec
 import { NegotiationSection } from "@/components/report/negotiation-section";
 import { WorkplaceInsightSection } from "@/components/report/workplace-insight-section";
 import { NavReportRenderer } from "@/components/admin/nav-report-renderer";
+import { StartupReportRenderer } from "@/components/admin/startup-report-renderer";
 import type { ReportData, JobFormData } from "@/lib/types";
 import type {
   ReportData as NavReportData,
@@ -18,17 +19,23 @@ import type {
   ScoringResult,
   InterviewQ1Q2,
 } from "@/lib/types-nav";
+import type {
+  ReportData as StartupReportData,
+  JobFormData as StartupJobFormData,
+  ScoringResult as StartupScoringResult,
+  InterviewQ1Q6 as StartupInterviewQ1Q6,
+} from "@/lib/types-startup";
 import { withBase } from "@/lib/url";
 
-type Project = "report" | "nav";
+type Project = "report" | "nav" | "startup";
 
 interface ApiResponse {
   project: Project;
   meta: Record<string, unknown>;
-  reportData: ReportData | NavReportData | null;
-  interviewQ1Q2?: InterviewQ1Q2 | null;
-  formData: JobFormData | NavJobFormData | null;
-  scoring?: ScoringResult | null;
+  reportData: ReportData | NavReportData | StartupReportData | null;
+  interviewQ1Q2?: InterviewQ1Q2 | StartupInterviewQ1Q6 | null;
+  formData: JobFormData | NavJobFormData | StartupJobFormData | null;
+  scoring?: ScoringResult | StartupScoringResult | null;
 }
 
 const TOTAL_REPORT = 6;
@@ -36,8 +43,9 @@ const TOTAL_REPORT = 6;
 export default function ReportPreviewPage() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
+  const rawProject = searchParams.get("project");
   const project: Project =
-    searchParams.get("project") === "nav" ? "nav" : "report";
+    rawProject === "nav" ? "nav" : rawProject === "startup" ? "startup" : "report";
 
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,9 +106,25 @@ export default function ReportPreviewPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
           <NavReportRenderer
             reportData={apiData.reportData as NavReportData}
-            interviewQ1Q2={apiData.interviewQ1Q2 ?? null}
+            interviewQ1Q2={(apiData.interviewQ1Q2 as InterviewQ1Q2 | undefined) ?? null}
             formData={apiData.formData as NavJobFormData | null}
-            scoring={apiData.scoring ?? null}
+            scoring={(apiData.scoring as ScoringResult | undefined) ?? null}
+          />
+        </div>
+      </>
+    );
+  }
+
+  if (project === "startup") {
+    return (
+      <>
+        {banner}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <StartupReportRenderer
+            reportData={apiData.reportData as StartupReportData}
+            interviewQ1Q2={(apiData.interviewQ1Q2 as StartupInterviewQ1Q6 | undefined) ?? null}
+            formData={apiData.formData as StartupJobFormData | null}
+            scoring={(apiData.scoring as StartupScoringResult | undefined) ?? null}
           />
         </div>
       </>

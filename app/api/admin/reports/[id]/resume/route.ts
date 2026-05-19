@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb, isNavDbReady } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady } from "@/lib/db";
 import fs from "fs";
 import path from "path";
 
 export const runtime = "nodejs";
+
+type Project = "report" | "nav" | "startup";
 
 export async function GET(
   req: NextRequest,
@@ -16,14 +18,24 @@ export async function GET(
       return NextResponse.json({ error: "无效 ID" }, { status: 400 });
     }
 
-    const project = req.nextUrl.searchParams.get("project") === "nav" ? "nav" : "report";
+    const rawProject = req.nextUrl.searchParams.get("project");
+    const project: Project =
+      rawProject === "nav" ? "nav" : rawProject === "startup" ? "startup" : "report";
 
     if (project === "nav" && !isNavDbReady()) {
       return NextResponse.json({ error: "职业导航数据库暂不可用" }, { status: 503 });
     }
+    if (project === "startup" && !isStartupDbReady()) {
+      return NextResponse.json({ error: "创业诊断数据库暂不可用" }, { status: 503 });
+    }
 
     const db = getAdminDb();
-    const table = project === "nav" ? "nav.reports" : "main.reports";
+    const tableMap: Record<Project, string> = {
+      report: "main.reports",
+      nav: "nav.reports",
+      startup: "startup.reports",
+    };
+    const table = tableMap[project];
     const row = db
       .prepare(
         `SELECT resume_storage_path, resume_filename FROM ${table} WHERE id = ?`

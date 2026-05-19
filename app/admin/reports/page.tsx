@@ -10,6 +10,7 @@ import {
   ArrowRightCircle,
   Briefcase,
   Compass,
+  Rocket,
   Sparkles,
   Clock,
   Calendar,
@@ -66,6 +67,12 @@ interface ReportRow {
   duration_ms: number | null;
   /** 已转服务的 service_tracking.id；NULL = 未转 */
   tracking_id: number | null;
+  /** startup 项目专属：项目名称（来自 form_data_json.projectName） */
+  project_name?: string | null;
+  /** startup 项目专属：启动资金（来自 form_data_json.startupCapital） */
+  startup_capital?: string | null;
+  /** startup 项目专属：创业经验（来自 form_data_json.startupExperience） */
+  startup_experience?: string | null;
 }
 
 interface Stats {
@@ -73,11 +80,11 @@ interface Stats {
   todayCount: number;
   resumeRate: number;
   avgDurationSec: number | null;
-  /** nav 项目专属：本月新增 */
+  /** nav / startup 项目专属：本月新增 */
   monthCount?: number;
-  /** nav 项目专属：本周新增 */
+  /** nav / startup 项目专属：本周新增 */
   weekCount?: number;
-  /** nav 项目专属：累计已转服务数 */
+  /** nav / startup 项目专属：累计已转服务数 */
   transferredCount?: number;
 }
 
@@ -88,6 +95,7 @@ interface ApiResponse {
   pageSize: number;
   project: ProjectFilter;
   navReady: boolean;
+  startupReady: boolean;
   stats: Stats;
 }
 
@@ -106,6 +114,22 @@ const EDUCATION_LABELS: Record<string, string> = {
   master_plus: "硕士及以上",
 };
 
+// startup 启动资金档位 → 中文标签
+const STARTUP_CAPITAL_LABELS: Record<string, string> = {
+  lt5w: "5万以下",
+  "5w-10w": "5–10万",
+  "10w-30w": "10–30万",
+  "30w-50w": "30–50万",
+  gt50w: "50万以上",
+};
+
+// startup 创业经验 → 中文标签
+const STARTUP_EXPERIENCE_LABELS: Record<string, string> = {
+  none: "无经验",
+  one: "1次",
+  multiple: "多次",
+};
+
 function eduLabel(v: string | null | undefined): string {
   if (!v) return "—";
   return EDUCATION_LABELS[v] ?? v;
@@ -120,9 +144,23 @@ function formatTs(ms: number) {
 
 function ProjectBadge({ project }: { project: ProjectId }) {
   const meta = PROJECTS[project];
-  const tone = meta.color === "green" ? "success" : "info";
+  const tone =
+    meta.color === "green" ? "success" : meta.color === "purple" ? "neutral" : "info";
   const dotColor =
-    meta.color === "green" ? "bg-[var(--semantic-positive)]" : "bg-[var(--blue-500)]";
+    meta.color === "green"
+      ? "bg-[var(--semantic-positive)]"
+      : meta.color === "purple"
+        ? "bg-[var(--purple-500)]"
+        : "bg-[var(--blue-500)]";
+  // purple 走内联类（status-pill 的 data-tone 没枚举 purple，直接 inline 控色）
+  if (meta.color === "purple") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--purple-50)] text-[var(--purple-700)] ring-1 ring-[var(--purple-200)]/60">
+        <span className={`size-1.5 rounded-full ${dotColor}`} />
+        {meta.shortLabel}
+      </span>
+    );
+  }
   return (
     <span className="status-pill" data-tone={tone}>
       <span className={`size-1.5 rounded-full ${dotColor}`} />
@@ -133,7 +171,7 @@ function ProjectBadge({ project }: { project: ProjectId }) {
 
 function readProjectFromUrl(p: string | null): ProjectFilter {
   // 历史链接 ?project=all 或不带参数时一律落到职业定位。
-  if (p === "report" || p === "nav") return p;
+  if (p === "report" || p === "nav" || p === "startup") return p;
   return "report";
 }
 
@@ -171,11 +209,14 @@ function AdminReportsContent() {
   const [to, setTo] = useState("");
   const [position, setPosition] = useState("");
   const [hasResume, setHasResume] = useState<"" | "1" | "0">("");
-  // nav 专属筛选
+  // nav / startup 专属筛选
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [userIdentity, setUserIdentity] = useState("");
   const [transferStatus, setTransferStatus] = useState<"" | "1" | "0">("");
+  // startup 专属筛选
+  const [startupCapital, setStartupCapital] = useState("");
+  const [startupExperience, setStartupExperience] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
@@ -193,11 +234,17 @@ function AdminReportsContent() {
       .catch(() => {});
   }, []);
   const handleTransfer = useCallback((row: ReportRow) => {
+    // 仅 nav / startup 行能转服务（按钮渲染处已 gate）；这里 narrow 一下类型
+    if (row.project !== "nav" && row.project !== "startup") return;
     setTransferRow({
       id: row.id,
       user_name: row.user_name,
       user_phone: row.user_phone,
-      target_position: row.target_position,
+      target_position:
+        row.project === "startup"
+          ? row.project_name ?? row.target_position
+          : row.target_position,
+      source_project: row.project,
     });
   }, []);
 
@@ -211,6 +258,8 @@ function AdminReportsContent() {
     setPhone("");
     setUserIdentity("");
     setTransferStatus("");
+    setStartupCapital("");
+    setStartupExperience("");
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [project]);
 
@@ -234,6 +283,8 @@ function AdminReportsContent() {
       if (phone) params.set("phone", phone);
       if (userIdentity) params.set("userIdentity", userIdentity);
       if (transferStatus) params.set("transferStatus", transferStatus);
+      if (startupCapital) params.set("startupCapital", startupCapital);
+      if (startupExperience) params.set("startupExperience", startupExperience);
       params.set("project", project);
       params.set("page", String(page));
       params.set("pageSize", String(pageSize));
@@ -246,7 +297,7 @@ function AdminReportsContent() {
     } finally {
       setLoading(false);
     }
-  }, [from, to, position, hasResume, name, phone, userIdentity, transferStatus, project, page]);
+  }, [from, to, position, hasResume, name, phone, userIdentity, transferStatus, startupCapital, startupExperience, project, page]);
 
   useEffect(() => {
     // 筛选条件变化时重新拉列表
@@ -270,6 +321,8 @@ function AdminReportsContent() {
     setPhone("");
     setUserIdentity("");
     setTransferStatus("");
+    setStartupCapital("");
+    setStartupExperience("");
     setPage(1);
   }
 
@@ -281,16 +334,21 @@ function AdminReportsContent() {
     name ||
     phone ||
     userIdentity ||
-    transferStatus
+    transferStatus ||
+    startupCapital ||
+    startupExperience
   );
 
-  // 只在 navReady===false 时提示（避免 pm2 重启首次请求的短暂 false 污染状态）
-  const navDegraded = data && !data.navReady;
+  // 只在 navReady===false / startupReady===false 时提示（避免 pm2 重启首次请求的短暂 false 污染状态）
+  const navDegraded = data && project === "nav" && !data.navReady;
+  const startupDegraded = data && project === "startup" && !data.startupReady;
 
   // 列定义（项目专属）
   const columns = useMemo(() => {
     if (project === "report")
       return ["时间", "姓名", "手机号", "项目", "岗位", "学历", "公司", "城市", "简历", "耗时", "操作"];
+    if (project === "startup")
+      return ["时间", "姓名", "手机号", "服务项目", "项目名称", "启动资金", "创业经验", "转服务状态", "操作"];
     // 职业导航：HR 关心节奏 + 用户身份 + 服务转化状态
     return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
   }, [project]);
@@ -315,17 +373,35 @@ function AdminReportsContent() {
       <div className="relative max-w-7xl mx-auto space-y-5">
         {/* 标题 — 统一 PageHeader（圆形 icon avatar + 顶部装饰条） */}
         <PageHeader
-          icon={project === "nav" ? Compass : Briefcase}
+          icon={
+            project === "nav"
+              ? Compass
+              : project === "startup"
+                ? Rocket
+                : Briefcase
+          }
           title={currentProjectLabel}
           subtitle={PROJECTS[project].description ?? null}
-          accentColor={project === "nav" ? "green" : "blue"}
+          accentColor={
+            project === "nav"
+              ? "green"
+              : project === "startup"
+                ? "purple"
+                : "blue"
+          }
         />
 
-        {/* nav 降级提示 */}
+        {/* nav / startup 降级提示 */}
         {navDegraded && (
           <Alert tone="warning">
             「职业导航」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
             <code>NAV_DB_PATH</code>。
+          </Alert>
+        )}
+        {startupDegraded && (
+          <Alert tone="warning">
+            「创业诊断」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
+            <code>STARTUP_DB_PATH</code>。
           </Alert>
         )}
 
@@ -396,6 +472,81 @@ function AdminReportsContent() {
                   className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">转服务状态</div>
+                <select
+                  value={transferStatus}
+                  onChange={(e) =>
+                    setTransferStatus(e.target.value as "" | "1" | "0")
+                  }
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                >
+                  <option value="">全部</option>
+                  <option value="1">已转入服务</option>
+                  <option value="0">未转入</option>
+                </select>
+              </div>
+            </>
+          ) : project === "startup" ? (
+            <>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">姓名</div>
+                <Input
+                  placeholder="关键词"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">手机号</div>
+                <Input
+                  placeholder="关键词"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">项目名称</div>
+                <Input
+                  placeholder="关键词"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">启动资金</div>
+                <select
+                  value={startupCapital}
+                  onChange={(e) => setStartupCapital(e.target.value)}
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                >
+                  <option value="">全部</option>
+                  <option value="lt5w">5万以下</option>
+                  <option value="5w-10w">5–10万</option>
+                  <option value="10w-30w">10–30万</option>
+                  <option value="30w-50w">30–50万</option>
+                  <option value="gt50w">50万以上</option>
+                </select>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">创业经验</div>
+                <select
+                  value={startupExperience}
+                  onChange={(e) => setStartupExperience(e.target.value)}
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                >
+                  <option value="">全部</option>
+                  <option value="none">无经验</option>
+                  <option value="one">1次</option>
+                  <option value="multiple">多次</option>
+                </select>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1">转服务状态</div>
@@ -519,6 +670,7 @@ function AdminReportsContent() {
                     project={project}
                     onTransfer={handleTransfer}
                     navReady={data?.navReady ?? true}
+                    startupReady={data?.startupReady ?? true}
                   />
                 ))
               )}
@@ -591,8 +743,8 @@ function KpiStrip({
 }) {
   const skeleton = loading && data === null;
 
-  // nav 项目：总报告数 / 本月新增 / 本周新增 / 转服务数量
-  if (project === "nav") {
+  // nav / startup 项目：总报告数 / 本月新增 / 本周新增 / 转服务数量（KPI 结构相同）
+  if (project === "nav" || project === "startup") {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <DataCard
@@ -713,15 +865,64 @@ function ReportRowItem({
   project,
   onTransfer,
   navReady,
+  startupReady,
 }: {
   row: ReportRow;
   project: ProjectFilter;
   onTransfer: (row: ReportRow) => void;
   navReady: boolean;
+  startupReady: boolean;
 }) {
   const durationCell = row.duration_ms
     ? `${Math.round(row.duration_ms / 1000)}s`
     : "—";
+
+  // tab=startup：项目名称 + 启动资金 + 创业经验 + 转服务状态
+  if (project === "startup") {
+    const startupMeta = PROJECTS.startup;
+    const transferred = row.tracking_id != null;
+    return (
+      <TableRow className="text-sm hover:bg-[var(--blue-50)]/40 transition-colors duration-150">
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {formatTs(row.created_at)}
+        </TableCell>
+        <TableCell className="text-foreground max-w-[100px] truncate">
+          {row.user_name || "—"}
+        </TableCell>
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {row.user_phone || "—"}
+        </TableCell>
+        <TableCell>
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--purple-700)]">
+            <span className="size-1.5 rounded-full bg-[var(--purple-500)]" />
+            {startupMeta.label}
+          </span>
+        </TableCell>
+        <TableCell className="font-medium max-w-[140px] truncate">
+          {row.project_name || row.target_position || "—"}
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {row.startup_capital
+            ? STARTUP_CAPITAL_LABELS[row.startup_capital] ?? row.startup_capital
+            : "—"}
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {row.startup_experience
+            ? STARTUP_EXPERIENCE_LABELS[row.startup_experience] ?? row.startup_experience
+            : "—"}
+        </TableCell>
+        <TableCell className="text-center">
+          <span
+            title={transferred ? "已转入服务" : "未转入"}
+            className={`inline-block size-3 rounded-full ${transferred ? "bg-[var(--semantic-positive)] shadow-[0_0_0_3px_oklch(0.72_0.18_155_/_0.22)]" : "bg-muted-foreground/40"}`}
+          />
+        </TableCell>
+        <TableCell>
+          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+        </TableCell>
+      </TableRow>
+    );
+  }
 
   // tab=report：全列
   if (project === "report") {
@@ -760,7 +961,7 @@ function ReportRowItem({
           {durationCell}
         </TableCell>
         <TableCell>
-          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} />
+          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
         </TableCell>
       </TableRow>
     );
@@ -804,7 +1005,7 @@ function ReportRowItem({
         />
       </TableCell>
       <TableCell>
-        <RowActions row={row} onTransfer={onTransfer} navReady={navReady} />
+        <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
       </TableCell>
     </TableRow>
   );
@@ -824,18 +1025,23 @@ function RowActions({
   row,
   onTransfer,
   navReady,
+  startupReady,
 }: {
   row: ReportRow;
   onTransfer: (row: ReportRow) => void;
   navReady: boolean;
+  startupReady: boolean;
 }) {
-  // 只在 nav 行显示「转服务」按钮（plan §8，V1 决策）
-  const canTransfer = row.project === "nav" && navReady;
+  // nav / startup 行均支持「转服务」按钮（v1 决策）
+  const supportsTransfer = row.project === "nav" || row.project === "startup";
+  const dbReady =
+    row.project === "nav" ? navReady : row.project === "startup" ? startupReady : false;
+  const canTransfer = supportsTransfer && dbReady;
   const transferred = row.tracking_id != null;
   return (
     <div className="flex items-center justify-center gap-2">
-      {/* 简历：有则显示，无则不可见占位（保证档案/转服务列位置固定） */}
-      {row.project === "nav" ? (
+      {/* 简历：nav/startup 留固定占位（保证档案/转服务列位置固定）；report 仅在有简历时显示 */}
+      {supportsTransfer ? (
         row.has_resume ? (
           <a
             href={withBase(`/api/admin/reports/${row.id}/resume?project=${row.project}`)}
@@ -864,7 +1070,7 @@ function RowActions({
       >
         档案
       </Link>
-      {row.project === "nav" && (
+      {supportsTransfer && (
         transferred ? (
           <Link
             href={`/admin/service-tracking/${row.tracking_id}`}
@@ -922,7 +1128,7 @@ function ReportMobileCard({ row }: { row: ReportRow }) {
             </span>
           )}
           {durationSec && <span className="tabular-nums">{durationSec}</span>}
-          {row.project === "nav" && (
+          {(row.project === "nav" || row.project === "startup") && (
             <span
               aria-label={transferred ? "已转入服务" : "未转入"}
               className={`size-2 rounded-full ${transferred ? "bg-[var(--semantic-positive)] shadow-[0_0_0_2px_oklch(0.72_0.18_155_/_0.22)]" : "bg-muted-foreground/40"}`}

@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb, isNavDbReady } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-session";
 import { canViewMenu } from "@/lib/menus";
 import { startOfMonthCN, startOfWeekCN } from "@/lib/cn-time";
 
 export const runtime = "nodejs";
 
-type ProjectFilter = "all" | "report" | "nav";
+type ProjectFilter = "all" | "report" | "nav" | "startup";
 
 function parseProject(v: string | null): ProjectFilter {
-  if (v === "report" || v === "nav") return v;
+  if (v === "report" || v === "nav" || v === "startup") return v;
   return "all";
 }
 
@@ -27,6 +27,7 @@ function clampProject(
   // 没有请求的权限，降级到第一个有权限的菜单
   if (canViewMenu(session, "report")) return "report";
   if (canViewMenu(session, "nav")) return "nav";
+  if (canViewMenu(session, "startup")) return "startup";
   if (canViewMenu(session, "all")) return "all";
   return "report"; // 兜底
 }
@@ -34,7 +35,7 @@ function clampProject(
 interface ReportRow {
   id: number;
   created_at: number;
-  project: "report" | "nav";
+  project: "report" | "nav" | "startup";
   target_position: string;
   target_education: string | null;
   work_years: string | null;
@@ -49,8 +50,14 @@ interface ReportRow {
   duration_ms: number | null;
   sections_status: string | null;
   ip: string | null;
-  /** 已转服务的 service_tracking.id；NULL = 未转。仅 nav 项目可能非 NULL。 */
+  /** 已转服务的 service_tracking.id；NULL = 未转。 */
   tracking_id: number | null;
+  /** startup 项目专属：项目名称（来自 form_data_json.projectName） */
+  project_name?: string | null;
+  /** startup 项目专属：启动资金（来自 form_data_json.startupCapital） */
+  startup_capital?: string | null;
+  /** startup 项目专属：创业经验（来自 form_data_json.startupExperience） */
+  startup_experience?: string | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -74,13 +81,19 @@ export async function GET(req: NextRequest) {
     const phone = searchParams.get("phone");
     const userIdentity = searchParams.get("userIdentity");
     const transferStatus = searchParams.get("transferStatus"); // "1"=已转 "0"=未转
+    // startup 专属筛选
+    const startupCapital = searchParams.get("startupCapital");
+    const startupExperience = searchParams.get("startupExperience");
     const project = clampProject(parseProject(searchParams.get("project")), session);
 
     const db = getAdminDb();
     const navReady = isNavDbReady();
+    const startupReady = isStartupDbReady();
 
-    // 如果 nav 库不可用，自动降级到 report-only
-    const effectiveProject: ProjectFilter = !navReady && project !== "report" ? "report" : project;
+    // 如果指定项目的库不可用，自动降级到 report-only
+    let effectiveProject: ProjectFilter = project;
+    if (project === "nav" && !navReady) effectiveProject = "report";
+    else if (project === "startup" && !startupReady) effectiveProject = "report";
 
     // 通用 conditions（应用到 report 和 nav 两侧）
     const conditions: string[] = [];
@@ -124,6 +137,36 @@ export async function GET(req: NextRequest) {
       navOnlyConditions.push("st.id IS NOT NULL");
     } else if (transferStatus === "0") {
       navOnlyConditions.push("st.id IS NULL");
+    }
+
+    // startup 专属 conditions（已带 s./st. prefix）
+    const startupOnlyConditions: string[] = [];
+    const startupOnlyParams: (string | number)[] = [];
+    if (name) {
+      startupOnlyConditions.push("json_extract(s.form_data_json, '$.name') LIKE ?");
+      startupOnlyParams.push(`%${name}%`);
+    }
+    if (phone) {
+      startupOnlyConditions.push("json_extract(s.form_data_json, '$.phone') LIKE ?");
+      startupOnlyParams.push(`%${phone}%`);
+    }
+    if (position) {
+      // startup 复用 position URL 参数作为「项目名称」搜索（form_data_json.projectName）
+      startupOnlyConditions.push("json_extract(s.form_data_json, '$.projectName') LIKE ?");
+      startupOnlyParams.push(`%${position}%`);
+    }
+    if (startupCapital) {
+      startupOnlyConditions.push("json_extract(s.form_data_json, '$.startupCapital') = ?");
+      startupOnlyParams.push(startupCapital);
+    }
+    if (startupExperience) {
+      startupOnlyConditions.push("json_extract(s.form_data_json, '$.startupExperience') = ?");
+      startupOnlyParams.push(startupExperience);
+    }
+    if (transferStatus === "1") {
+      startupOnlyConditions.push("st.id IS NOT NULL");
+    } else if (transferStatus === "0") {
+      startupOnlyConditions.push("st.id IS NULL");
     }
 
     // navSelect 用 LEFT JOIN service_tracking，nav.reports 起别名 n. —— WHERE 列名要 prefix
@@ -174,6 +217,51 @@ export async function GET(req: NextRequest) {
         ON st.source_project = 'nav' AND st.source_report_id = n.id
     `;
 
+    // startup 用 LEFT JOIN service_tracking，startup.reports 起别名 s.
+    // form_data_json 里抽出 projectName / startupCapital / startupExperience 等业务字段
+    // 学历/工作年限/用户身份/意向公司/城市能级用 NULL 占位（startup 没有这些概念）
+    // startup 的"意向岗位"语义上等价于"项目名称"，所以 target_position 也用 projectName 填，前端列展示一致
+    const startupConditionsCombined = [
+      ...conditions
+        .filter((c) => !c.startsWith("target_position"))
+        .map((c) =>
+          c.replace(/^(created_at|has_resume)\b/, "s.$1")
+        ),
+      ...startupOnlyConditions,
+    ];
+    const whereStartup = startupConditionsCombined.length > 0
+      ? `WHERE ${startupConditionsCombined.join(" AND ")}`
+      : "";
+    const startupSelect = `
+      SELECT s.id, s.created_at, 'startup' AS project,
+             json_extract(s.form_data_json, '$.projectName') AS target_position,
+             NULL AS target_education,
+             NULL AS work_years,
+             json_extract(s.form_data_json, '$.name') AS user_name,
+             json_extract(s.form_data_json, '$.phone') AS user_phone,
+             NULL AS target_company, NULL AS target_city_tier,
+             s.has_resume, s.resume_filename, NULL AS user_identity, s.uuid,
+             s.duration_ms, s.sections_status, s.ip,
+             st.id AS tracking_id,
+             json_extract(s.form_data_json, '$.projectName') AS project_name,
+             json_extract(s.form_data_json, '$.startupCapital') AS startup_capital,
+             json_extract(s.form_data_json, '$.startupExperience') AS startup_experience
+      FROM startup.reports s
+      LEFT JOIN main.service_tracking st
+        ON st.source_project = 'startup' AND st.source_report_id = s.id
+      ${whereStartup}
+    `;
+    const startupCountFrom = `
+      FROM startup.reports s
+      LEFT JOIN main.service_tracking st
+        ON st.source_project = 'startup' AND st.source_report_id = s.id
+    `;
+    // startup base params 重建（不复用通用 params，因为 position 走 startupOnlyParams）
+    // 顺序与 conditions 一致：from / to / hasResume（hasResume 是字面量无 param）
+    const startupBaseParams: (string | number)[] = [];
+    if (from) startupBaseParams.push(new Date(from).getTime());
+    if (to) startupBaseParams.push(new Date(to).getTime() + 86400000);
+
     // 根据 project filter 决定查哪一侧或两侧 UNION
     let listQuery: string;
     let countQuery: string;
@@ -189,6 +277,11 @@ export async function GET(req: NextRequest) {
       countQuery = `SELECT COUNT(*) AS c ${navCountFrom} ${whereNav}`;
       queryParams = [...params, ...navOnlyParams];
       countParams = [...params, ...navOnlyParams];
+    } else if (effectiveProject === "startup") {
+      listQuery = `${startupSelect} ORDER BY s.created_at DESC LIMIT ? OFFSET ?`;
+      countQuery = `SELECT COUNT(*) AS c ${startupCountFrom} ${whereStartup}`;
+      queryParams = [...startupBaseParams, ...startupOnlyParams];
+      countParams = [...startupBaseParams, ...startupOnlyParams];
     } else {
       // all: UNION ALL，report 用 params，nav 用 params + navOnlyParams
       listQuery = `${reportSelect} UNION ALL ${navSelect} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
@@ -288,10 +381,61 @@ export async function GET(req: NextRequest) {
           transferredCount: transferRow.c ?? 0,
         };
       }
+      // startup 项目专属：与 nav 同款 KPI（本月/本周/已转服务）
+      if (p === "startup") {
+        const monthStart = startOfMonthCN();
+        const weekStart = startOfWeekCN();
+        const stRow = db
+          .prepare("SELECT COUNT(*) AS c FROM startup.reports WHERE created_at >= ?")
+          .get(monthStart) as { c: number };
+        const swRow = db
+          .prepare("SELECT COUNT(*) AS c FROM startup.reports WHERE created_at >= ?")
+          .get(weekStart) as { c: number };
+        const transferRow = db
+          .prepare(
+            "SELECT COUNT(DISTINCT source_report_id) AS c FROM service_tracking WHERE source_project = 'startup'"
+          )
+          .get() as { c: number };
+        // startup base 的 total/today_count/resume_count 要重新算（statForProject 走 'all' 分支不够通用）
+        const totalRow = db
+          .prepare(`SELECT COUNT(*) AS total,
+            SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS today_count,
+            SUM(CASE WHEN has_resume = 1 THEN 1 ELSE 0 END) AS resume_count,
+            AVG(duration_ms) AS avg_dur
+            FROM startup.reports`)
+          .get(todayTs) as {
+            total: number;
+            today_count: number | null;
+            resume_count: number | null;
+            avg_dur: number | null;
+          };
+        const tt = totalRow.total ?? 0;
+        const rc = totalRow.resume_count ?? 0;
+        return {
+          total: tt,
+          todayCount: totalRow.today_count ?? 0,
+          resumeRate: tt > 0 ? Math.round((rc / tt) * 100) : 0,
+          avgDurationSec: totalRow.avg_dur ? Math.round(totalRow.avg_dur / 1000) : null,
+          monthCount: stRow.c ?? 0,
+          weekCount: swRow.c ?? 0,
+          transferredCount: transferRow.c ?? 0,
+        };
+      }
       return base;
     }
 
-    const stats = navReady ? statForProject(effectiveProject) : statForProject("report");
+    let stats;
+    if (effectiveProject === "startup" && startupReady) {
+      stats = statForProject("startup");
+    } else if (effectiveProject === "nav" && navReady) {
+      stats = statForProject("nav");
+    } else if (effectiveProject === "report") {
+      stats = statForProject("report");
+    } else if (navReady) {
+      stats = statForProject(effectiveProject);
+    } else {
+      stats = statForProject("report");
+    }
 
     return NextResponse.json({
       rows,
@@ -300,6 +444,7 @@ export async function GET(req: NextRequest) {
       pageSize,
       project: effectiveProject,
       navReady,
+      startupReady,
       stats,
     });
   } catch (e) {

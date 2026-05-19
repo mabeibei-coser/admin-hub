@@ -5,6 +5,7 @@ import { useSearchParams, usePathname } from "next/navigation";
 import {
   Briefcase,
   Compass,
+  Rocket,
   LogOut,
   Users,
   KeyRound,
@@ -15,12 +16,12 @@ import {
   Laptop,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { PROJECTS } from "@/lib/projects";
+import { PROJECTS, type ProjectId } from "@/lib/projects";
 import { ChangePasswordDialog } from "./change-password-dialog";
 import { useTheme, type Theme } from "./theme-provider";
 import { withBase } from "@/lib/url";
 
-type ProjectFilter = "all" | "report" | "nav";
+type ProjectFilter = "all" | ProjectId;
 
 interface MeData {
   name: string;
@@ -36,6 +37,7 @@ interface MeData {
 const PROJECT_ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
   report: Briefcase,
   nav: Compass,
+  startup: Rocket,
 };
 
 /** 从 /api/admin/me 获取当前用户数据。加载中返回 null。
@@ -112,7 +114,7 @@ export function AdminSidebar() {
         {/* === 报告管理 section === */}
         <SectionHeader label="报告管理" />
         <nav className="px-3 flex flex-col gap-0.5">
-          {(!me ? (["report", "nav"] as string[]) : me.visibleProjects).map(
+          {(!me ? (["report", "nav", "startup"] as string[]) : me.visibleProjects).map(
             (pid) => {
               const meta = PROJECTS[pid as keyof typeof PROJECTS];
               if (!meta) return null;
@@ -316,7 +318,7 @@ export function AdminMobileBar() {
   if (pathname.replace(/\/$/, "") === "/admin/login") return null;
 
   // 在 me 加载前显示骨架（loading 状态）
-  const visibleProjects: string[] = me ? me.visibleProjects : ["report", "nav"];
+  const visibleProjects: string[] = me ? me.visibleProjects : ["report", "nav", "startup"];
   const showService = !me || me.showService;
   const inServiceTracking = pathname.startsWith("/admin/service-tracking");
 

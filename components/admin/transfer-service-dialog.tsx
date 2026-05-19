@@ -25,11 +25,13 @@ interface PickerAdmin {
 }
 
 export interface TransferTargetRow {
-  /** nav.reports.id */
+  /** nav.reports.id / startup.reports.id */
   id: number;
   user_name: string | null;
   user_phone: string | null;
   target_position: string | null;
+  /** 源项目：决定 service_tracking.source_project 写哪个值 */
+  source_project: "nav" | "startup";
 }
 
 interface TransferServiceDialogProps {
@@ -91,6 +93,7 @@ export function TransferServiceDialog({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          source_project: row.source_project,
           source_report_id: row.id,
           service_category: category,
           staff2_admin_id: staff2 ? Number(staff2) : null,

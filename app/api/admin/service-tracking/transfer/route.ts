@@ -1,34 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMenu } from "@/lib/admin-session";
-import { getAdminDb, isNavDbReady } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady } from "@/lib/db";
 import { SERVICE_CATEGORY_KEYS, type ServiceCategory } from "@/lib/service-tracking";
+
+type SourceProject = "nav" | "startup";
 
 /**
  * POST /api/admin/service-tracking/transfer
  *
- * 把一条 nav.reports 记录「转入」服务跟踪。
+ * 把一条 nav.reports / startup.reports 记录「转入」服务跟踪。
  *
- * 权限：requireMenu("nav") — 操作员需有职业导航菜单权限
- * source_project 后端写死 'nav'（V1 不接前端参数；report 项目下版再放开）
+ * 权限：requireMenu(source_project) — 操作员需有对应项目的菜单权限
+ * source_project 由前端传入，nav | startup 二选一（默认 'nav' 兼容历史调用）
  *
  * 错误处理：
  *   - 400 输入校验失败
  *   - 404 源记录不存在
  *   - 409 已转过 + existingId（TOCTOU 安全：try INSERT → catch SQLITE_CONSTRAINT_UNIQUE）
- *   - 503 nav 库不可用
+ *   - 503 源库不可用
  */
 export async function POST(req: NextRequest) {
-  const session = await requireMenu("nav");
-  if (!session) {
-    return NextResponse.json({ error: "无权限" }, { status: 403 });
-  }
-  if (!isNavDbReady()) {
-    return NextResponse.json({ error: "职业导航数据库暂不可用" }, { status: 503 });
-  }
-
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
   if (!body) {
     return NextResponse.json({ error: "请求体格式错误" }, { status: 400 });
+  }
+
+  // source_project：默认 'nav'（兼容历史）；显式传 'startup' 走创业流程
+  const rawSourceProject = (body.source_project ?? "nav") as string;
+  if (rawSourceProject !== "nav" && rawSourceProject !== "startup") {
+    return NextResponse.json({ error: "source_project 无效（nav|startup）" }, { status: 400 });
+  }
+  const sourceProject: SourceProject = rawSourceProject;
+
+  const session = await requireMenu(sourceProject);
+  if (!session) {
+    return NextResponse.json({ error: "无权限" }, { status: 403 });
+  }
+  const projectReady = sourceProject === "nav" ? isNavDbReady() : isStartupDbReady();
+  if (!projectReady) {
+    const label = sourceProject === "nav" ? "职业导航" : "创业诊断";
+    return NextResponse.json({ error: `${label}数据库暂不可用` }, { status: 503 });
   }
 
   // ─── 输入校验（EH3） ────────────────────────────────────────────
@@ -74,15 +85,20 @@ export async function POST(req: NextRequest) {
   }
 
   // ─── 源记录存在性 + 关键字段（EH4） ─────────────────────────────
-  // nav.reports 真实 schema 里没有 user_name / user_phone 列，
-  // 姓名手机号埋在 form_data_json，照搬 [/api/admin/reports/route.ts] 用 json_extract 抽
+  // nav/startup 的 reports 真实 schema 里没有 user_name / user_phone 列，姓名手机号埋在 form_data_json
+  // 用 json_extract 抽；startup 的"target_position"语义上是项目名称（form_data_json.projectName）
+  const sourceTable = sourceProject === "nav" ? "nav.reports" : "startup.reports";
+  const positionExpr =
+    sourceProject === "nav"
+      ? "target_position"
+      : "json_extract(form_data_json, '$.projectName')";
   const source = db
     .prepare(
       `SELECT
          json_extract(form_data_json, '$.name')  AS user_name,
          json_extract(form_data_json, '$.phone') AS user_phone,
-         target_position
-       FROM nav.reports WHERE id = ?`
+         ${positionExpr} AS target_position
+       FROM ${sourceTable} WHERE id = ?`
     )
     .get(sourceReportId) as
     | {
@@ -109,9 +125,10 @@ export async function POST(req: NextRequest) {
           overall_note,
           first_service_at, last_service_at,
           created_at, updated_at
-        ) VALUES ('nav', ?, ?, ?, ?, ?, 'in_progress', ?, ?, ?, NULL, ?, NULL, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, 'in_progress', ?, ?, ?, NULL, ?, NULL, ?, ?)`
       )
       .run(
+        sourceProject,
         sourceReportId,
         source.user_name,
         source.user_phone,
@@ -133,9 +150,9 @@ export async function POST(req: NextRequest) {
       const existing = db
         .prepare(
           `SELECT id FROM service_tracking
-           WHERE source_project = 'nav' AND source_report_id = ?`
+           WHERE source_project = ? AND source_report_id = ?`
         )
-        .get(sourceReportId) as { id: number } | undefined;
+        .get(sourceProject, sourceReportId) as { id: number } | undefined;
       return NextResponse.json(
         {
           error: "duplicate",

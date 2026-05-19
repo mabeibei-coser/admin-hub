@@ -1,13 +1,20 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAdminDb, isNavDbReady } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady, getStartupDbDir } from "@/lib/db";
 import fs from "fs";
 import path from "path";
-import { Download, Compass, Briefcase } from "lucide-react";
+import { Download, Compass, Briefcase, Rocket } from "lucide-react";
 import { withBase } from "@/lib/url";
 import type { JobFormData, QuizAnswer } from "@/lib/types";
 import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2, QuizBank, QuizQuestion as NavQuizQuestion } from "@/lib/types-nav";
+import type {
+  JobFormData as StartupJobFormData,
+  QuizAnswer as StartupQuizAnswer,
+  ReportData as StartupReportData,
+  InterviewQ1Q6 as StartupInterviewQ1Q6,
+  QuizBank as StartupQuizBank,
+} from "@/lib/types-startup";
 import { PROJECTS } from "@/lib/projects";
 import { PageHeader } from "@/components/admin/page-header";
 import { Breadcrumb } from "@/components/admin/breadcrumb";
@@ -15,11 +22,27 @@ import { Alert } from "@/components/admin/alert";
 import { StatusPill } from "@/components/admin/status-pill";
 import { DataRow } from "@/components/admin/data-row";
 
-type ProjectId = "report" | "nav";
+type ProjectId = "report" | "nav" | "startup";
 
 function parseProject(v: string | undefined): ProjectId {
-  return v === "nav" ? "nav" : "report";
+  if (v === "nav") return "nav";
+  if (v === "startup") return "startup";
+  return "report";
 }
+
+const STARTUP_CAPITAL_LABELS: Record<string, string> = {
+  lt5w: "5万以下",
+  "5w-10w": "5–10万",
+  "10w-30w": "10–30万",
+  "30w-50w": "30–50万",
+  gt50w: "50万以上",
+};
+
+const STARTUP_EXPERIENCE_LABELS: Record<string, string> = {
+  none: "无经验",
+  one: "1次",
+  multiple: "多次",
+};
 
 /** 详情页 section 容器 — surface-panel + 内部标题 */
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -91,9 +114,29 @@ export default async function ReportDetailPage({
       </div>
     );
   }
+  if (project === "startup" && !isStartupDbReady()) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-3xl mx-auto space-y-5">
+          <Breadcrumb
+            items={[
+              { label: "报告列表", href: "/admin/reports" },
+              { label: "创业诊断报告" },
+            ]}
+          />
+          <Alert tone="warning">创业诊断数据库暂不可用，无法加载此报告。</Alert>
+        </div>
+      </div>
+    );
+  }
 
   const db = getAdminDb();
-  const table = project === "nav" ? "nav.reports" : "main.reports";
+  const tableMap: Record<ProjectId, string> = {
+    report: "main.reports",
+    nav: "nav.reports",
+    startup: "startup.reports",
+  };
+  const table = tableMap[project];
   const row = db
     .prepare(`SELECT * FROM ${table} WHERE id = ?`)
     .get(id) as Record<string, unknown> | undefined;
@@ -109,6 +152,12 @@ export default async function ReportDetailPage({
   const navQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
   let reportFormData: JobFormData | null = null;
   let reportQuizAnswers: QuizAnswer[] = [];
+  // startup 专属解析
+  let startupReportData: StartupReportData | null = null;
+  let startupInterview: StartupInterviewQ1Q6 | null = null;
+  let startupFormData: StartupJobFormData | null = null;
+  let startupQuizAnswers: StartupQuizAnswer[] | null = null;
+  const startupQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
 
   if (project === "nav") {
     try { reportData = JSON.parse(row.report_json as string) as NavReportData; } catch { /* empty */ }
@@ -139,6 +188,23 @@ export default async function ReportDetailPage({
         }
       }
     } catch { /* dynamic questions missing or unreadable */ }
+  } else if (project === "startup") {
+    try { startupReportData = JSON.parse(row.report_json as string) as StartupReportData; } catch { /* empty */ }
+    try { startupInterview = JSON.parse(row.interview_q1q2_json as string) as StartupInterviewQ1Q6; } catch { /* empty */ }
+    try { startupFormData = JSON.parse(row.form_data_json as string) as StartupJobFormData; } catch { /* empty */ }
+    try { startupQuizAnswers = JSON.parse(row.quiz_answers_json as string) as StartupQuizAnswer[]; } catch { /* empty */ }
+    // startup 的 quiz-bank.json 在 startup-diagnostic 项目的 data/ 同级目录
+    try {
+      const bank = JSON.parse(
+        fs.readFileSync(path.join(getStartupDbDir(), "quiz-bank.json"), "utf-8")
+      ) as StartupQuizBank;
+      for (const q of bank.fixedQuestions) {
+        startupQuizBankMap.set(q.id, {
+          text: q.text,
+          options: q.options.map((o) => ({ label: o.label, text: o.text })),
+        });
+      }
+    } catch { /* quiz bank missing or unreadable */ }
   } else {
     const storagePath = row.report_storage_path as string | null;
     if (storagePath) {
@@ -156,11 +222,33 @@ export default async function ReportDetailPage({
     (row.resume_storage_path as string | null) &&
     fs.existsSync(row.resume_storage_path as string);
 
-  const hasReportData = project === "nav" ? !!reportData : !!reportFormData;
+  const hasReportData =
+    project === "nav"
+      ? !!reportData
+      : project === "startup"
+        ? !!startupReportData
+        : !!reportFormData;
 
   // 用户友好的页头副信息：「张三 · 13800138001」或仅项目名
-  const userName = project === "nav" ? navFormData?.name : null;
-  const userPhone = project === "nav" ? navFormData?.phone : null;
+  const userName =
+    project === "nav"
+      ? navFormData?.name
+      : project === "startup"
+        ? startupFormData?.name
+        : null;
+  const userPhone =
+    project === "nav"
+      ? navFormData?.phone
+      : project === "startup"
+        ? startupFormData?.phone
+        : null;
+
+  // startup 的 target_position 列实际是 form_data_json.projectName（同 nav 的存法），
+  // row.target_position 在 startup-diagnostic 里就直接是 projectName（finalize 时写入）
+  const headerPosition =
+    project === "startup"
+      ? (startupFormData?.projectName ?? (row.target_position as string) ?? "—")
+      : ((row.target_position as string) ?? "—");
 
   return (
     <div className="min-h-screen bg-background p-6 print:bg-white print:p-0">
@@ -171,7 +259,15 @@ export default async function ReportDetailPage({
               { label: "报告列表", href: "/admin/reports" },
               {
                 label: (
-                  <StatusPill tone={project === "nav" ? "success" : "info"}>
+                  <StatusPill
+                    tone={
+                      project === "nav"
+                        ? "success"
+                        : project === "startup"
+                          ? "info"
+                          : "info"
+                    }
+                  >
                     {projectMeta.label}
                   </StatusPill>
                 ),
@@ -183,20 +279,28 @@ export default async function ReportDetailPage({
         {/* 页头 */}
         <div className="print:hidden">
           <PageHeader
-            icon={project === "nav" ? Compass : Briefcase}
-            eyebrow={`${projectMeta.label} · 报告 #${row.id as number}`}
-            title={
-              userName
-                ? `${userName} · ${row.target_position as string}`
-                : (row.target_position as string)
+            icon={
+              project === "nav"
+                ? Compass
+                : project === "startup"
+                  ? Rocket
+                  : Briefcase
             }
+            eyebrow={`${projectMeta.label} · 报告 #${row.id as number}`}
+            title={userName ? `${userName} · ${headerPosition}` : headerPosition}
             subtitle={
               <span className="tabular-nums">
                 {new Date(row.created_at as number).toLocaleString("zh-CN")}
                 {userPhone ? ` · ${userPhone}` : ""}
               </span>
             }
-            accentColor={project === "nav" ? "green" : "blue"}
+            accentColor={
+              project === "nav"
+                ? "green"
+                : project === "startup"
+                  ? "purple"
+                  : "blue"
+            }
           />
         </div>
 
@@ -206,34 +310,66 @@ export default async function ReportDetailPage({
           <DataRow label="创建时间">
             {new Date(row.created_at as number).toLocaleString("zh-CN")}
           </DataRow>
-          {/* 姓名 / 手机号（nav 侧从 form_data_json 取；report 侧暂无） */}
-          {project === "nav" && (
+          {/* 姓名 / 手机号（nav/startup 侧从 form_data_json 取；report 侧暂无） */}
+          {(project === "nav" || project === "startup") && (
             <>
-              <DataRow label="姓名">{navFormData?.name ?? "—"}</DataRow>
-              <DataRow label="手机号">{navFormData?.phone ?? "—"}</DataRow>
+              <DataRow label="姓名">
+                {(project === "nav" ? navFormData?.name : startupFormData?.name) ?? "—"}
+              </DataRow>
+              <DataRow label="手机号">
+                {(project === "nav" ? navFormData?.phone : startupFormData?.phone) ?? "—"}
+              </DataRow>
             </>
           )}
-          <DataRow label="意向岗位">{(row.target_position as string) ?? "—"}</DataRow>
-          {/* nav 侧学历优先取 form_data_json，列里的 target_education 总是 NULL */}
-          <DataRow label="学历">
-            {project === "nav"
-              ? eduLabel(navFormData?.education)
-              : eduLabel(row.target_education as string | null)}
-          </DataRow>
 
-          {project === "nav" ? (
+          {project === "startup" ? (
             <>
-              <DataRow label="工作年限">{workYearsLabel(navFormData?.workYears)}</DataRow>
-              <DataRow label="用户身份">
-                {IDENTITY_LABELS[row.user_identity as string] ??
-                  (row.user_identity as string | null) ??
-                  "—"}
+              <DataRow label="项目名称">{startupFormData?.projectName ?? "—"}</DataRow>
+              <DataRow label="启动资金">
+                {startupFormData?.startupCapital
+                  ? STARTUP_CAPITAL_LABELS[startupFormData.startupCapital] ??
+                    startupFormData.startupCapital
+                  : "—"}
               </DataRow>
+              <DataRow label="创业经验">
+                {startupFormData?.startupExperience
+                  ? STARTUP_EXPERIENCE_LABELS[startupFormData.startupExperience] ??
+                    startupFormData.startupExperience
+                  : "—"}
+              </DataRow>
+              {startupFormData?.productOrService && (
+                <DataRow label="主要产品/服务">
+                  <span className="text-foreground whitespace-pre-wrap leading-relaxed">
+                    {startupFormData.productOrService}
+                  </span>
+                </DataRow>
+              )}
             </>
           ) : (
             <>
-              <DataRow label="意向公司">{(row.target_company as string | null) ?? "—"}</DataRow>
-              <DataRow label="城市能级">{(row.target_city_tier as string | null) ?? "—"}</DataRow>
+              <DataRow label="意向岗位">{(row.target_position as string) ?? "—"}</DataRow>
+              {/* nav 侧学历优先取 form_data_json，列里的 target_education 总是 NULL */}
+              <DataRow label="学历">
+                {project === "nav"
+                  ? eduLabel(navFormData?.education)
+                  : eduLabel(row.target_education as string | null)}
+              </DataRow>
+
+              {project === "nav" ? (
+                <>
+                  <DataRow label="工作年限">{workYearsLabel(navFormData?.workYears)}</DataRow>
+                  <DataRow label="用户身份">
+                    {IDENTITY_LABELS[row.user_identity as string] ??
+                      (row.user_identity as string | null) ??
+                      "—"}
+                  </DataRow>
+                </>
+              ) : (
+                <>
+                  <DataRow label="意向公司">{(row.target_company as string | null) ?? "—"}</DataRow>
+                  <DataRow label="城市能级">{(row.target_city_tier as string | null) ?? "—"}</DataRow>
+                </>
+              )}
             </>
           )}
 
@@ -265,7 +401,11 @@ export default async function ReportDetailPage({
                 className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
               >
                 <Download className="size-3.5" />
-                {project === "nav" ? "职业导航报告" : "职业定位报告"}
+                {project === "nav"
+                  ? "职业导航报告"
+                  : project === "startup"
+                    ? "创业诊断报告"
+                    : "职业定位报告"}
               </Link>
             ) : (
               <span className="text-muted-foreground">未生成</span>
@@ -298,6 +438,35 @@ export default async function ReportDetailPage({
             <div className="divide-y divide-[var(--report-divider)]">
               {navQuizAnswers.map((a, i) => {
                 const q = navQuizBankMap.get(a.questionId);
+                const opt = q?.options.find((o) => o.label === a.selectedLabel);
+                return (
+                  <div key={a.questionId} className="py-2.5">
+                    <div className="flex items-start gap-2 mb-1.5">
+                      <span className="text-muted-foreground text-xs shrink-0 mt-0.5">Q{i + 1}</span>
+                      <div>
+                        <span className="text-xs font-mono text-muted-foreground mr-1.5">{a.questionId}</span>
+                        <span className="text-sm text-foreground">{q?.text ?? "—"}</span>
+                      </div>
+                    </div>
+                    <div className="ml-6">
+                      <span className="report-chip">
+                        <span className="font-semibold">{a.selectedLabel}.</span>
+                        <span>{opt?.text ?? a.selectedLabel}</span>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+        )}
+
+        {/* ── 量表作答（startup 侧）─ quiz_answers 结构与 nav 完全一致 ── */}
+        {project === "startup" && startupQuizAnswers && startupQuizAnswers.length > 0 && (
+          <Section title={`量表作答（${startupQuizAnswers.length} 题）`}>
+            <div className="divide-y divide-[var(--report-divider)]">
+              {startupQuizAnswers.map((a, i) => {
+                const q = startupQuizBankMap.get(a.questionId);
                 const opt = q?.options.find((o) => o.label === a.selectedLabel);
                 return (
                   <div key={a.questionId} className="py-2.5">
@@ -362,6 +531,33 @@ export default async function ReportDetailPage({
                     </pre>
                   </div>
                 )}
+              </div>
+            </Section>
+          )}
+
+        {/* ── 访谈内容（startup 侧）— Q1-Q6 循环 ─────────────────── */}
+        {project === "startup" &&
+          startupInterview &&
+          Object.values(startupInterview).some((v) => v) && (
+            <Section title="访谈内容（Q1 – Q6）">
+              <div className="space-y-3">
+                <Alert tone="warning">
+                  以下内容为用户访谈原始回答，含个人陈述、PII 敏感信息。请勿截图传播或对外汇报。
+                </Alert>
+                {(["Q1", "Q2", "Q3", "Q4", "Q5", "Q6"] as const).map((qKey) => {
+                  const answer = startupInterview?.[qKey];
+                  if (!answer) return null;
+                  return (
+                    <div key={qKey}>
+                      <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                        {qKey} 创业访谈
+                      </div>
+                      <pre className="text-sm text-foreground bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
+                        {answer}
+                      </pre>
+                    </div>
+                  );
+                })}
               </div>
             </Section>
           )}

@@ -16,7 +16,7 @@ import { Breadcrumb } from "@/components/admin/breadcrumb";
 
 interface DetailRow {
   id: number;
-  source_project: "report" | "nav";
+  source_project: "report" | "nav" | "startup";
   source_report_id: number;
   user_name: string | null;
   user_phone: string | null;

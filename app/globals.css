@@ -101,6 +101,13 @@
   --blue-100: oklch(0.94 0.03 238);
   --blue-50: oklch(0.975 0.012 238);
   --gold-500: oklch(0.74 0.13 75);
+  /* —— Purple scale — startup 项目专属 accent —— */
+  --purple-700: oklch(0.5 0.2 305);
+  --purple-600: oklch(0.57 0.19 305);
+  --purple-500: oklch(0.63 0.18 305);
+  --purple-200: oklch(0.87 0.07 305);
+  --purple-100: oklch(0.94 0.03 305);
+  --purple-50: oklch(0.975 0.012 305);
 
   /* —— Tinted neutrals for surfaces & shadows —— */
   --surface-tinted: oklch(0.985 0.006 240);
@@ -172,6 +179,13 @@
   --blue-100: oklch(0.32 0.08 250);
   --blue-50: oklch(0.24 0.05 252);
   --gold-500: oklch(0.78 0.13 75);
+  /* —— Purple scale (dark) —— */
+  --purple-700: oklch(0.78 0.13 305);
+  --purple-600: oklch(0.72 0.15 305);
+  --purple-500: oklch(0.65 0.17 305);
+  --purple-200: oklch(0.4 0.12 305);
+  --purple-100: oklch(0.32 0.08 305);
+  --purple-50: oklch(0.24 0.05 305);
 
   /* —— Tinted surfaces & shadows —— */
   --surface-tinted: oklch(0.18 0.025 252);
