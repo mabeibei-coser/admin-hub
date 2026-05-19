@@ -45,10 +45,11 @@ export function statusLabel(key: string): string {
   return STATUS_LABEL_MAP[key as ServiceStatus] ?? key;
 }
 
-// 服务项目映射（来自 nav.reports / main.reports）
+// 服务项目映射（来自 nav.reports / main.reports / startup.reports）
 export const SERVICE_PROJECT_LABELS: Record<string, string> = {
   nav: "职业导航",
   report: "职业定位",
+  startup: "创业诊断",
 };
 
 // 分类 / 状态徽章统一走 components/admin/status-pill.tsx (data-tone),

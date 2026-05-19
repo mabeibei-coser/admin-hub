@@ -7,6 +7,9 @@ const DB_PATH = process.env.DB_PATH ?? path.join(DATA_DIR, "career-report.db");
 // career-nav 数据库路径（ATTACH DATABASE 模式）。默认与 career-report 同目录。
 // 部署时通过 NAV_DB_PATH env 指向实际 career-nav 数据文件。
 const NAV_DB_PATH = process.env.NAV_DB_PATH ?? path.join(DATA_DIR, "career-nav.db");
+// startup-diagnostic 数据库路径（ATTACH DATABASE 模式）。默认与 career-report 同目录。
+// 部署时通过 STARTUP_DB_PATH env 指向实际 startup-diagnostic 数据文件。
+const STARTUP_DB_PATH = process.env.STARTUP_DB_PATH ?? path.join(DATA_DIR, "startup-diagnostic.db");
 
 let _db: Database.Database | null = null;
 
@@ -61,7 +64,7 @@ export function getDb(): Database.Database {
   _db.exec(`
     CREATE TABLE IF NOT EXISTS service_tracking (
       id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-      source_project      TEXT    NOT NULL CHECK (source_project IN ('report','nav')),
+      source_project      TEXT    NOT NULL CHECK (source_project IN ('report','nav','startup')),
       source_report_id    INTEGER NOT NULL,
       user_name           TEXT,
       user_phone          TEXT,
@@ -109,6 +112,46 @@ export function getDb(): Database.Database {
     _db.exec("ALTER TABLE service_records ADD COLUMN attachments_json TEXT");
   }
 
+  // 老库迁移：service_tracking.source_project CHECK 约束扩展 'startup'。
+  // SQLite 不支持 ALTER TABLE 改 CHECK，必须重建表。幂等：检查 sql 文本含 'startup' 则跳过。
+  const stMeta = _db
+    .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='service_tracking'")
+    .get() as { sql?: string } | undefined;
+  if (stMeta?.sql && !stMeta.sql.includes("'startup'")) {
+    _db.exec(`
+      BEGIN;
+      CREATE TABLE service_tracking_new (
+        id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_project      TEXT    NOT NULL CHECK (source_project IN ('report','nav','startup')),
+        source_report_id    INTEGER NOT NULL,
+        user_name           TEXT,
+        user_phone          TEXT,
+        target_position     TEXT,
+        service_category    TEXT    NOT NULL
+                            CHECK (service_category IN ('easy','moderate','hard','priority','safety_net')),
+        status              TEXT    NOT NULL DEFAULT 'in_progress'
+                            CHECK (status IN ('in_progress','completed')),
+        staff1_admin_id     INTEGER NOT NULL,
+        staff2_admin_id     INTEGER
+                            CHECK (staff2_admin_id IS NULL OR staff2_admin_id != staff1_admin_id),
+        recorder_admin_id   INTEGER NOT NULL,
+        overall_note        TEXT,
+        first_service_at    INTEGER NOT NULL,
+        last_service_at     INTEGER,
+        created_at          INTEGER NOT NULL,
+        updated_at          INTEGER NOT NULL
+      );
+      INSERT INTO service_tracking_new SELECT * FROM service_tracking;
+      DROP TABLE service_tracking;
+      ALTER TABLE service_tracking_new RENAME TO service_tracking;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_st_source ON service_tracking(source_project, source_report_id);
+      CREATE INDEX IF NOT EXISTS idx_st_staff1 ON service_tracking(staff1_admin_id);
+      CREATE INDEX IF NOT EXISTS idx_st_staff2 ON service_tracking(staff2_admin_id);
+      CREATE INDEX IF NOT EXISTS idx_st_first ON service_tracking(first_service_at DESC);
+      COMMIT;
+    `);
+  }
+
   return _db;
 }
 
@@ -128,6 +171,10 @@ export function getAdminDb(): Database.Database {
     const safePath = NAV_DB_PATH.replaceAll("'", "''");
     db.exec(`ATTACH DATABASE '${safePath}' AS nav`);
   }
+  if (!attached.some((d) => d.name === "startup")) {
+    const safePath = STARTUP_DB_PATH.replaceAll("'", "''");
+    db.exec(`ATTACH DATABASE '${safePath}' AS startup`);
+  }
   return db;
 }
 
@@ -142,4 +189,22 @@ export function isNavDbReady(): boolean {
   } catch {
     return false;
   }
+}
+
+/** admin 端检查 startup 库是否就绪（有 reports 表）。返回 false 时 admin 应降级到 'report' tab。 */
+export function isStartupDbReady(): boolean {
+  try {
+    const db = getAdminDb();
+    const tables = db
+      .prepare("SELECT name FROM startup.sqlite_master WHERE type='table' AND name='reports'")
+      .all() as Array<{ name: string }>;
+    return tables.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** startup 数据库目录路径（用于读 quiz-bank.json 等附属文件）。 */
+export function getStartupDbDir(): string {
+  return path.dirname(STARTUP_DB_PATH);
 }

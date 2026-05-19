@@ -8,7 +8,7 @@
  * 添加新项目（如徐汇/浦东）：在 PROJECTS 里加一项 + admin API 加 schema 即可。
  */
 
-export type ProjectId = "report" | "nav";
+export type ProjectId = "report" | "nav" | "startup";
 
 export interface ProjectMeta {
   id: ProjectId;
@@ -40,6 +40,14 @@ export const PROJECTS: Record<ProjectId, ProjectMeta> = {
     color: "green",
     sectionCount: 5,
     description: "求职指导评估报告",
+  },
+  startup: {
+    id: "startup",
+    label: "创业诊断",
+    shortLabel: "创业",
+    color: "purple",
+    sectionCount: 3,
+    description: "创业项目六维诊断报告",
   },
 };
 

@@ -4,11 +4,21 @@ import fs from "fs";
 
 export const runtime = "nodejs";
 
-type Project = "report" | "nav";
+type Project = "report" | "nav" | "startup";
 
 function parseProject(v: string | null): Project | null {
-  if (v === "report" || v === "nav") return v;
+  if (v === "report" || v === "nav" || v === "startup") return v;
   return null;
+}
+
+// JSON 解析：startup/nav 共用同样的字段名，抽成 helper 避免重复
+function safeJsonParse<T = unknown>(raw: unknown): T | null {
+  if (typeof raw !== "string") return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(
@@ -25,13 +35,18 @@ export async function GET(
     const project = parseProject(req.nextUrl.searchParams.get("project"));
     if (!project) {
       return NextResponse.json(
-        { error: "缺少 project 参数（report|nav）" },
+        { error: "缺少 project 参数（report|nav|startup）" },
         { status: 400 }
       );
     }
 
     const db = getAdminDb();
-    const table = project === "nav" ? "nav.reports" : "main.reports";
+    const tableMap: Record<Project, string> = {
+      report: "main.reports",
+      nav: "nav.reports",
+      startup: "startup.reports",
+    };
+    const table = tableMap[project];
 
     // 注：SQLite 不支持 prepared statement 参数化表名，project 已在白名单内枚举（report|nav），可安全插入
     const row = db.prepare(`SELECT * FROM ${table} WHERE id = ?`).get(id) as
@@ -48,49 +63,15 @@ export async function GET(
     let quizAnswers: unknown = null;
     let scoring: unknown = null;
 
-    if (project === "nav") {
-      // career-nav: 直接从 report_json 列拿（T3 polish 后这是单一真相来源）
-      // 关键防御：绝对不能走 readReportFromDisk（跨进程文件读必然失败）
-      const reportJson = row.report_json as string | null;
-      if (reportJson) {
-        try {
-          reportData = JSON.parse(reportJson);
-        } catch (e) {
-          console.error("[admin/reports] nav report_json parse failed:", e);
-        }
-      }
-      const q1q2Json = row.interview_q1q2_json as string | null;
-      if (q1q2Json) {
-        try {
-          interviewQ1Q2 = JSON.parse(q1q2Json);
-        } catch {
-          /* swallow */
-        }
-      }
-      const formJson = row.form_data_json as string | null;
-      if (formJson) {
-        try {
-          formData = JSON.parse(formJson);
-        } catch {
-          /* swallow */
-        }
-      }
-      const quizJson = row.quiz_answers_json as string | null;
-      if (quizJson) {
-        try {
-          quizAnswers = JSON.parse(quizJson);
-        } catch {
-          /* swallow */
-        }
-      }
-      const scoringJson = row.scoring_json as string | null;
-      if (scoringJson) {
-        try {
-          scoring = JSON.parse(scoringJson);
-        } catch {
-          /* swallow */
-        }
-      }
+    if (project === "nav" || project === "startup") {
+      // career-nav / startup-diagnostic: 直接从 report_json 列拿（finalize 后这是单一真相来源）
+      // 两者 JSON 列字段名完全一致：report_json / interview_q1q2_json / form_data_json
+      // / quiz_answers_json / scoring_json
+      reportData = safeJsonParse(row.report_json);
+      interviewQ1Q2 = safeJsonParse(row.interview_q1q2_json);
+      formData = safeJsonParse(row.form_data_json);
+      quizAnswers = safeJsonParse(row.quiz_answers_json);
+      scoring = safeJsonParse(row.scoring_json);
     } else {
       // career-report: 从磁盘读 data/reports/{id}.json（沿用现有逻辑）
       const storagePath = row.report_storage_path as string | null;

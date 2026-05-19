@@ -59,7 +59,7 @@ const STATUS_TONE: Record<ServiceStatus, StatusTone> = {
 
 interface ListRow {
   id: number;
-  source_project: "report" | "nav";
+  source_project: "report" | "nav" | "startup";
   source_report_id: number;
   user_name: string | null;
   user_phone: string | null;
