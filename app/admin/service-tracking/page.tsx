@@ -6,6 +6,8 @@ import Link from "next/link";
 import {
   Inbox,
   RefreshCw,
+  RotateCcw,
+  Search,
   ArrowRightCircle,
   FileText,
   FolderOpen,
@@ -114,12 +116,10 @@ function dayEndMs(s: string): number | null {
 }
 
 function formatTs(ms: number) {
-  return new Date(ms).toLocaleString("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  // 手写格式确保 YYYY/MM/DD 稳定输出（locale 行为差异避坑）
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
 }
 
 export default function AdminServiceTrackingPage() {
@@ -153,13 +153,12 @@ function ListContent() {
   const pageParam = Number(searchParams.get("page") ?? "1") || 1;
   const pageSize = 20;
 
-  // 姓名搜索本地态：URL 同步走 onBlur / Enter，不打字时同步避免每按一键 fetch
+  // 筛选草稿态：输入只改本地，点「搜索」才提交到 URL（提交后由下方 effect 触发 fetch）
+  const [dateFromInput, setDateFromInput] = useState(dateFromParam);
+  const [dateToInput, setDateToInput] = useState(dateToParam);
+  const [statusInput, setStatusInput] = useState<string>(statusParam ?? "");
+  const [categoryInput, setCategoryInput] = useState<string>(categoryParam ?? "");
   const [nameInput, setNameInput] = useState(nameParam);
-  useEffect(() => {
-    // 同步 URL 参数到 input（外部状态 → 内部态），不会形成循环因为只在 nameParam 真变化时触发
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setNameInput(nameParam);
-  }, [nameParam]);
 
   const [data, setData] = useState<ListResponse | null>(null);
   const [stats, setStats] = useState<StatsResponse | null>(null);
@@ -201,21 +200,22 @@ function ListContent() {
     fetch_();
   }, [fetch_]);
 
-  function updateParam(key: string, value: string) {
-    const sp = new URLSearchParams(Array.from(searchParams.entries()));
-    if (value) sp.set(key, value);
-    else sp.delete(key);
-    sp.delete("page");
+  function applyFilters() {
+    const sp = new URLSearchParams();
+    if (statusInput) sp.set("status", statusInput);
+    if (categoryInput) sp.set("category", categoryInput);
+    if (nameInput.trim()) sp.set("name", nameInput.trim());
+    if (dateFromInput) sp.set("date_from", dateFromInput);
+    if (dateToInput) sp.set("date_to", dateToInput);
+    // 重新搜索 → 不带 page，回到第 1 页
     router.replace(`/admin/service-tracking?${sp.toString()}`);
   }
 
-  function commitNameSearch() {
-    if (nameInput.trim() !== nameParam) {
-      updateParam("name", nameInput.trim());
-    }
-  }
-
   function resetFilters() {
+    setDateFromInput("");
+    setDateToInput("");
+    setStatusInput("");
+    setCategoryInput("");
     setNameInput("");
     router.replace(`/admin/service-tracking`);
   }
@@ -227,7 +227,6 @@ function ListContent() {
   }
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / pageSize)) : 1;
-  const hasAnyFilter = !!(statusParam || categoryParam || nameParam || dateFromParam || dateToParam);
 
   return (
     <div className="relative p-6">
@@ -285,15 +284,15 @@ function ListContent() {
           />
         </div>
 
-        {/* 筛选 — Tabler 风：包成轻卡 */}
+        {/* 筛选 — Tabler 风：包成轻卡。条件为草稿态，点「搜索」才提交 */}
         <div className="surface-panel p-4 flex flex-wrap gap-3 items-end">
           <div>
             <div className="text-xs text-muted-foreground mb-1">首次服务起始时间</div>
             <input
               type="date"
-              value={dateFromParam}
-              max={dateToParam || undefined}
-              onChange={(e) => updateParam("date_from", e.target.value)}
+              value={dateFromInput}
+              max={dateToInput || undefined}
+              onChange={(e) => setDateFromInput(e.target.value)}
               className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             />
           </div>
@@ -301,17 +300,17 @@ function ListContent() {
             <div className="text-xs text-muted-foreground mb-1">首次服务截止时间</div>
             <input
               type="date"
-              value={dateToParam}
-              min={dateFromParam || undefined}
-              onChange={(e) => updateParam("date_to", e.target.value)}
+              value={dateToInput}
+              min={dateFromInput || undefined}
+              onChange={(e) => setDateToInput(e.target.value)}
               className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             />
           </div>
           <div>
             <div className="text-xs text-muted-foreground mb-1">服务状态</div>
             <select
-              value={statusParam ?? ""}
-              onChange={(e) => updateParam("status", e.target.value)}
+              value={statusInput}
+              onChange={(e) => setStatusInput(e.target.value)}
               className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             >
               <option value="">全部</option>
@@ -325,8 +324,8 @@ function ListContent() {
           <div>
             <div className="text-xs text-muted-foreground mb-1">服务分类</div>
             <select
-              value={categoryParam ?? ""}
-              onChange={(e) => updateParam("category", e.target.value)}
+              value={categoryInput}
+              onChange={(e) => setCategoryInput(e.target.value)}
               className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             >
               <option value="">全部</option>
@@ -344,26 +343,25 @@ function ListContent() {
               value={nameInput}
               placeholder="输入姓名"
               onChange={(e) => setNameInput(e.target.value)}
-              onBlur={commitNameSearch}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  commitNameSearch();
+                  applyFilters();
                 }
               }}
               className="h-8 w-32 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
             />
           </div>
-          {hasAnyFilter && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 text-xs text-muted-foreground hover:text-foreground"
-              onClick={resetFilters}
-            >
-              清空
+          <div className="flex gap-2">
+            <Button onClick={applyFilters}>
+              <Search />
+              搜索
             </Button>
-          )}
+            <Button variant="outline" onClick={resetFilters}>
+              <RotateCcw />
+              重置
+            </Button>
+          </div>
         </div>
 
         {/* 错误提示（桌面/移动共用） */}

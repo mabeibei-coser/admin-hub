@@ -283,7 +283,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
             </StatusPill>
           )}
         </DataRow>
-        <DataRow label="主服务人员">
+        <DataRow label="服务老师">
           {editing ? (
             <StaffSelect
               value={staff1Id}
@@ -296,7 +296,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
             <span>{initial.staff1_name || "—"}</span>
           )}
         </DataRow>
-        <DataRow label="协同服务人员">
+        <DataRow label="协同服务">
           {editing ? (
             <StaffSelect
               value={staff2Id}
@@ -334,7 +334,7 @@ export function ServiceTrackingEditor({ trackingId, adminId, initial }: Props) {
       {editing && (
         <p className="text-xs text-[var(--semantic-warning)] mt-3 flex items-start gap-1">
           <AlertTriangle className="size-3 shrink-0 mt-0.5" />
-          若把主/协同服务人员改成他人且你都不在其中，保存后你将立刻失去访问权。
+          若把服务老师 / 协同服务改成他人且你都不在其中，保存后你将立刻失去访问权。
         </p>
       )}
 

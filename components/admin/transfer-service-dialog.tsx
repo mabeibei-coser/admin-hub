@@ -227,7 +227,7 @@ export function TransferServiceDialog({
 
           {/* 服务人员 2 */}
           <div className="space-y-1.5">
-            <Label htmlFor="staff2">协同服务人员（可选）</Label>
+            <Label htmlFor="staff2">协同服务（可选）</Label>
             <select
               id="staff2"
               value={staff2}
@@ -266,7 +266,7 @@ export function TransferServiceDialog({
 
           {/* 主服务人员（只读，最下） */}
           <div className="space-y-1.5">
-            <Label>主服务人员</Label>
+            <Label>服务老师</Label>
             <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground flex items-center gap-2">
               <User2 className="size-4 text-muted-foreground" />
               当前操作员：{me.name}
