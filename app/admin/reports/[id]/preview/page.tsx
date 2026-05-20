@@ -12,6 +12,7 @@ import { NegotiationSection } from "@/components/report/negotiation-section";
 import { WorkplaceInsightSection } from "@/components/report/workplace-insight-section";
 import { NavReportRenderer } from "@/components/admin/nav-report-renderer";
 import { StartupReportRenderer } from "@/components/admin/startup-report-renderer";
+import { TailorReportRenderer } from "@/components/admin/tailor-report-renderer";
 import type { ReportData, JobFormData } from "@/lib/types";
 import type {
   ReportData as NavReportData,
@@ -25,9 +26,10 @@ import type {
   ScoringResult as StartupScoringResult,
   InterviewQ1Q6 as StartupInterviewQ1Q6,
 } from "@/lib/types-startup";
+import type { TailorReport } from "@/lib/types-tailor";
 import { withBase } from "@/lib/url";
 
-type Project = "report" | "nav" | "startup";
+type Project = "report" | "nav" | "startup" | "tailor";
 
 interface ApiResponse {
   project: Project;
@@ -45,7 +47,13 @@ export default function ReportPreviewPage() {
   const searchParams = useSearchParams();
   const rawProject = searchParams.get("project");
   const project: Project =
-    rawProject === "nav" ? "nav" : rawProject === "startup" ? "startup" : "report";
+    rawProject === "nav"
+      ? "nav"
+      : rawProject === "startup"
+        ? "startup"
+        : rawProject === "tailor"
+          ? "tailor"
+          : "report";
 
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -126,6 +134,17 @@ export default function ReportPreviewPage() {
             formData={apiData.formData as StartupJobFormData | null}
             scoring={(apiData.scoring as StartupScoringResult | undefined) ?? null}
           />
+        </div>
+      </>
+    );
+  }
+
+  if (project === "tailor") {
+    return (
+      <>
+        {banner}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <TailorReportRenderer reportData={apiData.reportData as unknown as TailorReport | null} />
         </div>
       </>
     );

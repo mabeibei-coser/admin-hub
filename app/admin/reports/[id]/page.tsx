@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAdminDb, isNavDbReady, isStartupDbReady, getStartupDbDir } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, getStartupDbDir } from "@/lib/db";
 import fs from "fs";
 import path from "path";
-import { Download, Compass, Briefcase, Rocket } from "lucide-react";
+import { Download, Compass, Briefcase, Rocket, FilePen } from "lucide-react";
 import { withBase } from "@/lib/url";
 import type { JobFormData, QuizAnswer } from "@/lib/types";
 import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2, QuizBank, QuizQuestion as NavQuizQuestion } from "@/lib/types-nav";
@@ -15,6 +15,7 @@ import type {
   InterviewQ1Q6 as StartupInterviewQ1Q6,
   QuizBank as StartupQuizBank,
 } from "@/lib/types-startup";
+import type { TailorFormData, TailorReport } from "@/lib/types-tailor";
 import { PROJECTS } from "@/lib/projects";
 import { PageHeader } from "@/components/admin/page-header";
 import { Breadcrumb } from "@/components/admin/breadcrumb";
@@ -22,11 +23,12 @@ import { Alert } from "@/components/admin/alert";
 import { StatusPill } from "@/components/admin/status-pill";
 import { DataRow } from "@/components/admin/data-row";
 
-type ProjectId = "report" | "nav" | "startup";
+type ProjectId = "report" | "nav" | "startup" | "tailor";
 
 function parseProject(v: string | undefined): ProjectId {
   if (v === "nav") return "nav";
   if (v === "startup") return "startup";
+  if (v === "tailor") return "tailor";
   return "report";
 }
 
@@ -129,12 +131,28 @@ export default async function ReportDetailPage({
       </div>
     );
   }
+  if (project === "tailor" && !isTailorDbReady()) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-3xl mx-auto space-y-5">
+          <Breadcrumb
+            items={[
+              { label: "报告列表", href: "/admin/reports" },
+              { label: "简历定制报告" },
+            ]}
+          />
+          <Alert tone="warning">简历定制数据库暂不可用，无法加载此报告。</Alert>
+        </div>
+      </div>
+    );
+  }
 
   const db = getAdminDb();
   const tableMap: Record<ProjectId, string> = {
     report: "main.reports",
     nav: "nav.reports",
     startup: "startup.reports",
+    tailor: "tailor.reports",
   };
   const table = tableMap[project];
   const row = db
@@ -152,6 +170,9 @@ export default async function ReportDetailPage({
   const navQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
   let reportFormData: JobFormData | null = null;
   let reportQuizAnswers: QuizAnswer[] = [];
+  // tailor 专属解析
+  let tailorReportData: TailorReport | null = null;
+  let tailorFormData: TailorFormData | null = null;
   // startup 专属解析
   let startupReportData: StartupReportData | null = null;
   let startupInterview: StartupInterviewQ1Q6 | null = null;
@@ -205,6 +226,9 @@ export default async function ReportDetailPage({
         });
       }
     } catch { /* quiz bank missing or unreadable */ }
+  } else if (project === "tailor") {
+    try { tailorReportData = JSON.parse(row.report_json as string) as TailorReport; } catch { /* empty */ }
+    try { tailorFormData = JSON.parse(row.form_data_json as string) as TailorFormData; } catch { /* empty */ }
   } else {
     const storagePath = row.report_storage_path as string | null;
     if (storagePath) {
@@ -227,7 +251,9 @@ export default async function ReportDetailPage({
       ? !!reportData
       : project === "startup"
         ? !!startupReportData
-        : !!reportFormData;
+        : project === "tailor"
+          ? !!tailorReportData
+          : !!reportFormData;
 
   // 用户友好的页头副信息：「张三 · 13800138001」或仅项目名
   const userName =
@@ -235,20 +261,26 @@ export default async function ReportDetailPage({
       ? navFormData?.name
       : project === "startup"
         ? startupFormData?.name
-        : null;
+        : project === "tailor"
+          ? (row.user_name as string | null)
+          : null;
   const userPhone =
     project === "nav"
       ? navFormData?.phone
       : project === "startup"
         ? startupFormData?.phone
-        : null;
+        : project === "tailor"
+          ? (row.user_phone as string | null)
+          : null;
 
   // startup 的 target_position 列实际是 form_data_json.projectName（同 nav 的存法），
   // row.target_position 在 startup-diagnostic 里就直接是 projectName（finalize 时写入）
   const headerPosition =
     project === "startup"
       ? (startupFormData?.projectName ?? (row.target_position as string) ?? "—")
-      : ((row.target_position as string) ?? "—");
+      : project === "tailor"
+        ? ((row.job_title as string) ?? "—")
+        : ((row.target_position as string) ?? "—");
 
   return (
     <div className="min-h-screen bg-background p-6 print:bg-white print:p-0">
@@ -263,7 +295,9 @@ export default async function ReportDetailPage({
                     tone={
                       project === "nav"
                         ? "success"
-                        : project === "startup"
+                        : project === "tailor"
+                          ? "warning"
+                          : project === "startup"
                           ? "info"
                           : "info"
                     }
@@ -284,7 +318,9 @@ export default async function ReportDetailPage({
                 ? Compass
                 : project === "startup"
                   ? Rocket
-                  : Briefcase
+                  : project === "tailor"
+                    ? FilePen
+                    : Briefcase
             }
             eyebrow={`${projectMeta.label} · 报告 #${row.id as number}`}
             title={userName ? `${userName} · ${headerPosition}` : headerPosition}
@@ -299,7 +335,9 @@ export default async function ReportDetailPage({
                 ? "green"
                 : project === "startup"
                   ? "purple"
-                  : "blue"
+                  : project === "tailor"
+                    ? "orange"
+                    : "blue"
             }
           />
         </div>
@@ -310,19 +348,29 @@ export default async function ReportDetailPage({
           <DataRow label="创建时间">
             {new Date(row.created_at as number).toLocaleString("zh-CN")}
           </DataRow>
-          {/* 姓名 / 手机号（nav/startup 侧从 form_data_json 取；report 侧暂无） */}
-          {(project === "nav" || project === "startup") && (
+          {/* 姓名 / 手机号（nav/startup/tailor 侧从 form_data_json 或专属列取；report 侧暂无） */}
+          {(project === "nav" || project === "startup" || project === "tailor") && (
             <>
-              <DataRow label="姓名">
-                {(project === "nav" ? navFormData?.name : startupFormData?.name) ?? "—"}
-              </DataRow>
-              <DataRow label="手机号">
-                {(project === "nav" ? navFormData?.phone : startupFormData?.phone) ?? "—"}
-              </DataRow>
+              <DataRow label="姓名">{userName ?? "—"}</DataRow>
+              <DataRow label="手机号">{userPhone ?? "—"}</DataRow>
             </>
           )}
 
-          {project === "startup" ? (
+          {project === "tailor" ? (
+            <>
+              <DataRow label="目标岗位">{(row.job_title as string) || "—"}</DataRow>
+              <DataRow label="改写模式">
+                {(row.mode as string) === "moderate"
+                  ? "稳健改写"
+                  : (row.mode as string) === "aggressive"
+                    ? "大幅改写"
+                    : (row.mode as string) || "—"}
+              </DataRow>
+              {(row.resume_filename as string | null) && (
+                <DataRow label="原始简历文件名">{row.resume_filename as string}</DataRow>
+              )}
+            </>
+          ) : project === "startup" ? (
             <>
               <DataRow label="项目名称">{startupFormData?.projectName ?? "—"}</DataRow>
               <DataRow label="启动资金">
@@ -373,26 +421,28 @@ export default async function ReportDetailPage({
             </>
           )}
 
-          <DataRow label="简历文件">
-            {(row.has_resume as number) ? (
-              hasResumeFile ? (
-                <a
-                  href={withBase(`/api/admin/reports/${String(row.id as number)}/resume?project=${project}`)}
-                  download
-                  className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
-                >
-                  <Download className="size-3.5" />
-                  {row.resume_filename as string}
-                </a>
+          {project !== "tailor" && (
+            <DataRow label="简历文件">
+              {(row.has_resume as number) ? (
+                hasResumeFile ? (
+                  <a
+                    href={withBase(`/api/admin/reports/${String(row.id as number)}/resume?project=${project}`)}
+                    download
+                    className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
+                  >
+                    <Download className="size-3.5" />
+                    {row.resume_filename as string}
+                  </a>
+                ) : (
+                  <span className="text-[var(--semantic-warning)] text-xs">
+                    文件已丢失（{row.resume_filename as string}）
+                  </span>
+                )
               ) : (
-                <span className="text-[var(--semantic-warning)] text-xs">
-                  文件已丢失（{row.resume_filename as string}）
-                </span>
-              )
-            ) : (
-              "未上传"
-            )}
-          </DataRow>
+                "未上传"
+              )}
+            </DataRow>
+          )}
           <DataRow label="报告附件">
             {hasReportData ? (
               <Link
@@ -405,7 +455,9 @@ export default async function ReportDetailPage({
                   ? "职业导航报告"
                   : project === "startup"
                     ? "创业诊断报告"
-                    : "职业定位报告"}
+                    : project === "tailor"
+                      ? "简历定制报告"
+                      : "职业定位报告"}
               </Link>
             ) : (
               <span className="text-muted-foreground">未生成</span>

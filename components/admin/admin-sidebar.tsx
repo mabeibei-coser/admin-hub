@@ -6,6 +6,7 @@ import {
   Briefcase,
   Compass,
   Rocket,
+  FilePen,
   LogOut,
   Users,
   KeyRound,
@@ -38,6 +39,7 @@ const PROJECT_ICONS: Record<string, React.ComponentType<{ className?: string; st
   report: Briefcase,
   nav: Compass,
   startup: Rocket,
+  tailor: FilePen,
 };
 
 /** 从 /api/admin/me 获取当前用户数据。加载中返回 null。
@@ -114,7 +116,7 @@ export function AdminSidebar() {
         {/* === 报告管理 section === */}
         <SectionHeader label="报告管理" />
         <nav className="px-3 flex flex-col gap-0.5">
-          {(!me ? (["report", "nav", "startup"] as string[]) : me.visibleProjects).map(
+          {(!me ? (["report", "nav", "startup", "tailor"] as string[]) : me.visibleProjects).map(
             (pid) => {
               const meta = PROJECTS[pid as keyof typeof PROJECTS];
               if (!meta) return null;
@@ -318,7 +320,7 @@ export function AdminMobileBar() {
   if (pathname.replace(/\/$/, "") === "/admin/login") return null;
 
   // 在 me 加载前显示骨架（loading 状态）
-  const visibleProjects: string[] = me ? me.visibleProjects : ["report", "nav", "startup"];
+  const visibleProjects: string[] = me ? me.visibleProjects : ["report", "nav", "startup", "tailor"];
   const showService = !me || me.showService;
   const inServiceTracking = pathname.startsWith("/admin/service-tracking");
 

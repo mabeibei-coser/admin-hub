@@ -10,6 +10,9 @@ const NAV_DB_PATH = process.env.NAV_DB_PATH ?? path.join(DATA_DIR, "career-nav.d
 // startup-diagnostic 数据库路径（ATTACH DATABASE 模式）。默认与 career-report 同目录。
 // 部署时通过 STARTUP_DB_PATH env 指向实际 startup-diagnostic 数据文件。
 const STARTUP_DB_PATH = process.env.STARTUP_DB_PATH ?? path.join(DATA_DIR, "startup-diagnostic.db");
+// resume-tailor 数据库路径（ATTACH DATABASE 模式）。
+// 部署时通过 TAILOR_DB_PATH env 指向实际 resume-tailor 数据文件。
+const TAILOR_DB_PATH = process.env.TAILOR_DB_PATH ?? path.join(DATA_DIR, "resume-tailor.db");
 
 let _db: Database.Database | null = null;
 
@@ -175,6 +178,10 @@ export function getAdminDb(): Database.Database {
     const safePath = STARTUP_DB_PATH.replaceAll("'", "''");
     db.exec(`ATTACH DATABASE '${safePath}' AS startup`);
   }
+  if (!attached.some((d) => d.name === "tailor")) {
+    const safePath = TAILOR_DB_PATH.replaceAll("'", "''");
+    db.exec(`ATTACH DATABASE '${safePath}' AS tailor`);
+  }
   return db;
 }
 
@@ -207,4 +214,17 @@ export function isStartupDbReady(): boolean {
 /** startup 数据库目录路径（用于读 quiz-bank.json 等附属文件）。 */
 export function getStartupDbDir(): string {
   return path.dirname(STARTUP_DB_PATH);
+}
+
+/** admin 端检查 tailor 库是否就绪（有 reports 表）。返回 false 时 admin 应降级到 'report' tab。 */
+export function isTailorDbReady(): boolean {
+  try {
+    const db = getAdminDb();
+    const tables = db
+      .prepare("SELECT name FROM tailor.sqlite_master WHERE type='table' AND name='reports'")
+      .all() as Array<{ name: string }>;
+    return tables.length > 0;
+  } catch {
+    return false;
+  }
 }

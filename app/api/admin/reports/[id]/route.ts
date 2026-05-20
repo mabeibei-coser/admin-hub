@@ -4,10 +4,10 @@ import fs from "fs";
 
 export const runtime = "nodejs";
 
-type Project = "report" | "nav" | "startup";
+type Project = "report" | "nav" | "startup" | "tailor";
 
 function parseProject(v: string | null): Project | null {
-  if (v === "report" || v === "nav" || v === "startup") return v;
+  if (v === "report" || v === "nav" || v === "startup" || v === "tailor") return v;
   return null;
 }
 
@@ -35,7 +35,7 @@ export async function GET(
     const project = parseProject(req.nextUrl.searchParams.get("project"));
     if (!project) {
       return NextResponse.json(
-        { error: "缺少 project 参数（report|nav|startup）" },
+        { error: "缺少 project 参数（report|nav|startup|tailor）" },
         { status: 400 }
       );
     }
@@ -45,6 +45,7 @@ export async function GET(
       report: "main.reports",
       nav: "nav.reports",
       startup: "startup.reports",
+      tailor: "tailor.reports",
     };
     const table = tableMap[project];
 
@@ -72,6 +73,12 @@ export async function GET(
       formData = safeJsonParse(row.form_data_json);
       quizAnswers = safeJsonParse(row.quiz_answers_json);
       scoring = safeJsonParse(row.scoring_json);
+    } else if (project === "tailor") {
+      // resume-tailor：report_json 含完整 TailorReport（suggestions+interview+resume+changes）
+      // form_data_json 含 TailorFormData（去掉了 parsedResume/resumeText 大字段）
+      reportData = safeJsonParse(row.report_json);
+      formData = safeJsonParse(row.form_data_json);
+      // tailor 无 quiz / scoring / interviewQ1Q2（interview 在 reportData 里）
     } else {
       // career-report: 从磁盘读 data/reports/{id}.json（沿用现有逻辑）
       const storagePath = row.report_storage_path as string | null;

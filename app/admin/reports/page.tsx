@@ -11,6 +11,7 @@ import {
   Briefcase,
   Compass,
   Rocket,
+  FilePen,
   Sparkles,
   Clock,
   Calendar,
@@ -73,6 +74,8 @@ interface ReportRow {
   startup_capital?: string | null;
   /** startup 项目专属：创业经验（来自 form_data_json.startupExperience） */
   startup_experience?: string | null;
+  /** tailor 项目专属：改写模式（moderate / aggressive） */
+  tailor_mode?: string | null;
 }
 
 interface Stats {
@@ -96,6 +99,7 @@ interface ApiResponse {
   project: ProjectFilter;
   navReady: boolean;
   startupReady: boolean;
+  tailorReady: boolean;
   stats: Stats;
 }
 
@@ -151,11 +155,21 @@ function ProjectBadge({ project }: { project: ProjectId }) {
       ? "bg-[var(--semantic-positive)]"
       : meta.color === "purple"
         ? "bg-[var(--purple-500)]"
-        : "bg-[var(--blue-500)]";
-  // purple 走内联类（status-pill 的 data-tone 没枚举 purple，直接 inline 控色）
+        : meta.color === "orange"
+          ? "bg-[var(--orange-500)]"
+          : "bg-[var(--blue-500)]";
+  // purple / orange 走内联类（status-pill 的 data-tone 没枚举，直接 inline 控色）
   if (meta.color === "purple") {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--purple-50)] text-[var(--purple-700)] ring-1 ring-[var(--purple-200)]/60">
+        <span className={`size-1.5 rounded-full ${dotColor}`} />
+        {meta.shortLabel}
+      </span>
+    );
+  }
+  if (meta.color === "orange") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--orange-50)] text-[var(--orange-700)] ring-1 ring-[var(--orange-200)]/60">
         <span className={`size-1.5 rounded-full ${dotColor}`} />
         {meta.shortLabel}
       </span>
@@ -171,7 +185,7 @@ function ProjectBadge({ project }: { project: ProjectId }) {
 
 function readProjectFromUrl(p: string | null): ProjectFilter {
   // 历史链接 ?project=all 或不带参数时一律落到职业定位。
-  if (p === "report" || p === "nav" || p === "startup") return p;
+  if (p === "report" || p === "nav" || p === "startup" || p === "tailor") return p;
   return "report";
 }
 
@@ -217,6 +231,8 @@ function AdminReportsContent() {
   // startup 专属筛选
   const [startupCapital, setStartupCapital] = useState("");
   const [startupExperience, setStartupExperience] = useState("");
+  // tailor 专属筛选
+  const [tailorMode, setTailorMode] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
@@ -260,6 +276,7 @@ function AdminReportsContent() {
     setTransferStatus("");
     setStartupCapital("");
     setStartupExperience("");
+    setTailorMode("");
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [project]);
 
@@ -285,6 +302,7 @@ function AdminReportsContent() {
       if (transferStatus) params.set("transferStatus", transferStatus);
       if (startupCapital) params.set("startupCapital", startupCapital);
       if (startupExperience) params.set("startupExperience", startupExperience);
+      if (tailorMode) params.set("tailorMode", tailorMode);
       params.set("project", project);
       params.set("page", String(page));
       params.set("pageSize", String(pageSize));
@@ -297,7 +315,7 @@ function AdminReportsContent() {
     } finally {
       setLoading(false);
     }
-  }, [from, to, position, hasResume, name, phone, userIdentity, transferStatus, startupCapital, startupExperience, project, page]);
+  }, [from, to, position, hasResume, name, phone, userIdentity, transferStatus, startupCapital, startupExperience, tailorMode, project, page]);
 
   useEffect(() => {
     // 筛选条件变化时重新拉列表
@@ -323,6 +341,7 @@ function AdminReportsContent() {
     setTransferStatus("");
     setStartupCapital("");
     setStartupExperience("");
+    setTailorMode("");
     setPage(1);
   }
 
@@ -336,12 +355,14 @@ function AdminReportsContent() {
     userIdentity ||
     transferStatus ||
     startupCapital ||
-    startupExperience
+    startupExperience ||
+    tailorMode
   );
 
   // 只在 navReady===false / startupReady===false 时提示（避免 pm2 重启首次请求的短暂 false 污染状态）
   const navDegraded = data && project === "nav" && !data.navReady;
   const startupDegraded = data && project === "startup" && !data.startupReady;
+  const tailorDegraded = data && project === "tailor" && !data.tailorReady;
 
   // 列定义（项目专属）
   const columns = useMemo(() => {
@@ -349,6 +370,8 @@ function AdminReportsContent() {
       return ["时间", "姓名", "手机号", "项目", "岗位", "学历", "公司", "城市", "简历", "耗时", "操作"];
     if (project === "startup")
       return ["时间", "姓名", "手机号", "服务项目", "项目名称", "启动资金", "创业经验", "转服务状态", "操作"];
+    if (project === "tailor")
+      return ["时间", "姓名", "手机号", "服务项目", "目标岗位", "改写模式", "操作"];
     // 职业导航：HR 关心节奏 + 用户身份 + 服务转化状态
     return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
   }, [project]);
@@ -378,7 +401,9 @@ function AdminReportsContent() {
               ? Compass
               : project === "startup"
                 ? Rocket
-                : Briefcase
+                : project === "tailor"
+                  ? FilePen
+                  : Briefcase
           }
           title={currentProjectLabel}
           subtitle={PROJECTS[project].description ?? null}
@@ -387,7 +412,9 @@ function AdminReportsContent() {
               ? "green"
               : project === "startup"
                 ? "purple"
-                : "blue"
+                : project === "tailor"
+                  ? "orange"
+                  : "blue"
           }
         />
 
@@ -402,6 +429,12 @@ function AdminReportsContent() {
           <Alert tone="warning">
             「创业诊断」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
             <code>STARTUP_DB_PATH</code>。
+          </Alert>
+        )}
+        {tailorDegraded && (
+          <Alert tone="warning">
+            「简历定制」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
+            <code>TAILOR_DB_PATH</code>。
           </Alert>
         )}
 
@@ -560,6 +593,51 @@ function AdminReportsContent() {
                   <option value="">全部</option>
                   <option value="1">已转入服务</option>
                   <option value="0">未转入</option>
+                </select>
+              </div>
+            </>
+          ) : project === "tailor" ? (
+            <>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">姓名</div>
+                <Input
+                  placeholder="关键词"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">手机号</div>
+                <Input
+                  placeholder="关键词"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">目标岗位</div>
+                <Input
+                  placeholder="关键词"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">改写模式</div>
+                <select
+                  value={tailorMode}
+                  onChange={(e) => setTailorMode(e.target.value)}
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                >
+                  <option value="">全部</option>
+                  <option value="moderate">稳健改写</option>
+                  <option value="aggressive">大幅改写</option>
                 </select>
               </div>
             </>
@@ -742,6 +820,33 @@ function KpiStrip({
   loading: boolean;
 }) {
   const skeleton = loading && data === null;
+
+  // tailor 项目：总报告数 / 本月新增 / 本周新增（无转服务）
+  if (project === "tailor") {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <DataCard
+          label="总报告数"
+          value={data?.stats.total}
+          icon={FileText}
+          loading={skeleton}
+          highlight
+        />
+        <DataCard
+          label="本月新增"
+          value={data?.stats.monthCount}
+          icon={Calendar}
+          loading={skeleton}
+        />
+        <DataCard
+          label="本周新增"
+          value={data?.stats.weekCount}
+          icon={CalendarDays}
+          loading={skeleton}
+        />
+      </div>
+    );
+  }
 
   // nav / startup 项目：总报告数 / 本月新增 / 本周新增 / 转服务数量（KPI 结构相同）
   if (project === "nav" || project === "startup") {
@@ -960,6 +1065,43 @@ function ReportRowItem({
         <TableCell className="tabular-nums text-xs text-muted-foreground">
           {durationCell}
         </TableCell>
+        <TableCell>
+          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  // tab=tailor：时间 / 姓名 / 手机号 / 服务项目 / 目标岗位 / 改写模式 / 操作
+  if (project === "tailor") {
+    const tailorMeta = PROJECTS.tailor;
+    const modeLabel =
+      row.tailor_mode === "moderate"
+        ? "稳健"
+        : row.tailor_mode === "aggressive"
+          ? "大幅"
+          : "—";
+    return (
+      <TableRow className="text-sm hover:bg-[var(--blue-50)]/40 transition-colors duration-150">
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {formatTs(row.created_at)}
+        </TableCell>
+        <TableCell className="text-foreground max-w-[100px] truncate">
+          {row.user_name || "—"}
+        </TableCell>
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {row.user_phone || "—"}
+        </TableCell>
+        <TableCell>
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--orange-700)]">
+            <span className="size-1.5 rounded-full bg-[var(--orange-500)]" />
+            {tailorMeta.label}
+          </span>
+        </TableCell>
+        <TableCell className="font-medium max-w-[140px] truncate">
+          {row.target_position || "—"}
+        </TableCell>
+        <TableCell className="text-muted-foreground">{modeLabel}</TableCell>
         <TableCell>
           <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
         </TableCell>

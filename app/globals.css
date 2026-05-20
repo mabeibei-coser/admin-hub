@@ -108,6 +108,13 @@
   --purple-200: oklch(0.87 0.07 305);
   --purple-100: oklch(0.94 0.03 305);
   --purple-50: oklch(0.975 0.012 305);
+  /* —— Orange scale — tailor 项目专属 accent —— */
+  --orange-700: oklch(0.55 0.18 50);
+  --orange-600: oklch(0.62 0.17 50);
+  --orange-500: oklch(0.7 0.16 50);
+  --orange-200: oklch(0.88 0.07 50);
+  --orange-100: oklch(0.95 0.03 50);
+  --orange-50: oklch(0.98 0.012 50);
 
   /* —— Tinted neutrals for surfaces & shadows —— */
   --surface-tinted: oklch(0.985 0.006 240);
@@ -186,6 +193,13 @@
   --purple-200: oklch(0.4 0.12 305);
   --purple-100: oklch(0.32 0.08 305);
   --purple-50: oklch(0.24 0.05 305);
+  /* —— Orange scale (dark) —— */
+  --orange-700: oklch(0.78 0.13 50);
+  --orange-600: oklch(0.72 0.14 50);
+  --orange-500: oklch(0.65 0.15 50);
+  --orange-200: oklch(0.42 0.1 50);
+  --orange-100: oklch(0.32 0.07 50);
+  --orange-50: oklch(0.24 0.04 50);
 
   /* —— Tinted surfaces & shadows —— */
   --surface-tinted: oklch(0.18 0.025 252);

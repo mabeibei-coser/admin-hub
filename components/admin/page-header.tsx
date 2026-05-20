@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 
 // accent 含义: blue=主品牌 / green=正向语义 / primary=低饱和主色(降级展示用)
 // 旧名 "neutral" 误导(实际还是蓝调), 保留作为 alias 不破坏调用方。
-type AccentColor = "blue" | "green" | "primary" | "purple";
+type AccentColor = "blue" | "green" | "primary" | "purple" | "orange";
 type LegacyAccent = AccentColor | "neutral";
 
 const ICON_BG: Record<AccentColor, string> = {
@@ -13,6 +13,8 @@ const ICON_BG: Record<AccentColor, string> = {
     "bg-gradient-to-br from-[var(--blue-50)] to-[oklch(0.99_0.006_240)] text-[var(--blue-600)] ring-[var(--blue-200)]/50",
   purple:
     "bg-gradient-to-br from-[var(--purple-100)] to-[var(--purple-50)] text-[var(--purple-700)] ring-[var(--purple-200)]/60",
+  orange:
+    "bg-gradient-to-br from-[var(--orange-100)] to-[var(--orange-50)] text-[var(--orange-700)] ring-[var(--orange-200)]/60",
 };
 
 export interface PageHeaderProps {
