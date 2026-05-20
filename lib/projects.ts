@@ -28,7 +28,7 @@ export const PROJECTS: Record<ProjectId, ProjectMeta> = {
   report: {
     id: "report",
     label: "职业定位",
-    shortLabel: "定位",
+    shortLabel: "职业定位",
     color: "blue",
     sectionCount: 6,
     description: "应届校招求职报告",

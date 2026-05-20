@@ -13,7 +13,6 @@ import {
   Rocket,
   FilePen,
   Sparkles,
-  Clock,
   Calendar,
   CalendarDays,
 } from "lucide-react";
@@ -367,7 +366,7 @@ function AdminReportsContent() {
   // 列定义（项目专属）
   const columns = useMemo(() => {
     if (project === "report")
-      return ["时间", "姓名", "手机号", "项目", "岗位", "学历", "公司", "城市", "简历", "耗时", "操作"];
+      return ["时间", "姓名", "手机号", "项目", "岗位", "学历", "公司", "操作"];
     if (project === "startup")
       return ["时间", "姓名", "手机号", "服务项目", "项目名称", "启动资金", "创业经验", "转服务状态", "操作"];
     if (project === "tailor")
@@ -609,16 +608,6 @@ function AdminReportsContent() {
                 />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">手机号</div>
-                <Input
-                  placeholder="关键词"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                />
-              </div>
-              <div>
                 <div className="text-xs text-muted-foreground mb-1">目标岗位</div>
                 <Input
                   placeholder="关键词"
@@ -644,6 +633,16 @@ function AdminReportsContent() {
           ) : (
             <>
               <div>
+                <div className="text-xs text-muted-foreground mb-1">姓名</div>
+                <Input
+                  placeholder="关键词"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
                 <div className="text-xs text-muted-foreground mb-1">意向岗位</div>
                 <Input
                   placeholder="关键词"
@@ -652,20 +651,6 @@ function AdminReportsContent() {
                   className="h-8 text-sm w-36 bg-card text-foreground ring-1 ring-[var(--report-border)]"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-1">简历</div>
-                <select
-                  value={hasResume}
-                  onChange={(e) =>
-                    setHasResume(e.target.value as "" | "1" | "0")
-                  }
-                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
-                >
-                  <option value="">全部</option>
-                  <option value="1">有简历</option>
-                  <option value="0">无简历</option>
-                </select>
               </div>
             </>
           )}
@@ -821,12 +806,12 @@ function KpiStrip({
 }) {
   const skeleton = loading && data === null;
 
-  // tailor 项目：总报告数 / 本月新增 / 本周新增（无转服务）
+  // tailor 项目：报告总数 / 本月新增 / 本周新增 / 今日新增
   if (project === "tailor") {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <DataCard
-          label="总报告数"
+          label="报告总数"
           value={data?.stats.total}
           icon={FileText}
           loading={skeleton}
@@ -844,6 +829,12 @@ function KpiStrip({
           icon={CalendarDays}
           loading={skeleton}
         />
+        <DataCard
+          label="今日新增"
+          value={data?.stats.todayCount}
+          icon={Sparkles}
+          loading={skeleton}
+        />
       </div>
     );
   }
@@ -853,7 +844,7 @@ function KpiStrip({
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <DataCard
-          label="总报告数"
+          label="报告总数"
           value={data?.stats.total}
           icon={FileText}
           loading={skeleton}
@@ -882,34 +873,32 @@ function KpiStrip({
     );
   }
 
-  // report / all：今日新增 / 累计总数 / 简历上传率 / 平均耗时
-  const resumeRate = data?.stats.resumeRate;
-  const avgDur = data?.stats.avgDurationSec;
+  // report / all：报告总数 / 本月新增 / 本周新增 / 今日新增
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <DataCard
-        label="今日新增"
-        value={data?.stats.todayCount}
-        icon={Sparkles}
+        label="报告总数"
+        value={data?.stats.total}
+        icon={FileText}
         loading={skeleton}
         highlight
       />
       <DataCard
-        label="累计总数"
-        value={data?.stats.total}
-        icon={Inbox}
+        label="本月新增"
+        value={data?.stats.monthCount}
+        icon={Calendar}
         loading={skeleton}
       />
       <DataCard
-        label="简历上传率"
-        value={resumeRate !== undefined ? `${resumeRate}%` : undefined}
-        icon={FileText}
+        label="本周新增"
+        value={data?.stats.weekCount}
+        icon={CalendarDays}
         loading={skeleton}
       />
       <DataCard
-        label="平均耗时"
-        value={avgDur ? `${avgDur}s` : undefined}
-        icon={Clock}
+        label="今日新增"
+        value={data?.stats.todayCount}
+        icon={Sparkles}
         loading={skeleton}
       />
     </div>
@@ -1052,19 +1041,6 @@ function ReportRowItem({
         <TableCell className="text-muted-foreground max-w-[120px] truncate">
           {row.target_company || "—"}
         </TableCell>
-        <TableCell className="text-muted-foreground">{row.target_city_tier || "—"}</TableCell>
-        <TableCell>
-          {row.has_resume ? (
-            <span className="inline-flex items-center gap-1 text-[var(--semantic-positive)] bg-[var(--semantic-positive)]/8 border border-[var(--semantic-positive)]/30 rounded px-1.5 py-0.5 text-[11px]">
-              <FileText className="size-3" />有
-            </span>
-          ) : (
-            <span className="text-muted-foreground text-[11px]">无</span>
-          )}
-        </TableCell>
-        <TableCell className="tabular-nums text-xs text-muted-foreground">
-          {durationCell}
-        </TableCell>
         <TableCell>
           <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
         </TableCell>
@@ -1182,7 +1158,7 @@ function RowActions({
   const transferred = row.tracking_id != null;
   return (
     <div className="flex items-center justify-center gap-2">
-      {/* 简历：nav/startup 留固定占位（保证档案/转服务列位置固定）；report 仅在有简历时显示 */}
+      {/* 报告：nav/startup 留固定占位（保证档案/转服务列位置固定）；report 仅在有简历时显示 */}
       {supportsTransfer ? (
         row.has_resume ? (
           <a
@@ -1190,10 +1166,10 @@ function RowActions({
             download
             className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
           >
-            简历
+            报告
           </a>
         ) : (
-          <span aria-hidden className={`${ACTION_BTN_BASE} invisible`}>简历</span>
+          <span aria-hidden className={`${ACTION_BTN_BASE} invisible`}>报告</span>
         )
       ) : (
         row.has_resume ? (
@@ -1202,9 +1178,18 @@ function RowActions({
             download
             className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
           >
-            简历
+            报告
           </a>
         ) : null
+      )}
+      {row.project === "tailor" && (
+        <Link
+          href={`/admin/reports/${row.id}/preview?project=tailor`}
+          target="_blank"
+          className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
+        >
+          报告
+        </Link>
       )}
       <Link
         href={`/admin/reports/${row.id}?project=${row.project}`}

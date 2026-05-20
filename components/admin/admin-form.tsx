@@ -231,12 +231,9 @@ export function AdminForm(props: AdminFormProps) {
                   onChange={() => toggleMenu(m.key)}
                   className="mt-0.5 size-4 rounded border-border accent-[var(--blue-600)]"
                 />
-                <div className="leading-tight">
-                  <span className="text-sm font-medium text-foreground group-hover:text-[var(--blue-700)]">
-                    {m.label}
-                  </span>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{m.description}</p>
-                </div>
+                <span className="text-sm font-medium text-foreground group-hover:text-[var(--blue-700)]">
+                  {m.label}
+                </span>
               </label>
             );
           })}

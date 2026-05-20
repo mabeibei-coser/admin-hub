@@ -512,7 +512,20 @@ export async function GET(req: NextRequest) {
           weekCount: weekRow.c ?? 0,
         };
       }
-      return base;
+      // report / all：补本月/本周新增
+      const monthStart = startOfMonthCN();
+      const weekStart = startOfWeekCN();
+      let monthCount: number;
+      let weekCount: number;
+      if (p === "report") {
+        monthCount = (db.prepare("SELECT COUNT(*) AS c FROM main.reports WHERE created_at >= ?").get(monthStart) as { c: number }).c ?? 0;
+        weekCount = (db.prepare("SELECT COUNT(*) AS c FROM main.reports WHERE created_at >= ?").get(weekStart) as { c: number }).c ?? 0;
+      } else {
+        // all：main + nav 合并
+        monthCount = (db.prepare("SELECT (SELECT COUNT(*) FROM main.reports WHERE created_at >= ?) + (SELECT COUNT(*) FROM nav.reports WHERE created_at >= ?) AS c").get(monthStart, monthStart) as { c: number }).c ?? 0;
+        weekCount = (db.prepare("SELECT (SELECT COUNT(*) FROM main.reports WHERE created_at >= ?) + (SELECT COUNT(*) FROM nav.reports WHERE created_at >= ?) AS c").get(weekStart, weekStart) as { c: number }).c ?? 0;
+      }
+      return { ...base, monthCount, weekCount };
     }
 
     let stats;

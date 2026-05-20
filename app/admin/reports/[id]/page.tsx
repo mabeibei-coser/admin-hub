@@ -367,7 +367,21 @@ export default async function ReportDetailPage({
                     : (row.mode as string) || "—"}
               </DataRow>
               {(row.resume_filename as string | null) && (
-                <DataRow label="原始简历文件名">{row.resume_filename as string}</DataRow>
+                <DataRow label="原始简历文件名">
+                  <span className="text-muted-foreground select-all">{row.resume_filename as string}</span>
+                </DataRow>
+              )}
+              {tailorReportData?.resume && tailorReportData?.changes && (
+                <DataRow label="优化后简历">
+                  <a
+                    href={withBase(`/api/admin/reports/${String(row.id as number)}/tailor-resume`)}
+                    download
+                    className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
+                  >
+                    <Download className="size-3.5" />
+                    下载优化简历.docx
+                  </a>
+                </DataRow>
               )}
             </>
           ) : project === "startup" ? (
