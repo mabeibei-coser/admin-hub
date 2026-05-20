@@ -366,7 +366,7 @@ function AdminReportsContent() {
   // 列定义（项目专属）
   const columns = useMemo(() => {
     if (project === "report")
-      return ["时间", "姓名", "手机号", "项目", "岗位", "学历", "公司", "操作"];
+      return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "学历", "意向公司", "操作"];
     if (project === "startup")
       return ["时间", "姓名", "手机号", "服务项目", "项目名称", "启动资金", "创业经验", "转服务状态", "操作"];
     if (project === "tailor")
@@ -1158,39 +1158,14 @@ function RowActions({
   const transferred = row.tracking_id != null;
   return (
     <div className="flex items-center justify-center gap-2">
-      {/* 报告：nav/startup 留固定占位（保证档案/转服务列位置固定）；report 仅在有简历时显示 */}
-      {supportsTransfer ? (
-        row.has_resume ? (
-          <a
-            href={withBase(`/api/admin/reports/${row.id}/resume?project=${row.project}`)}
-            download
-            className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
-          >
-            报告
-          </a>
-        ) : (
-          <span aria-hidden className={`${ACTION_BTN_BASE} invisible`}>报告</span>
-        )
-      ) : (
-        row.has_resume ? (
-          <a
-            href={withBase(`/api/admin/reports/${row.id}/resume?project=${row.project}`)}
-            download
-            className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
-          >
-            报告
-          </a>
-        ) : null
-      )}
-      {row.project === "tailor" && (
-        <Link
-          href={`/admin/reports/${row.id}/preview?project=tailor`}
-          target="_blank"
-          className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
-        >
-          报告
-        </Link>
-      )}
+      {/* 报告：所有项目都跳预览页（渲染生成的报告，不是原始简历） */}
+      <Link
+        href={`/admin/reports/${row.id}/preview?project=${row.project}`}
+        target="_blank"
+        className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
+      >
+        报告
+      </Link>
       <Link
         href={`/admin/reports/${row.id}?project=${row.project}`}
         className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}

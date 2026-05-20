@@ -368,7 +368,19 @@ export default async function ReportDetailPage({
               </DataRow>
               {(row.resume_filename as string | null) && (
                 <DataRow label="原始简历文件名">
-                  <span className="text-muted-foreground select-all">{row.resume_filename as string}</span>
+                  {(row.resume_storage_path as string | null) &&
+                  fs.existsSync(row.resume_storage_path as string) ? (
+                    <a
+                      href={withBase(`/api/admin/reports/${String(row.id as number)}/resume?project=tailor`)}
+                      download
+                      className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
+                    >
+                      <Download className="size-3.5" />
+                      {row.resume_filename as string}
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground select-all">{row.resume_filename as string}</span>
+                  )}
                 </DataRow>
               )}
               {tailorReportData?.resume && tailorReportData?.changes && (
