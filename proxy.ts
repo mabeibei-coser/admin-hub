@@ -55,10 +55,13 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(basePathAwareRedirect(req, "/admin/login"));
     }
 
-    // 超管闸门：/admin/admins/* 和 /api/admin/admins/* 只有 isSuper 才能进
+    // 超管闸门：/admin/admins/* 和 /api/admin/admins/* 只有 isSuper 才能进。
+    // 例外：/api/admin/admins/picker 是给普通管理员用的（转服务弹窗选协同人员），
+    // 其 route handler 自己用 requireAdmin 鉴权，不能被超管闸门连带拦掉。
     const isAdminsPath =
       normalized.startsWith("/admin/admins") ||
-      normalized.startsWith("/api/admin/admins");
+      (normalized.startsWith("/api/admin/admins") &&
+        normalized !== "/api/admin/admins/picker");
     if (isAdminsPath && !session.isSuper) {
       if (normalized.startsWith("/api/")) {
         return NextResponse.json({ error: "无权限" }, { status: 403 });
