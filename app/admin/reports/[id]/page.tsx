@@ -361,9 +361,9 @@ export default async function ReportDetailPage({
               <DataRow label="目标岗位">{(row.job_title as string) || "—"}</DataRow>
               <DataRow label="改写模式">
                 {(row.mode as string) === "moderate"
-                  ? "稳健改写"
+                  ? "适中"
                   : (row.mode as string) === "aggressive"
-                    ? "大幅改写"
+                    ? "激进"
                     : (row.mode as string) || "—"}
               </DataRow>
               {(row.resume_filename as string | null) && (

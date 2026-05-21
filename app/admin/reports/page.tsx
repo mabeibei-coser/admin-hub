@@ -625,8 +625,8 @@ function AdminReportsContent() {
                   className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
                 >
                   <option value="">全部</option>
-                  <option value="moderate">稳健改写</option>
-                  <option value="aggressive">大幅改写</option>
+                  <option value="moderate">适中</option>
+                  <option value="aggressive">激进</option>
                 </select>
               </div>
             </>
@@ -1053,9 +1053,9 @@ function ReportRowItem({
     const tailorMeta = PROJECTS.tailor;
     const modeLabel =
       row.tailor_mode === "moderate"
-        ? "稳健"
+        ? "适中"
         : row.tailor_mode === "aggressive"
-          ? "大幅"
+          ? "激进"
           : "—";
     return (
       <TableRow className="text-sm hover:bg-[var(--blue-50)]/40 transition-colors duration-150">
