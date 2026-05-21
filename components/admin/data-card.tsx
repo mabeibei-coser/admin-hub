@@ -1,3 +1,4 @@
+import { Info } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -60,7 +61,6 @@ export function DataCard({
   return (
     <div
       className="surface-panel relative overflow-hidden p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_oklch(0.3_0.06_252_/_0.08),0_18px_36px_oklch(0.55_0.2_252_/_0.12)] group"
-      title={hint}
     >
       {/* 右上角微弱渐变 — hover 时加强 */}
       <div
@@ -71,8 +71,19 @@ export function DataCard({
         }}
       />
       <div className="relative flex items-start justify-between gap-3">
-        <div className="text-[10.5px] text-muted-foreground font-semibold tracking-[0.16em] uppercase pt-0.5 min-w-0 truncate">
-          {label}
+        <div className="flex items-center gap-1 min-w-0">
+          <div className="text-[10.5px] text-muted-foreground font-semibold tracking-[0.16em] uppercase pt-0.5 truncate">
+            {label}
+          </div>
+          {hint && (
+            <span
+              title={hint}
+              aria-label={hint}
+              className="shrink-0 text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-help"
+            >
+              <Info className="size-3" />
+            </span>
+          )}
         </div>
         {Icon && (
           <div

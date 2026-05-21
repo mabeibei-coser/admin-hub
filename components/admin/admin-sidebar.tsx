@@ -312,12 +312,24 @@ export function AdminMobileBar() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const me = useAdminMe();
 
   const currentProject = (searchParams.get("project") ?? "report") as ProjectFilter;
 
   // trailingSlash:true 时 pathname 是 "/admin/login/"，剥掉尾斜杠再比
   if (pathname.replace(/\/$/, "") === "/admin/login") return null;
+
+  async function handleLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await fetch(withBase("/api/admin/logout"), { method: "POST" });
+      window.location.href = withBase("/admin/login");
+    } catch {
+      setLoggingOut(false);
+    }
+  }
 
   // 在 me 加载前显示骨架（loading 状态）
   const visibleProjects: string[] = me ? me.visibleProjects : ["report", "nav", "startup", "tailor"];
@@ -364,14 +376,24 @@ export function AdminMobileBar() {
             />
           )}
         </div>
-        {/* 修改密码 — 右侧图标按钮 */}
-        <button
-          onClick={() => setPwdDialogOpen(true)}
-          className="ml-auto shrink-0 size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--blue-50)]/60"
-          aria-label="修改密码"
-        >
-          <KeyRound className="size-3.5" />
-        </button>
+        {/* 右侧操作：修改密码 + 退出登录 */}
+        <div className="ml-auto flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => setPwdDialogOpen(true)}
+            className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--blue-50)]/60 cursor-pointer"
+            aria-label="修改密码"
+          >
+            <KeyRound className="size-3.5" />
+          </button>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-rose-600 hover:bg-rose-50 disabled:opacity-50 cursor-pointer transition-colors"
+            aria-label="退出登录"
+          >
+            <LogOut className="size-3.5" />
+          </button>
+        </div>
       </div>
     </>
   );

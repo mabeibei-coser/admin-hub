@@ -287,31 +287,34 @@ function ListContent() {
         {/* 筛选 — Tabler 风：包成轻卡。条件为草稿态，点「搜索」才提交 */}
         <div className="surface-panel p-4 flex flex-wrap gap-3 items-end">
           <div>
-            <div className="text-xs text-muted-foreground mb-1">首次服务起始时间</div>
+            <label htmlFor="st-filter-from" className="block text-xs text-muted-foreground mb-1">首次服务起始时间</label>
             <input
+              id="st-filter-from"
               type="date"
               value={dateFromInput}
               max={dateToInput || undefined}
               onChange={(e) => setDateFromInput(e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30 cursor-pointer"
             />
           </div>
           <div>
-            <div className="text-xs text-muted-foreground mb-1">首次服务截止时间</div>
+            <label htmlFor="st-filter-to" className="block text-xs text-muted-foreground mb-1">首次服务截止时间</label>
             <input
+              id="st-filter-to"
               type="date"
               value={dateToInput}
               min={dateFromInput || undefined}
               onChange={(e) => setDateToInput(e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30 cursor-pointer"
             />
           </div>
           <div>
-            <div className="text-xs text-muted-foreground mb-1">服务状态</div>
+            <label htmlFor="st-filter-status" className="block text-xs text-muted-foreground mb-1">服务状态</label>
             <select
+              id="st-filter-status"
               value={statusInput}
               onChange={(e) => setStatusInput(e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30 cursor-pointer"
             >
               <option value="">全部</option>
               {SERVICE_STATUSES.map((s) => (
@@ -322,11 +325,12 @@ function ListContent() {
             </select>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground mb-1">服务分类</div>
+            <label htmlFor="st-filter-category" className="block text-xs text-muted-foreground mb-1">服务分类</label>
             <select
+              id="st-filter-category"
               value={categoryInput}
               onChange={(e) => setCategoryInput(e.target.value)}
-              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
+              className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30 cursor-pointer"
             >
               <option value="">全部</option>
               {SERVICE_CATEGORIES.map((c) => (
@@ -337,8 +341,9 @@ function ListContent() {
             </select>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground mb-1">姓名</div>
+            <label htmlFor="st-filter-name" className="block text-xs text-muted-foreground mb-1">姓名</label>
             <input
+              id="st-filter-name"
               type="text"
               value={nameInput}
               placeholder="输入姓名"

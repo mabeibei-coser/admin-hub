@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ShieldCheck, ArrowRight, RefreshCw } from "lucide-react";
+import { ShieldCheck, ArrowRight, RefreshCw, Loader2, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { withBase } from "@/lib/url";
@@ -13,6 +13,7 @@ export default function AdminLoginPage() {
   const [captchaUrl, setCaptchaUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // 用户名最少 3 字符（之前的"必须是大陆手机号"放宽，因为用户名可能是手机号/字母/混合）
   const usernameError =
@@ -148,17 +149,27 @@ export default function AdminLoginPage() {
               >
                 密码
               </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="请输入密码"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-                className={darkInputClass}
-                style={{ fontSize: "16px" }}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="请输入密码"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                  className={`${darkInputClass} pr-10`}
+                  style={{ fontSize: "16px" }}
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
             </div>
 
             {/* 图形验证码 — 输入 + 图（点图换一张） */}
@@ -223,12 +234,19 @@ export default function AdminLoginPage() {
               disabled={loading || !canSubmit}
               className="btn-primary-glow w-full h-11 rounded-xl text-[15px] font-medium flex items-center justify-center gap-2 group"
             >
-              <span>{loading ? "登录中…" : "登录"}</span>
-              {!loading && (
-                <ArrowRight
-                  className="size-4 transition-transform group-hover:translate-x-0.5"
-                  strokeWidth={2.25}
-                />
+              {loading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>登录中…</span>
+                </>
+              ) : (
+                <>
+                  <span>登录</span>
+                  <ArrowRight
+                    className="size-4 transition-transform group-hover:translate-x-0.5"
+                    strokeWidth={2.25}
+                  />
+                </>
               )}
             </button>
           </form>

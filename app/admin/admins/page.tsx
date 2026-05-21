@@ -152,7 +152,11 @@ export default function AdminsPage() {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">还没有管理员</p>
-              <Link href="/admin/admins/new" className="inline-block text-xs text-[var(--blue-700)] hover:underline">
+              <Link
+                href="/admin/admins/new"
+                className={buttonVariants({ variant: "outline", size: "sm", className: "mt-1" })}
+              >
+                <Plus className="size-3.5" />
                 立即新建第一个
               </Link>
             </div>

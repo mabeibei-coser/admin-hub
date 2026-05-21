@@ -443,51 +443,56 @@ function AdminReportsContent() {
         {/* 过滤栏 — 包成轻卡 */}
         <div className="surface-panel p-4 flex flex-wrap gap-3 items-end">
           <div>
-            <div className="text-xs text-muted-foreground mb-1">开始日期</div>
+            <label htmlFor="filter-from" className="block text-xs text-muted-foreground mb-1">开始日期</label>
             <Input
+              id="filter-from"
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="h-8 text-sm w-36 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+              className="h-8 text-sm w-36 bg-card text-foreground border border-input cursor-pointer"
             />
           </div>
           <div>
-            <div className="text-xs text-muted-foreground mb-1">结束日期</div>
+            <label htmlFor="filter-to" className="block text-xs text-muted-foreground mb-1">结束日期</label>
             <Input
+              id="filter-to"
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="h-8 text-sm w-36 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+              className="h-8 text-sm w-36 bg-card text-foreground border border-input cursor-pointer"
             />
           </div>
           {project === "nav" ? (
             <>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">姓名</div>
+                <label htmlFor="filter-name" className="block text-xs text-muted-foreground mb-1">姓名</label>
                 <Input
+                  id="filter-name"
                   placeholder="关键词"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">手机号</div>
+                <label htmlFor="filter-phone" className="block text-xs text-muted-foreground mb-1">手机号</label>
                 <Input
+                  id="filter-phone"
                   placeholder="关键词"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">用户身份</div>
+                <label htmlFor="filter-identity" className="block text-xs text-muted-foreground mb-1">用户身份</label>
                 <select
+                  id="filter-identity"
                   value={userIdentity}
                   onChange={(e) => setUserIdentity(e.target.value)}
-                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)] cursor-pointer"
                 >
                   <option value="">全部</option>
                   <option value="recent_grad">应届毕业生</option>
@@ -496,23 +501,25 @@ function AdminReportsContent() {
                 </select>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">意向岗位</div>
+                <label htmlFor="filter-position" className="block text-xs text-muted-foreground mb-1">意向岗位</label>
                 <Input
+                  id="filter-position"
                   placeholder="关键词"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
-                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">转服务状态</div>
+                <label htmlFor="filter-transfer" className="block text-xs text-muted-foreground mb-1">转服务状态</label>
                 <select
+                  id="filter-transfer"
                   value={transferStatus}
                   onChange={(e) =>
                     setTransferStatus(e.target.value as "" | "1" | "0")
                   }
-                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)] cursor-pointer"
                 >
                   <option value="">全部</option>
                   <option value="1">已转入服务</option>
@@ -523,41 +530,45 @@ function AdminReportsContent() {
           ) : project === "startup" ? (
             <>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">姓名</div>
+                <label htmlFor="filter-name" className="block text-xs text-muted-foreground mb-1">姓名</label>
                 <Input
+                  id="filter-name"
                   placeholder="关键词"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">手机号</div>
+                <label htmlFor="filter-phone" className="block text-xs text-muted-foreground mb-1">手机号</label>
                 <Input
+                  id="filter-phone"
                   placeholder="关键词"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">项目名称</div>
+                <label htmlFor="filter-project" className="block text-xs text-muted-foreground mb-1">项目名称</label>
                 <Input
+                  id="filter-project"
                   placeholder="关键词"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
-                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">启动资金</div>
+                <label htmlFor="filter-capital" className="block text-xs text-muted-foreground mb-1">启动资金</label>
                 <select
+                  id="filter-capital"
                   value={startupCapital}
                   onChange={(e) => setStartupCapital(e.target.value)}
-                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)] cursor-pointer"
                 >
                   <option value="">全部</option>
                   <option value="lt5w">5万以下</option>
@@ -568,11 +579,12 @@ function AdminReportsContent() {
                 </select>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">创业经验</div>
+                <label htmlFor="filter-experience" className="block text-xs text-muted-foreground mb-1">创业经验</label>
                 <select
+                  id="filter-experience"
                   value={startupExperience}
                   onChange={(e) => setStartupExperience(e.target.value)}
-                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)] cursor-pointer"
                 >
                   <option value="">全部</option>
                   <option value="none">无经验</option>
@@ -581,13 +593,14 @@ function AdminReportsContent() {
                 </select>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">转服务状态</div>
+                <label htmlFor="filter-transfer" className="block text-xs text-muted-foreground mb-1">转服务状态</label>
                 <select
+                  id="filter-transfer"
                   value={transferStatus}
                   onChange={(e) =>
                     setTransferStatus(e.target.value as "" | "1" | "0")
                   }
-                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)] cursor-pointer"
                 >
                   <option value="">全部</option>
                   <option value="1">已转入服务</option>
@@ -598,31 +611,34 @@ function AdminReportsContent() {
           ) : project === "tailor" ? (
             <>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">姓名</div>
+                <label htmlFor="filter-name" className="block text-xs text-muted-foreground mb-1">姓名</label>
                 <Input
+                  id="filter-name"
                   placeholder="关键词"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">目标岗位</div>
+                <label htmlFor="filter-position" className="block text-xs text-muted-foreground mb-1">目标岗位</label>
                 <Input
+                  id="filter-position"
                   placeholder="关键词"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
-                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">改写模式</div>
+                <label htmlFor="filter-mode" className="block text-xs text-muted-foreground mb-1">改写模式</label>
                 <select
+                  id="filter-mode"
                   value={tailorMode}
                   onChange={(e) => setTailorMode(e.target.value)}
-                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)] cursor-pointer"
                 >
                   <option value="">全部</option>
                   <option value="moderate">适中</option>
@@ -633,22 +649,24 @@ function AdminReportsContent() {
           ) : (
             <>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">姓名</div>
+                <label htmlFor="filter-name" className="block text-xs text-muted-foreground mb-1">姓名</label>
                 <Input
+                  id="filter-name"
                   placeholder="关键词"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="h-8 text-sm w-32 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">意向岗位</div>
+                <label htmlFor="filter-position" className="block text-xs text-muted-foreground mb-1">意向岗位</label>
                 <Input
+                  id="filter-position"
                   placeholder="关键词"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
-                  className="h-8 text-sm w-36 bg-card text-foreground ring-1 ring-[var(--report-border)]"
+                  className="h-8 text-sm w-36 bg-card text-foreground border border-input"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
