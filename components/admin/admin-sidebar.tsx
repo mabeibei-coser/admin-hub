@@ -7,6 +7,7 @@ import {
   Compass,
   Rocket,
   FilePen,
+  Coins,
   LogOut,
   Users,
   KeyRound,
@@ -40,7 +41,11 @@ const PROJECT_ICONS: Record<string, React.ComponentType<{ className?: string; st
   nav: Compass,
   startup: Rocket,
   tailor: FilePen,
+  salary: Coins,
 };
+
+/** me.visibleProjects 加载前的兜底（与 PROJECTS 的 key 顺序一致） */
+const FALLBACK_PROJECTS = ["report", "nav", "startup", "tailor", "salary"];
 
 /** 从 /api/admin/me 获取当前用户数据。加载中返回 null。
  *  登录页跳过 fetch — 避免匿名用户的 401 console 噪音 + 多一次 RT。 */
@@ -116,7 +121,7 @@ export function AdminSidebar() {
         {/* === 报告管理 section === */}
         <SectionHeader label="报告管理" />
         <nav className="px-3 flex flex-col gap-0.5">
-          {(!me ? (["report", "nav", "startup", "tailor"] as string[]) : me.visibleProjects).map(
+          {(!me ? FALLBACK_PROJECTS : me.visibleProjects).map(
             (pid) => {
               const meta = PROJECTS[pid as keyof typeof PROJECTS];
               if (!meta) return null;
@@ -332,7 +337,7 @@ export function AdminMobileBar() {
   }
 
   // 在 me 加载前显示骨架（loading 状态）
-  const visibleProjects: string[] = me ? me.visibleProjects : ["report", "nav", "startup", "tailor"];
+  const visibleProjects: string[] = me ? me.visibleProjects : FALLBACK_PROJECTS;
   const showService = !me || me.showService;
   const inServiceTracking = pathname.startsWith("/admin/service-tracking");
 

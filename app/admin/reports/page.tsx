@@ -12,6 +12,7 @@ import {
   Compass,
   Rocket,
   FilePen,
+  Coins,
   Sparkles,
   Calendar,
   CalendarDays,
@@ -75,6 +76,10 @@ interface ReportRow {
   startup_experience?: string | null;
   /** tailor 项目专属：改写模式（moderate / aggressive） */
   tailor_mode?: string | null;
+  /** salary 项目专属：标准职级（P5/M3 等代码） */
+  salary_rank?: string | null;
+  /** salary 项目专属：职级中文标签 */
+  salary_rank_label?: string | null;
 }
 
 interface Stats {
@@ -99,6 +104,7 @@ interface ApiResponse {
   navReady: boolean;
   startupReady: boolean;
   tailorReady: boolean;
+  salaryReady: boolean;
   stats: Stats;
 }
 
@@ -156,8 +162,10 @@ function ProjectBadge({ project }: { project: ProjectId }) {
         ? "bg-[var(--purple-500)]"
         : meta.color === "orange"
           ? "bg-[var(--orange-500)]"
-          : "bg-[var(--blue-500)]";
-  // purple / orange 走内联类（status-pill 的 data-tone 没枚举，直接 inline 控色）
+          : meta.color === "cyan"
+            ? "bg-[var(--cyan-500)]"
+            : "bg-[var(--blue-500)]";
+  // purple / orange / cyan 走内联类（status-pill 的 data-tone 没枚举，直接 inline 控色）
   if (meta.color === "purple") {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--purple-50)] text-[var(--purple-700)] ring-1 ring-[var(--purple-200)]/60">
@@ -174,6 +182,14 @@ function ProjectBadge({ project }: { project: ProjectId }) {
       </span>
     );
   }
+  if (meta.color === "cyan") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--cyan-50)] text-[var(--cyan-700)] ring-1 ring-[var(--cyan-200)]/60">
+        <span className={`size-1.5 rounded-full ${dotColor}`} />
+        {meta.shortLabel}
+      </span>
+    );
+  }
   return (
     <span className="status-pill" data-tone={tone}>
       <span className={`size-1.5 rounded-full ${dotColor}`} />
@@ -184,7 +200,14 @@ function ProjectBadge({ project }: { project: ProjectId }) {
 
 function readProjectFromUrl(p: string | null): ProjectFilter {
   // 历史链接 ?project=all 或不带参数时一律落到职业定位。
-  if (p === "report" || p === "nav" || p === "startup" || p === "tailor") return p;
+  if (
+    p === "report" ||
+    p === "nav" ||
+    p === "startup" ||
+    p === "tailor" ||
+    p === "salary"
+  )
+    return p;
   return "report";
 }
 
@@ -362,6 +385,7 @@ function AdminReportsContent() {
   const navDegraded = data && project === "nav" && !data.navReady;
   const startupDegraded = data && project === "startup" && !data.startupReady;
   const tailorDegraded = data && project === "tailor" && !data.tailorReady;
+  const salaryDegraded = data && project === "salary" && !data.salaryReady;
 
   // 列定义（项目专属）
   const columns = useMemo(() => {
@@ -371,6 +395,18 @@ function AdminReportsContent() {
       return ["时间", "姓名", "手机号", "服务项目", "项目名称", "启动资金", "创业经验", "转服务状态", "操作"];
     if (project === "tailor")
       return ["时间", "姓名", "手机号", "服务项目", "目标岗位", "改写模式", "操作"];
+    if (project === "salary")
+      return [
+        "时间",
+        "手机号",
+        "服务项目",
+        "岗位名称",
+        "标准职级",
+        "企业性质",
+        "最高学历",
+        "所在城市",
+        "操作",
+      ];
     // 职业导航：HR 关心节奏 + 用户身份 + 服务转化状态
     return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
   }, [project]);
@@ -402,7 +438,9 @@ function AdminReportsContent() {
                 ? Rocket
                 : project === "tailor"
                   ? FilePen
-                  : Briefcase
+                  : project === "salary"
+                    ? Coins
+                    : Briefcase
           }
           title={currentProjectLabel}
           subtitle={PROJECTS[project].description ?? null}
@@ -413,7 +451,9 @@ function AdminReportsContent() {
                 ? "purple"
                 : project === "tailor"
                   ? "orange"
-                  : "blue"
+                  : project === "salary"
+                    ? "cyan"
+                    : "blue"
           }
         />
 
@@ -434,6 +474,12 @@ function AdminReportsContent() {
           <Alert tone="warning">
             「简历定制」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
             <code>TAILOR_DB_PATH</code>。
+          </Alert>
+        )}
+        {salaryDegraded && (
+          <Alert tone="warning">
+            「薪酬查询」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
+            <code>SALARY_DB_PATH</code>。
           </Alert>
         )}
 
@@ -646,6 +692,31 @@ function AdminReportsContent() {
                 </select>
               </div>
             </>
+          ) : project === "salary" ? (
+            <>
+              <div>
+                <label htmlFor="filter-phone" className="block text-xs text-muted-foreground mb-1">手机号</label>
+                <Input
+                  id="filter-phone"
+                  placeholder="关键词"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <label htmlFor="filter-position" className="block text-xs text-muted-foreground mb-1">岗位名称</label>
+                <Input
+                  id="filter-position"
+                  placeholder="关键词"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  className="h-8 text-sm w-36 bg-card text-foreground border border-input"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+            </>
           ) : (
             <>
               <div>
@@ -823,6 +894,39 @@ function KpiStrip({
   loading: boolean;
 }) {
   const skeleton = loading && data === null;
+
+  // salary 项目：报告总数 / 本月新增 / 本周新增 / 今日新增
+  if (project === "salary") {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <DataCard
+          label="报告总数"
+          value={data?.stats.total}
+          icon={FileText}
+          loading={skeleton}
+          highlight
+        />
+        <DataCard
+          label="本月新增"
+          value={data?.stats.monthCount}
+          icon={Calendar}
+          loading={skeleton}
+        />
+        <DataCard
+          label="本周新增"
+          value={data?.stats.weekCount}
+          icon={CalendarDays}
+          loading={skeleton}
+        />
+        <DataCard
+          label="今日新增"
+          value={data?.stats.todayCount}
+          icon={Sparkles}
+          loading={skeleton}
+        />
+      </div>
+    );
+  }
 
   // tailor 项目：报告总数 / 本月新增 / 本周新增 / 今日新增
   if (project === "tailor") {
@@ -1066,6 +1170,48 @@ function ReportRowItem({
     );
   }
 
+  // tab=salary：时间 / 手机号 / 服务项目 / 岗位名称 / 标准职级 / 企业性质 / 最高学历 / 所在城市 / 操作
+  if (project === "salary") {
+    const salaryMeta = PROJECTS.salary;
+    return (
+      <TableRow className="text-sm hover:bg-[var(--blue-50)]/40 transition-colors duration-150">
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {formatTs(row.created_at)}
+        </TableCell>
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {row.user_phone || "—"}
+        </TableCell>
+        <TableCell>
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--cyan-700)]">
+            <span className="size-1.5 rounded-full bg-[var(--cyan-500)]" />
+            {salaryMeta.label}
+          </span>
+        </TableCell>
+        <TableCell className="font-medium max-w-[140px] truncate">
+          {row.target_position || "—"}
+        </TableCell>
+        <TableCell
+          className="text-muted-foreground max-w-[180px] truncate"
+          title={row.salary_rank_label || row.salary_rank || undefined}
+        >
+          {row.salary_rank_label || row.salary_rank || "—"}
+        </TableCell>
+        <TableCell className="text-muted-foreground max-w-[110px] truncate">
+          {row.target_company || "—"}
+        </TableCell>
+        <TableCell className="text-muted-foreground max-w-[110px] truncate">
+          {row.target_education || "—"}
+        </TableCell>
+        <TableCell className="text-muted-foreground max-w-[110px] truncate">
+          {row.target_city_tier || "—"}
+        </TableCell>
+        <TableCell>
+          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+        </TableCell>
+      </TableRow>
+    );
+  }
+
   // tab=tailor：时间 / 姓名 / 手机号 / 服务项目 / 目标岗位 / 改写模式 / 操作
   if (project === "tailor") {
     const tailorMeta = PROJECTS.tailor;
@@ -1223,17 +1369,24 @@ function ReportMobileCard({ row }: { row: ReportRow }) {
   const durationSec = row.duration_ms
     ? `${Math.round(row.duration_ms / 1000)}s`
     : null;
+  // salary 没有姓名，主标识用手机号；其它项目主标识用姓名 + 副位手机号
+  const primary = row.project === "salary"
+    ? row.user_phone || "—"
+    : row.user_name || "—";
+  const secondary = row.project === "salary"
+    ? (row.target_company || "—")
+    : (row.user_phone || "—");
   return (
     <Link
       href={`/admin/reports/${row.id}?project=${row.project}`}
       className="block p-4 hover:bg-[var(--blue-50)]/40 active:bg-[var(--blue-100)]/50 transition-colors"
     >
       <div className="flex items-center justify-between gap-2 mb-1">
-        <span className="font-medium text-foreground truncate min-w-0">
-          {row.user_name || "—"}
+        <span className="font-medium text-foreground truncate min-w-0 tabular-nums">
+          {primary}
         </span>
         <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-          {row.user_phone || "—"}
+          {secondary}
         </span>
       </div>
       <div className="text-sm text-foreground truncate mb-1.5">

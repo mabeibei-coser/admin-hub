@@ -13,6 +13,7 @@ import { WorkplaceInsightSection } from "@/components/report/workplace-insight-s
 import { NavReportRenderer } from "@/components/admin/nav-report-renderer";
 import { StartupReportRenderer } from "@/components/admin/startup-report-renderer";
 import { TailorReportRenderer } from "@/components/admin/tailor-report-renderer";
+import { SalaryReportRenderer } from "@/components/admin/salary-report-renderer";
 import type { ReportData, JobFormData } from "@/lib/types";
 import type {
   ReportData as NavReportData,
@@ -27,14 +28,20 @@ import type {
   InterviewQ1Q6 as StartupInterviewQ1Q6,
 } from "@/lib/types-startup";
 import type { TailorReport } from "@/lib/types-tailor";
+import type { SalaryReportData } from "@/lib/types-salary";
 import { withBase } from "@/lib/url";
 
-type Project = "report" | "nav" | "startup" | "tailor";
+type Project = "report" | "nav" | "startup" | "tailor" | "salary";
 
 interface ApiResponse {
   project: Project;
   meta: Record<string, unknown>;
-  reportData: ReportData | NavReportData | StartupReportData | null;
+  reportData:
+    | ReportData
+    | NavReportData
+    | StartupReportData
+    | SalaryReportData
+    | null;
   interviewQ1Q2?: InterviewQ1Q2 | StartupInterviewQ1Q6 | null;
   formData: JobFormData | NavJobFormData | StartupJobFormData | null;
   scoring?: ScoringResult | StartupScoringResult | null;
@@ -53,7 +60,9 @@ export default function ReportPreviewPage() {
         ? "startup"
         : rawProject === "tailor"
           ? "tailor"
-          : "report";
+          : rawProject === "salary"
+            ? "salary"
+            : "report";
 
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +102,11 @@ export default function ReportPreviewPage() {
   }
 
   const meta = apiData.meta;
-  const position = (meta.target_position as string) ?? "—";
+  // salary 表的列名是 position 不是 target_position；其它项目用 target_position
+  const position =
+    (meta.target_position as string | undefined) ??
+    (meta.position as string | undefined) ??
+    "—";
   const createdAt = meta.created_at
     ? new Date(meta.created_at as number).toLocaleString("zh-CN")
     : "—";
@@ -145,6 +158,17 @@ export default function ReportPreviewPage() {
         {banner}
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
           <TailorReportRenderer reportData={apiData.reportData as unknown as TailorReport | null} />
+        </div>
+      </>
+    );
+  }
+
+  if (project === "salary") {
+    return (
+      <>
+        {banner}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <SalaryReportRenderer reportData={apiData.reportData as SalaryReportData | null} />
         </div>
       </>
     );

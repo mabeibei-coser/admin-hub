@@ -115,6 +115,13 @@
   --orange-200: oklch(0.88 0.07 50);
   --orange-100: oklch(0.95 0.03 50);
   --orange-50: oklch(0.98 0.012 50);
+  /* —— Cyan scale — salary 项目专属 accent —— */
+  --cyan-700: oklch(0.5 0.13 200);
+  --cyan-600: oklch(0.58 0.13 200);
+  --cyan-500: oklch(0.66 0.13 200);
+  --cyan-200: oklch(0.88 0.07 200);
+  --cyan-100: oklch(0.95 0.03 200);
+  --cyan-50: oklch(0.98 0.012 200);
 
   /* —— Tinted neutrals for surfaces & shadows —— */
   --surface-tinted: oklch(0.985 0.006 240);
@@ -200,6 +207,13 @@
   --orange-200: oklch(0.42 0.1 50);
   --orange-100: oklch(0.32 0.07 50);
   --orange-50: oklch(0.24 0.04 50);
+  /* —— Cyan scale (dark) —— */
+  --cyan-700: oklch(0.78 0.11 200);
+  --cyan-600: oklch(0.72 0.12 200);
+  --cyan-500: oklch(0.65 0.13 200);
+  --cyan-200: oklch(0.42 0.09 200);
+  --cyan-100: oklch(0.32 0.07 200);
+  --cyan-50: oklch(0.24 0.04 200);
 
   /* —— Tinted surfaces & shadows —— */
   --surface-tinted: oklch(0.18 0.025 252);

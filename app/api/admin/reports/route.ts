@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-session";
 import { canViewMenu } from "@/lib/menus";
 import { startOfMonthCN, startOfWeekCN } from "@/lib/cn-time";
 
 export const runtime = "nodejs";
 
-type ProjectFilter = "all" | "report" | "nav" | "startup" | "tailor";
+type ProjectFilter = "all" | "report" | "nav" | "startup" | "tailor" | "salary";
 
 function parseProject(v: string | null): ProjectFilter {
-  if (v === "report" || v === "nav" || v === "startup" || v === "tailor") return v;
+  if (v === "report" || v === "nav" || v === "startup" || v === "tailor" || v === "salary") return v;
   return "all";
 }
 
@@ -29,6 +29,7 @@ function clampProject(
   if (canViewMenu(session, "nav")) return "nav";
   if (canViewMenu(session, "startup")) return "startup";
   if (canViewMenu(session, "tailor")) return "tailor";
+  if (canViewMenu(session, "salary")) return "salary";
   if (canViewMenu(session, "all")) return "all";
   return "report"; // 兜底
 }
@@ -36,7 +37,7 @@ function clampProject(
 interface ReportRow {
   id: number;
   created_at: number;
-  project: "report" | "nav" | "startup" | "tailor";
+  project: "report" | "nav" | "startup" | "tailor" | "salary";
   target_position: string;
   target_education: string | null;
   work_years: string | null;
@@ -61,6 +62,10 @@ interface ReportRow {
   startup_experience?: string | null;
   /** tailor 项目专属：改写模式（moderate / aggressive） */
   tailor_mode?: string | null;
+  /** salary 项目专属：标准职级（如 P5、M3） */
+  salary_rank?: string | null;
+  /** salary 项目专属：职级中文标签（"P5(高级/独立负责)"） */
+  salary_rank_label?: string | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -95,12 +100,14 @@ export async function GET(req: NextRequest) {
     const navReady = isNavDbReady();
     const startupReady = isStartupDbReady();
     const tailorReady = isTailorDbReady();
+    const salaryReady = isSalaryDbReady();
 
     // 如果指定项目的库不可用，自动降级到 report-only
     let effectiveProject: ProjectFilter = project;
     if (project === "nav" && !navReady) effectiveProject = "report";
     else if (project === "startup" && !startupReady) effectiveProject = "report";
     else if (project === "tailor" && !tailorReady) effectiveProject = "report";
+    else if (project === "salary" && !salaryReady) effectiveProject = "report";
 
     // 通用 conditions（应用到 report 和 nav 两侧）
     const conditions: string[] = [];
@@ -318,6 +325,55 @@ export async function GET(req: NextRequest) {
     if (to) tailorBaseParams.push(new Date(to).getTime() + 86400000);
     if (position) tailorBaseParams.push(`%${position}%`);
 
+    // salary：表结构跟其他项目不一样，无 has_resume / user_name / target_position
+    // 列对齐 ReportRow：把 salary 的 position/company/education/city 映射到通用列
+    const salaryOnlyConditions: string[] = [];
+    const salaryOnlyParams: (string | number)[] = [];
+    if (phone) {
+      salaryOnlyConditions.push("sr.user_phone LIKE ?");
+      salaryOnlyParams.push(`%${phone}%`);
+    }
+    const salaryConditionsCombined = [
+      ...conditions
+        .filter(
+          (c) =>
+            !c.startsWith("target_position") && !c.startsWith("has_resume"),
+        )
+        .map((c) => c.replace(/^(created_at)\b/, "sr.$1")),
+      ...(position ? ["sr.position LIKE ?"] : []),
+      ...salaryOnlyConditions,
+    ];
+    const whereSalary =
+      salaryConditionsCombined.length > 0
+        ? `WHERE ${salaryConditionsCombined.join(" AND ")}`
+        : "";
+    const salarySelect = `
+      SELECT sr.id, sr.created_at, 'salary' AS project,
+             sr.position       AS target_position,
+             sr.education      AS target_education,
+             NULL              AS work_years,
+             NULL              AS user_name,
+             sr.user_phone     AS user_phone,
+             sr.company        AS target_company,
+             sr.city           AS target_city_tier,
+             0                 AS has_resume,
+             NULL              AS resume_filename,
+             NULL              AS user_identity,
+             NULL              AS uuid,
+             sr.duration_ms,
+             NULL              AS sections_status,
+             sr.ip,
+             NULL              AS tracking_id,
+             sr.rank           AS salary_rank,
+             sr.rank_label     AS salary_rank_label
+      FROM salary.reports sr
+      ${whereSalary}
+    `;
+    const salaryBaseParams: (string | number)[] = [];
+    if (from) salaryBaseParams.push(new Date(from).getTime());
+    if (to) salaryBaseParams.push(new Date(to).getTime() + 86400000);
+    if (position) salaryBaseParams.push(`%${position}%`);
+
     // 根据 project filter 决定查哪一侧或两侧 UNION
     let listQuery: string;
     let countQuery: string;
@@ -343,6 +399,11 @@ export async function GET(req: NextRequest) {
       countQuery = `SELECT COUNT(*) AS c FROM tailor.reports t ${whereTailor}`;
       queryParams = [...tailorBaseParams, ...tailorOnlyParams];
       countParams = [...tailorBaseParams, ...tailorOnlyParams];
+    } else if (effectiveProject === "salary") {
+      listQuery = `${salarySelect} ORDER BY sr.created_at DESC LIMIT ? OFFSET ?`;
+      countQuery = `SELECT COUNT(*) AS c FROM salary.reports sr ${whereSalary}`;
+      queryParams = [...salaryBaseParams, ...salaryOnlyParams];
+      countParams = [...salaryBaseParams, ...salaryOnlyParams];
     } else {
       // all: UNION ALL，report 用 params，nav 用 params + navOnlyParams
       listQuery = `${reportSelect} UNION ALL ${navSelect} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
@@ -482,6 +543,36 @@ export async function GET(req: NextRequest) {
           transferredCount: transferRow.c ?? 0,
         };
       }
+      // salary 项目专属：本月/本周（无简历、无转服务）
+      if (p === "salary") {
+        const monthStart = startOfMonthCN();
+        const weekStart = startOfWeekCN();
+        const totalRow = db
+          .prepare(`SELECT COUNT(*) AS total,
+            SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS today_count,
+            AVG(duration_ms) AS avg_dur
+            FROM salary.reports`)
+          .get(todayTs) as {
+            total: number;
+            today_count: number | null;
+            avg_dur: number | null;
+          };
+        const monthRow = db
+          .prepare("SELECT COUNT(*) AS c FROM salary.reports WHERE created_at >= ?")
+          .get(monthStart) as { c: number };
+        const weekRow = db
+          .prepare("SELECT COUNT(*) AS c FROM salary.reports WHERE created_at >= ?")
+          .get(weekStart) as { c: number };
+        const tt = totalRow.total ?? 0;
+        return {
+          total: tt,
+          todayCount: totalRow.today_count ?? 0,
+          resumeRate: 0,
+          avgDurationSec: totalRow.avg_dur ? Math.round(totalRow.avg_dur / 1000) : null,
+          monthCount: monthRow.c ?? 0,
+          weekCount: weekRow.c ?? 0,
+        };
+      }
       // tailor 项目专属：本月/本周（无转服务）
       if (p === "tailor") {
         const monthStart = startOfMonthCN();
@@ -529,7 +620,9 @@ export async function GET(req: NextRequest) {
     }
 
     let stats;
-    if (effectiveProject === "tailor" && tailorReady) {
+    if (effectiveProject === "salary" && salaryReady) {
+      stats = statForProject("salary");
+    } else if (effectiveProject === "tailor" && tailorReady) {
       stats = statForProject("tailor");
     } else if (effectiveProject === "startup" && startupReady) {
       stats = statForProject("startup");
@@ -552,6 +645,7 @@ export async function GET(req: NextRequest) {
       navReady,
       startupReady,
       tailorReady,
+      salaryReady,
       stats,
     });
   } catch (e) {

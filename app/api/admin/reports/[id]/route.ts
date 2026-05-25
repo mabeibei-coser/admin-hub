@@ -4,10 +4,17 @@ import fs from "fs";
 
 export const runtime = "nodejs";
 
-type Project = "report" | "nav" | "startup" | "tailor";
+type Project = "report" | "nav" | "startup" | "tailor" | "salary";
 
 function parseProject(v: string | null): Project | null {
-  if (v === "report" || v === "nav" || v === "startup" || v === "tailor") return v;
+  if (
+    v === "report" ||
+    v === "nav" ||
+    v === "startup" ||
+    v === "tailor" ||
+    v === "salary"
+  )
+    return v;
   return null;
 }
 
@@ -35,7 +42,7 @@ export async function GET(
     const project = parseProject(req.nextUrl.searchParams.get("project"));
     if (!project) {
       return NextResponse.json(
-        { error: "缺少 project 参数（report|nav|startup|tailor）" },
+        { error: "缺少 project 参数（report|nav|startup|tailor|salary）" },
         { status: 400 }
       );
     }
@@ -46,6 +53,7 @@ export async function GET(
       nav: "nav.reports",
       startup: "startup.reports",
       tailor: "tailor.reports",
+      salary: "salary.reports",
     };
     const table = tableMap[project];
 
@@ -79,6 +87,11 @@ export async function GET(
       reportData = safeJsonParse(row.report_json);
       formData = safeJsonParse(row.form_data_json);
       // tailor 无 quiz / scoring / interviewQ1Q2（interview 在 reportData 里）
+    } else if (project === "salary") {
+      // salary-report：report_json 含完整 SalaryReportData（薪资数据 + 行业 + 城市 + 高薪特征）
+      // 表单参数（position/company/rank/education/city）就是直接列，前端从 meta 取
+      reportData = safeJsonParse(row.report_json);
+      // salary 无 form_data_json / quiz / scoring / interviewQ1Q2
     } else {
       // career-report: 从磁盘读 data/reports/{id}.json（沿用现有逻辑）
       const storagePath = row.report_storage_path as string | null;
