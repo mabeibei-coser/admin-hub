@@ -17,6 +17,7 @@ import {
   Sparkles,
   Calendar,
   CalendarDays,
+  ImageOff,
 } from "lucide-react";
 import {
   Table,
@@ -87,6 +88,8 @@ interface ReportRow {
   scenario_label?: string | null;
   /** hazard 项目专属：本次识别条数 */
   hazard_count?: number | null;
+  /** hazard 项目专属：是否存了缩略图（1 = 有图，可走 /photo 路由）；老数据为 0 */
+  has_photo?: number | null;
 }
 
 interface Stats {
@@ -426,7 +429,7 @@ function AdminReportsContent() {
         "操作",
       ];
     if (project === "hazard")
-      return ["时间", "手机号", "服务项目", "检查场景", "识别条数", "耗时", "操作"];
+      return ["时间", "手机号", "服务项目", "检查场景", "识别条数", "耗时", "缩略图", "操作"];
     // 职业导航：HR 关心节奏 + 用户身份 + 服务转化状态
     return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
   }, [project]);
@@ -1267,7 +1270,7 @@ function ReportRowItem({
     );
   }
 
-  // tab=hazard：时间 / 手机号 / 服务项目 / 检查场景 / 识别条数 / 耗时 / 操作
+  // tab=hazard：时间 / 手机号 / 服务项目 / 检查场景 / 识别条数 / 耗时 / 缩略图 / 操作
   if (project === "hazard") {
     const hazardMeta = PROJECTS.hazard;
     const count = row.hazard_count ?? 0;
@@ -1306,6 +1309,9 @@ function ReportRowItem({
         </TableCell>
         <TableCell className="tabular-nums text-xs text-muted-foreground">
           {durationCell}
+        </TableCell>
+        <TableCell className="text-center">
+          <HazardThumb id={row.id} hasPhoto={!!row.has_photo} />
         </TableCell>
         <TableCell>
           <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
@@ -1395,6 +1401,43 @@ function ReportRowItem({
   );
 }
 
+/** 隐患识别列表缩略图。
+ *  hasPhoto=false（老数据 / 入库前的记录）→ 灰底占位；
+ *  hasPhoto=true → <img> 单独请求 /api/admin/reports/[id]/photo，点击新窗口看原图。
+ *  loading=lazy + decoding=async，避免一次列表滚动炸 20 个图片请求。
+ */
+function HazardThumb({ id, hasPhoto }: { id: number; hasPhoto: boolean }) {
+  if (!hasPhoto) {
+    return (
+      <span
+        title="此条报告无原图（早于本次接入）"
+        className="inline-flex items-center justify-center size-12 rounded-md bg-muted text-muted-foreground/60 ring-1 ring-border"
+      >
+        <ImageOff className="size-4" />
+      </span>
+    );
+  }
+  const src = withBase(`/api/admin/reports/${id}/photo?project=hazard`);
+  return (
+    <a
+      href={src}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="点击查看原图"
+      className="inline-block size-12 rounded-md overflow-hidden ring-1 ring-border bg-muted hover:ring-[var(--amber-300)] transition-shadow"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- 动态 API 路由，next/image 优化没意义且要白名单 */}
+      <img
+        src={src}
+        alt="隐患照片缩略图"
+        loading="lazy"
+        decoding="async"
+        className="w-full h-full object-cover"
+      />
+    </a>
+  );
+}
+
 // 统一的操作按钮基础类（简历/档案/转服务共用，保证设计一致性）
 const ACTION_BTN_BASE =
   "inline-flex items-center gap-1 min-h-[28px] sm:min-h-0 text-xs px-2.5 py-1 rounded-md ring-1 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2";
@@ -1422,16 +1465,19 @@ function RowActions({
     row.project === "nav" ? navReady : row.project === "startup" ? startupReady : false;
   const canTransfer = supportsTransfer && dbReady;
   const transferred = row.tracking_id != null;
+  // hazard 报告内嵌在档案页中，列表无需独立的"报告"按钮入口
+  const showReportButton = row.project !== "hazard";
   return (
     <div className="flex items-center justify-center gap-2">
-      {/* 报告：所有项目都跳预览页（渲染生成的报告，不是原始简历） */}
-      <Link
-        href={`/admin/reports/${row.id}/preview?project=${row.project}`}
-        target="_blank"
-        className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
-      >
-        报告
-      </Link>
+      {showReportButton && (
+        <Link
+          href={`/admin/reports/${row.id}/preview?project=${row.project}`}
+          target="_blank"
+          className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
+        >
+          报告
+        </Link>
+      )}
       <Link
         href={`/admin/reports/${row.id}?project=${row.project}`}
         className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}

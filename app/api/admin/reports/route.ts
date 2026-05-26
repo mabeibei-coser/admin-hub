@@ -73,6 +73,8 @@ interface ReportRow {
   scenario_label?: string | null;
   /** hazard 项目专属：本次识别出几条隐患 */
   hazard_count?: number | null;
+  /** hazard 项目专属：是否存了缩略图（1 = 有图，可走 /photo 路由）；老数据为 0 */
+  has_photo?: number | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -109,6 +111,19 @@ export async function GET(req: NextRequest) {
     const tailorReady = isTailorDbReady();
     const salaryReady = isSalaryDbReady();
     const hazardReady = isHazardDbReady();
+
+    // hazard 缩略图字段是 2026-05-26 才加的——如果用户还没重启 hazard-detect 跑过 migration，
+    // 老 schema 里没有 image_base64 列，这里动态守门避免 SELECT 时报 "no such column"。
+    let hazardHasImageCol = false;
+    if (hazardReady) {
+      const cols = db
+        .prepare("PRAGMA hazard.table_info(reports)")
+        .all() as Array<{ name: string }>;
+      hazardHasImageCol = cols.some((c) => c.name === "image_base64");
+    }
+    const hazardHasPhotoExpr = hazardHasImageCol
+      ? "CASE WHEN hr.image_base64 IS NOT NULL AND hr.image_base64 != '' THEN 1 ELSE 0 END"
+      : "0";
 
     // 如果指定项目的库不可用，自动降级到 report-only
     let effectiveProject: ProjectFilter = project;
@@ -407,6 +422,8 @@ export async function GET(req: NextRequest) {
       hazardConditionsCombined.length > 0
         ? `WHERE ${hazardConditionsCombined.join(" AND ")}`
         : "";
+    // has_photo: 列表不透出 base64（payload 会爆），只标记是否有图，前端再去 /photo 路由取
+    // CASE WHEN ... 兼容老 schema 还没补这列的情况
     const hazardSelect = `
       SELECT hr.id, hr.created_at, 'hazard' AS project,
              hr.scenario_label AS target_position,
@@ -426,7 +443,8 @@ export async function GET(req: NextRequest) {
              NULL              AS tracking_id,
              hr.scenario       AS scenario,
              hr.scenario_label AS scenario_label,
-             hr.hazard_count   AS hazard_count
+             hr.hazard_count   AS hazard_count,
+             ${hazardHasPhotoExpr} AS has_photo
       FROM hazard.reports hr
       ${whereHazard}
     `;
