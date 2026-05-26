@@ -17,10 +17,9 @@ export interface MarketComparison {
   diffPct: number;
 }
 
-export interface MarketRankingItem {
-  company: string;
+export interface SalaryTrendPoint {
+  year: number;
   monthly: number;
-  annual: number;
 }
 
 export interface IndustryAnalysisItem {
@@ -55,7 +54,7 @@ export interface SalaryReportData {
   housingFund: Percentile;
   hourlyRate: Percentile;
   marketComparison: MarketComparison;
-  marketRanking: MarketRankingItem[];
+  salaryTrend: SalaryTrendPoint[];
   industryAnalysis: IndustryAnalysisItem[];
   cityAnalysis: CityAnalysisItem[];
   highEarnerTraits: string;
