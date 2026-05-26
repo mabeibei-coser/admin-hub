@@ -16,6 +16,9 @@ const TAILOR_DB_PATH = process.env.TAILOR_DB_PATH ?? path.join(DATA_DIR, "resume
 // salary-report 数据库路径（ATTACH DATABASE 模式）。
 // 部署时通过 SALARY_DB_PATH env 指向实际 salary-report 数据文件。
 const SALARY_DB_PATH = process.env.SALARY_DB_PATH ?? path.join(DATA_DIR, "salary-report.db");
+// hazard-detect 数据库路径（ATTACH DATABASE 模式）。
+// 部署时通过 HAZARD_DB_PATH env 指向实际 hazard-detect 数据文件。
+const HAZARD_DB_PATH = process.env.HAZARD_DB_PATH ?? path.join(DATA_DIR, "hazard-detect.db");
 
 let _db: Database.Database | null = null;
 
@@ -189,6 +192,10 @@ export function getAdminDb(): Database.Database {
     const safePath = SALARY_DB_PATH.replaceAll("'", "''");
     db.exec(`ATTACH DATABASE '${safePath}' AS salary`);
   }
+  if (!attached.some((d) => d.name === "hazard")) {
+    const safePath = HAZARD_DB_PATH.replaceAll("'", "''");
+    db.exec(`ATTACH DATABASE '${safePath}' AS hazard`);
+  }
   return db;
 }
 
@@ -242,6 +249,19 @@ export function isSalaryDbReady(): boolean {
     const db = getAdminDb();
     const tables = db
       .prepare("SELECT name FROM salary.sqlite_master WHERE type='table' AND name='reports'")
+      .all() as Array<{ name: string }>;
+    return tables.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** admin 端检查 hazard 库是否就绪（有 reports 表）。返回 false 时 admin 应降级到 'report' tab。 */
+export function isHazardDbReady(): boolean {
+  try {
+    const db = getAdminDb();
+    const tables = db
+      .prepare("SELECT name FROM hazard.sqlite_master WHERE type='table' AND name='reports'")
       .all() as Array<{ name: string }>;
     return tables.length > 0;
   } catch {

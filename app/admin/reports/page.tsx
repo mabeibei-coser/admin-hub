@@ -13,6 +13,7 @@ import {
   Rocket,
   FilePen,
   Coins,
+  AlertTriangle,
   Sparkles,
   Calendar,
   CalendarDays,
@@ -80,6 +81,12 @@ interface ReportRow {
   salary_rank?: string | null;
   /** salary 项目专属：职级中文标签 */
   salary_rank_label?: string | null;
+  /** hazard 项目专属：场景 id */
+  scenario?: string | null;
+  /** hazard 项目专属：场景中文名（denorm） */
+  scenario_label?: string | null;
+  /** hazard 项目专属：本次识别条数 */
+  hazard_count?: number | null;
 }
 
 interface Stats {
@@ -105,6 +112,7 @@ interface ApiResponse {
   startupReady: boolean;
   tailorReady: boolean;
   salaryReady: boolean;
+  hazardReady: boolean;
   stats: Stats;
 }
 
@@ -190,6 +198,14 @@ function ProjectBadge({ project }: { project: ProjectId }) {
       </span>
     );
   }
+  if (meta.color === "amber") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--amber-50)] text-[var(--amber-700)] ring-1 ring-[var(--amber-200)]/60">
+        <span className={`size-1.5 rounded-full bg-[var(--amber-500)]`} />
+        {meta.shortLabel}
+      </span>
+    );
+  }
   return (
     <span className="status-pill" data-tone={tone}>
       <span className={`size-1.5 rounded-full ${dotColor}`} />
@@ -205,7 +221,8 @@ function readProjectFromUrl(p: string | null): ProjectFilter {
     p === "nav" ||
     p === "startup" ||
     p === "tailor" ||
-    p === "salary"
+    p === "salary" ||
+    p === "hazard"
   )
     return p;
   return "report";
@@ -386,6 +403,7 @@ function AdminReportsContent() {
   const startupDegraded = data && project === "startup" && !data.startupReady;
   const tailorDegraded = data && project === "tailor" && !data.tailorReady;
   const salaryDegraded = data && project === "salary" && !data.salaryReady;
+  const hazardDegraded = data && project === "hazard" && !data.hazardReady;
 
   // 列定义（项目专属）
   const columns = useMemo(() => {
@@ -407,6 +425,8 @@ function AdminReportsContent() {
         "所在城市",
         "操作",
       ];
+    if (project === "hazard")
+      return ["时间", "手机号", "服务项目", "检查场景", "识别条数", "耗时", "操作"];
     // 职业导航：HR 关心节奏 + 用户身份 + 服务转化状态
     return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
   }, [project]);
@@ -440,7 +460,9 @@ function AdminReportsContent() {
                   ? FilePen
                   : project === "salary"
                     ? Coins
-                    : Briefcase
+                    : project === "hazard"
+                      ? AlertTriangle
+                      : Briefcase
           }
           title={currentProjectLabel}
           subtitle={PROJECTS[project].description ?? null}
@@ -453,7 +475,9 @@ function AdminReportsContent() {
                   ? "orange"
                   : project === "salary"
                     ? "cyan"
-                    : "blue"
+                    : project === "hazard"
+                      ? "amber"
+                      : "blue"
           }
         />
 
@@ -480,6 +504,12 @@ function AdminReportsContent() {
           <Alert tone="warning">
             「薪酬查询」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
             <code>SALARY_DB_PATH</code>。
+          </Alert>
+        )}
+        {hazardDegraded && (
+          <Alert tone="warning">
+            「隐患识别」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
+            <code>HAZARD_DB_PATH</code>。
           </Alert>
         )}
 
@@ -717,6 +747,31 @@ function AdminReportsContent() {
                 />
               </div>
             </>
+          ) : project === "hazard" ? (
+            <>
+              <div>
+                <label htmlFor="filter-phone" className="block text-xs text-muted-foreground mb-1">手机号</label>
+                <Input
+                  id="filter-phone"
+                  placeholder="关键词"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <label htmlFor="filter-position" className="block text-xs text-muted-foreground mb-1">检查场景</label>
+                <Input
+                  id="filter-position"
+                  placeholder="如：医院 / 仓库"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  className="h-8 text-sm w-36 bg-card text-foreground border border-input"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+            </>
           ) : (
             <>
               <div>
@@ -895,8 +950,8 @@ function KpiStrip({
 }) {
   const skeleton = loading && data === null;
 
-  // salary 项目：报告总数 / 本月新增 / 本周新增 / 今日新增
-  if (project === "salary") {
+  // salary / hazard 项目：报告总数 / 本月新增 / 本周新增 / 今日新增（同款 KPI）
+  if (project === "salary" || project === "hazard") {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <DataCard
@@ -1212,6 +1267,53 @@ function ReportRowItem({
     );
   }
 
+  // tab=hazard：时间 / 手机号 / 服务项目 / 检查场景 / 识别条数 / 耗时 / 操作
+  if (project === "hazard") {
+    const hazardMeta = PROJECTS.hazard;
+    const count = row.hazard_count ?? 0;
+    return (
+      <TableRow className="text-sm hover:bg-[var(--blue-50)]/40 transition-colors duration-150">
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {formatTs(row.created_at)}
+        </TableCell>
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {row.user_phone || "—"}
+        </TableCell>
+        <TableCell>
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--amber-700)]">
+            <span className="size-1.5 rounded-full bg-[var(--amber-500)]" />
+            {hazardMeta.label}
+          </span>
+        </TableCell>
+        <TableCell
+          className="font-medium max-w-[180px] truncate"
+          title={row.scenario_label || row.scenario || undefined}
+        >
+          {row.scenario_label || row.target_position || "—"}
+        </TableCell>
+        <TableCell className="text-center">
+          <span
+            className={`inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 rounded text-[12px] font-semibold ${
+              count >= 5
+                ? "bg-[oklch(0.96_0.05_25)] text-[oklch(0.45_0.18_25)] ring-1 ring-[oklch(0.85_0.1_25)]/60"
+                : count >= 1
+                  ? "bg-[var(--amber-100)] text-[var(--amber-700)] ring-1 ring-[var(--amber-200)]/60"
+                  : "bg-[oklch(0.96_0.05_155)] text-[var(--semantic-positive)] ring-1 ring-[oklch(0.85_0.08_155)]/40"
+            }`}
+          >
+            {count}
+          </span>
+        </TableCell>
+        <TableCell className="tabular-nums text-xs text-muted-foreground">
+          {durationCell}
+        </TableCell>
+        <TableCell>
+          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+        </TableCell>
+      </TableRow>
+    );
+  }
+
   // tab=tailor：时间 / 姓名 / 手机号 / 服务项目 / 目标岗位 / 改写模式 / 操作
   if (project === "tailor") {
     const tailorMeta = PROJECTS.tailor;
@@ -1369,13 +1471,16 @@ function ReportMobileCard({ row }: { row: ReportRow }) {
   const durationSec = row.duration_ms
     ? `${Math.round(row.duration_ms / 1000)}s`
     : null;
-  // salary 没有姓名，主标识用手机号；其它项目主标识用姓名 + 副位手机号
-  const primary = row.project === "salary"
+  // salary / hazard 没有姓名，主标识用手机号；其它项目主标识用姓名 + 副位手机号
+  const noNameProject = row.project === "salary" || row.project === "hazard";
+  const primary = noNameProject
     ? row.user_phone || "—"
     : row.user_name || "—";
   const secondary = row.project === "salary"
     ? (row.target_company || "—")
-    : (row.user_phone || "—");
+    : row.project === "hazard"
+      ? (row.hazard_count != null ? `${row.hazard_count} 条隐患` : "—")
+      : (row.user_phone || "—");
   return (
     <Link
       href={`/admin/reports/${row.id}?project=${row.project}`}
@@ -1390,7 +1495,7 @@ function ReportMobileCard({ row }: { row: ReportRow }) {
         </span>
       </div>
       <div className="text-sm text-foreground truncate mb-1.5">
-        {row.target_position}
+        {row.project === "hazard" ? (row.scenario_label || row.target_position) : row.target_position}
       </div>
       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span className="tabular-nums">{formatTs(row.created_at)}</span>

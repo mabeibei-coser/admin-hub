@@ -122,6 +122,13 @@
   --cyan-200: oklch(0.88 0.07 200);
   --cyan-100: oklch(0.95 0.03 200);
   --cyan-50: oklch(0.98 0.012 200);
+  /* —— Amber scale — hazard 项目专属 accent（黄色警示，区分 orange 的暖色调） —— */
+  --amber-700: oklch(0.55 0.16 80);
+  --amber-600: oklch(0.65 0.16 80);
+  --amber-500: oklch(0.75 0.15 80);
+  --amber-200: oklch(0.9 0.08 80);
+  --amber-100: oklch(0.96 0.04 80);
+  --amber-50: oklch(0.985 0.015 80);
 
   /* —— Tinted neutrals for surfaces & shadows —— */
   --surface-tinted: oklch(0.985 0.006 240);
@@ -214,6 +221,13 @@
   --cyan-200: oklch(0.42 0.09 200);
   --cyan-100: oklch(0.32 0.07 200);
   --cyan-50: oklch(0.24 0.04 200);
+  /* —— Amber scale (dark) —— */
+  --amber-700: oklch(0.82 0.13 80);
+  --amber-600: oklch(0.75 0.14 80);
+  --amber-500: oklch(0.68 0.15 80);
+  --amber-200: oklch(0.45 0.1 80);
+  --amber-100: oklch(0.33 0.07 80);
+  --amber-50: oklch(0.24 0.04 80);
 
   /* —— Tinted surfaces & shadows —— */
   --surface-tinted: oklch(0.18 0.025 252);

@@ -8,7 +8,7 @@
  * 添加新项目（如徐汇/浦东）：在 PROJECTS 里加一项 + admin API 加 schema 即可。
  */
 
-export type ProjectId = "report" | "nav" | "startup" | "tailor" | "salary";
+export type ProjectId = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
 
 export interface ProjectMeta {
   id: ProjectId;
@@ -17,7 +17,7 @@ export interface ProjectMeta {
   /** UI 短标签（Badge、列表标记） */
   shortLabel: string;
   /** Badge 主色（Tailwind 兼容） */
-  color: "blue" | "green" | "purple" | "orange" | "cyan";
+  color: "blue" | "green" | "purple" | "orange" | "cyan" | "amber";
   /** 报告章节数（详情页用来标题里显示，可选） */
   sectionCount: number;
   /** 业务描述（sidebar / 标题副文案） */
@@ -64,6 +64,14 @@ export const PROJECTS: Record<ProjectId, ProjectMeta> = {
     color: "cyan",
     sectionCount: 5,
     description: "岗位薪酬查询报告",
+  },
+  hazard: {
+    id: "hazard",
+    label: "隐患识别",
+    shortLabel: "隐患",
+    color: "amber",
+    sectionCount: 1,
+    description: "安全隐患图像识别报告",
   },
 };
 

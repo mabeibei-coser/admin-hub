@@ -4,7 +4,7 @@ import fs from "fs";
 
 export const runtime = "nodejs";
 
-type Project = "report" | "nav" | "startup" | "tailor" | "salary";
+type Project = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
 
 function parseProject(v: string | null): Project | null {
   if (
@@ -12,7 +12,8 @@ function parseProject(v: string | null): Project | null {
     v === "nav" ||
     v === "startup" ||
     v === "tailor" ||
-    v === "salary"
+    v === "salary" ||
+    v === "hazard"
   )
     return v;
   return null;
@@ -42,7 +43,7 @@ export async function GET(
     const project = parseProject(req.nextUrl.searchParams.get("project"));
     if (!project) {
       return NextResponse.json(
-        { error: "缺少 project 参数（report|nav|startup|tailor|salary）" },
+        { error: "缺少 project 参数（report|nav|startup|tailor|salary|hazard）" },
         { status: 400 }
       );
     }
@@ -54,6 +55,7 @@ export async function GET(
       startup: "startup.reports",
       tailor: "tailor.reports",
       salary: "salary.reports",
+      hazard: "hazard.reports",
     };
     const table = tableMap[project];
 
@@ -92,6 +94,11 @@ export async function GET(
       // 表单参数（position/company/rank/education/city）就是直接列，前端从 meta 取
       reportData = safeJsonParse(row.report_json);
       // salary 无 form_data_json / quiz / scoring / interviewQ1Q2
+    } else if (project === "hazard") {
+      // hazard-detect：report_json 是 hazards 数组（不是对象）
+      // 场景元信息（scenario / scenario_label / hazard_count）在直接列，前端从 meta 取
+      reportData = safeJsonParse(row.report_json);
+      // hazard 无 form_data_json / quiz / scoring / interviewQ1Q2
     } else {
       // career-report: 从磁盘读 data/reports/{id}.json（沿用现有逻辑）
       const storagePath = row.report_storage_path as string | null;

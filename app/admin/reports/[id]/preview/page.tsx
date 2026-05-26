@@ -14,6 +14,7 @@ import { NavReportRenderer } from "@/components/admin/nav-report-renderer";
 import { StartupReportRenderer } from "@/components/admin/startup-report-renderer";
 import { TailorReportRenderer } from "@/components/admin/tailor-report-renderer";
 import { SalaryReportRenderer } from "@/components/admin/salary-report-renderer";
+import { HazardReportRenderer } from "@/components/admin/hazard-report-renderer";
 import type { ReportData, JobFormData } from "@/lib/types";
 import type {
   ReportData as NavReportData,
@@ -29,9 +30,10 @@ import type {
 } from "@/lib/types-startup";
 import type { TailorReport } from "@/lib/types-tailor";
 import type { SalaryReportData } from "@/lib/types-salary";
+import type { HazardReportData } from "@/lib/types-hazard";
 import { withBase } from "@/lib/url";
 
-type Project = "report" | "nav" | "startup" | "tailor" | "salary";
+type Project = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
 
 interface ApiResponse {
   project: Project;
@@ -41,6 +43,7 @@ interface ApiResponse {
     | NavReportData
     | StartupReportData
     | SalaryReportData
+    | HazardReportData
     | null;
   interviewQ1Q2?: InterviewQ1Q2 | StartupInterviewQ1Q6 | null;
   formData: JobFormData | NavJobFormData | StartupJobFormData | null;
@@ -62,7 +65,9 @@ export default function ReportPreviewPage() {
           ? "tailor"
           : rawProject === "salary"
             ? "salary"
-            : "report";
+            : rawProject === "hazard"
+              ? "hazard"
+              : "report";
 
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,9 +108,11 @@ export default function ReportPreviewPage() {
 
   const meta = apiData.meta;
   // salary 表的列名是 position 不是 target_position；其它项目用 target_position
+  // hazard 表的"主标题"是 scenario_label（场景中文名）
   const position =
     (meta.target_position as string | undefined) ??
     (meta.position as string | undefined) ??
+    (meta.scenario_label as string | undefined) ??
     "—";
   const createdAt = meta.created_at
     ? new Date(meta.created_at as number).toLocaleString("zh-CN")
@@ -169,6 +176,20 @@ export default function ReportPreviewPage() {
         {banner}
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
           <SalaryReportRenderer reportData={apiData.reportData as SalaryReportData | null} />
+        </div>
+      </>
+    );
+  }
+
+  if (project === "hazard") {
+    return (
+      <>
+        {banner}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <HazardReportRenderer
+            reportData={apiData.reportData as HazardReportData | null}
+            scenarioLabel={meta.scenario_label as string | null}
+          />
         </div>
       </>
     );

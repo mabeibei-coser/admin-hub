@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady, getStartupDbDir } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady, isHazardDbReady, getStartupDbDir } from "@/lib/db";
 import fs from "fs";
 import path from "path";
-import { Download, Compass, Briefcase, Rocket, FilePen, Coins } from "lucide-react";
+import { Download, Compass, Briefcase, Rocket, FilePen, Coins, AlertTriangle } from "lucide-react";
 import { withBase } from "@/lib/url";
 import type { JobFormData, QuizAnswer } from "@/lib/types";
 import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2, QuizBank, QuizQuestion as NavQuizQuestion } from "@/lib/types-nav";
@@ -17,6 +17,7 @@ import type {
 } from "@/lib/types-startup";
 import type { TailorFormData, TailorReport } from "@/lib/types-tailor";
 import type { SalaryReportData } from "@/lib/types-salary";
+import type { HazardReportData } from "@/lib/types-hazard";
 import { PROJECTS } from "@/lib/projects";
 import { PageHeader } from "@/components/admin/page-header";
 import { Breadcrumb } from "@/components/admin/breadcrumb";
@@ -24,13 +25,14 @@ import { Alert } from "@/components/admin/alert";
 import { StatusPill } from "@/components/admin/status-pill";
 import { DataRow } from "@/components/admin/data-row";
 
-type ProjectId = "report" | "nav" | "startup" | "tailor" | "salary";
+type ProjectId = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
 
 function parseProject(v: string | undefined): ProjectId {
   if (v === "nav") return "nav";
   if (v === "startup") return "startup";
   if (v === "tailor") return "tailor";
   if (v === "salary") return "salary";
+  if (v === "hazard") return "hazard";
   return "report";
 }
 
@@ -163,6 +165,21 @@ export default async function ReportDetailPage({
       </div>
     );
   }
+  if (project === "hazard" && !isHazardDbReady()) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-3xl mx-auto space-y-5">
+          <Breadcrumb
+            items={[
+              { label: "报告列表", href: "/admin/reports" },
+              { label: "隐患识别报告" },
+            ]}
+          />
+          <Alert tone="warning">隐患识别数据库暂不可用，无法加载此报告。</Alert>
+        </div>
+      </div>
+    );
+  }
 
   const db = getAdminDb();
   const tableMap: Record<ProjectId, string> = {
@@ -171,6 +188,7 @@ export default async function ReportDetailPage({
     startup: "startup.reports",
     tailor: "tailor.reports",
     salary: "salary.reports",
+    hazard: "hazard.reports",
   };
   const table = tableMap[project];
   const row = db
@@ -199,6 +217,8 @@ export default async function ReportDetailPage({
   const startupQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
   // salary 专属解析
   let salaryReportData: SalaryReportData | null = null;
+  // hazard 专属解析（report_json 是 hazards 数组）
+  let hazardReportData: HazardReportData | null = null;
 
   if (project === "nav") {
     try { reportData = JSON.parse(row.report_json as string) as NavReportData; } catch { /* empty */ }
@@ -251,6 +271,8 @@ export default async function ReportDetailPage({
     try { tailorFormData = JSON.parse(row.form_data_json as string) as TailorFormData; } catch { /* empty */ }
   } else if (project === "salary") {
     try { salaryReportData = JSON.parse(row.report_json as string) as SalaryReportData; } catch { /* empty */ }
+  } else if (project === "hazard") {
+    try { hazardReportData = JSON.parse(row.report_json as string) as HazardReportData; } catch { /* empty */ }
   } else {
     const storagePath = row.report_storage_path as string | null;
     if (storagePath) {
@@ -277,7 +299,9 @@ export default async function ReportDetailPage({
           ? !!tailorReportData
           : project === "salary"
             ? !!salaryReportData
-            : !!reportFormData;
+            : project === "hazard"
+              ? !!hazardReportData
+              : !!reportFormData;
 
   // 用户友好的页头副信息：「张三 · 13800138001」或仅项目名
   // salary 没有 user_name，只有 user_phone（直接列）
@@ -298,11 +322,14 @@ export default async function ReportDetailPage({
           ? (row.user_phone as string | null)
           : project === "salary"
             ? (row.user_phone as string | null)
-            : null;
+            : project === "hazard"
+              ? (row.user_phone as string | null)
+              : null;
 
   // startup 的 target_position 列实际是 form_data_json.projectName（同 nav 的存法），
   // row.target_position 在 startup-diagnostic 里就直接是 projectName（finalize 时写入）
   // salary 直接用 position 列
+  // hazard 用 scenario_label 当主标题
   const headerPosition =
     project === "startup"
       ? (startupFormData?.projectName ?? (row.target_position as string) ?? "—")
@@ -310,7 +337,9 @@ export default async function ReportDetailPage({
         ? ((row.job_title as string) ?? "—")
         : project === "salary"
           ? ((row.position as string) ?? "—")
-          : ((row.target_position as string) ?? "—");
+          : project === "hazard"
+            ? ((row.scenario_label as string) ?? (row.scenario as string) ?? "—")
+            : ((row.target_position as string) ?? "—");
 
   return (
     <div className="min-h-screen bg-background p-6 print:bg-white print:p-0">
@@ -331,7 +360,9 @@ export default async function ReportDetailPage({
                           ? "info"
                           : project === "salary"
                             ? "info"
-                            : "info"
+                            : project === "hazard"
+                              ? "warning"
+                              : "info"
                     }
                   >
                     {projectMeta.label}
@@ -354,7 +385,9 @@ export default async function ReportDetailPage({
                     ? FilePen
                     : project === "salary"
                       ? Coins
-                      : Briefcase
+                      : project === "hazard"
+                        ? AlertTriangle
+                        : Briefcase
             }
             eyebrow={`${projectMeta.label} · 报告 #${row.id as number}`}
             title={userName ? `${userName} · ${headerPosition}` : headerPosition}
@@ -373,7 +406,9 @@ export default async function ReportDetailPage({
                     ? "orange"
                     : project === "salary"
                       ? "cyan"
-                      : "blue"
+                      : project === "hazard"
+                        ? "amber"
+                        : "blue"
             }
           />
         </div>
@@ -391,8 +426,8 @@ export default async function ReportDetailPage({
               <DataRow label="手机号">{userPhone ?? "—"}</DataRow>
             </>
           )}
-          {/* salary 只有手机号，没姓名 */}
-          {project === "salary" && (
+          {/* salary / hazard 只有手机号，没姓名 */}
+          {(project === "salary" || project === "hazard") && (
             <DataRow label="手机号">{userPhone ?? "—"}</DataRow>
           )}
 
@@ -448,6 +483,28 @@ export default async function ReportDetailPage({
               <DataRow label="最高学历">{(row.education as string) || "—"}</DataRow>
               <DataRow label="所在城市">{(row.city as string) || "—"}</DataRow>
             </>
+          ) : project === "hazard" ? (
+            <>
+              <DataRow label="检查场景">
+                {(row.scenario_label as string | null) ||
+                  (row.scenario as string | null) ||
+                  "—"}
+              </DataRow>
+              <DataRow label="识别条数">
+                <span className="font-semibold tabular-nums">
+                  {String(row.hazard_count ?? 0)}
+                </span>{" "}
+                条
+              </DataRow>
+              {row.duration_ms != null && (
+                <DataRow label="AI 耗时">
+                  <span className="tabular-nums">
+                    {Math.round((row.duration_ms as number) / 1000)}
+                  </span>{" "}
+                  秒
+                </DataRow>
+              )}
+            </>
           ) : project === "startup" ? (
             <>
               <DataRow label="项目名称">{startupFormData?.projectName ?? "—"}</DataRow>
@@ -499,8 +556,8 @@ export default async function ReportDetailPage({
             </>
           )}
 
-          {/* 简历文件：salary / tailor 项目没有简历模块 */}
-          {project !== "tailor" && project !== "salary" && (
+          {/* 简历文件：salary / tailor / hazard 项目没有简历模块 */}
+          {project !== "tailor" && project !== "salary" && project !== "hazard" && (
             <DataRow label="简历文件">
               {(row.has_resume as number) ? (
                 hasResumeFile ? (
@@ -538,7 +595,9 @@ export default async function ReportDetailPage({
                       ? "简历定制报告"
                       : project === "salary"
                         ? "薪酬查询报告"
-                        : "职业定位报告"}
+                        : project === "hazard"
+                          ? "隐患识别报告"
+                          : "职业定位报告"}
               </Link>
             ) : (
               <span className="text-muted-foreground">未生成</span>

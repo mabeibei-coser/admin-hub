@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady, isHazardDbReady } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-session";
 import { canViewMenu } from "@/lib/menus";
 import { startOfMonthCN, startOfWeekCN } from "@/lib/cn-time";
 
 export const runtime = "nodejs";
 
-type ProjectFilter = "all" | "report" | "nav" | "startup" | "tailor" | "salary";
+type ProjectFilter = "all" | "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
 
 function parseProject(v: string | null): ProjectFilter {
-  if (v === "report" || v === "nav" || v === "startup" || v === "tailor" || v === "salary") return v;
+  if (v === "report" || v === "nav" || v === "startup" || v === "tailor" || v === "salary" || v === "hazard") return v;
   return "all";
 }
 
@@ -30,6 +30,7 @@ function clampProject(
   if (canViewMenu(session, "startup")) return "startup";
   if (canViewMenu(session, "tailor")) return "tailor";
   if (canViewMenu(session, "salary")) return "salary";
+  if (canViewMenu(session, "hazard")) return "hazard";
   if (canViewMenu(session, "all")) return "all";
   return "report"; // 兜底
 }
@@ -37,7 +38,7 @@ function clampProject(
 interface ReportRow {
   id: number;
   created_at: number;
-  project: "report" | "nav" | "startup" | "tailor" | "salary";
+  project: "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
   target_position: string;
   target_education: string | null;
   work_years: string | null;
@@ -66,6 +67,12 @@ interface ReportRow {
   salary_rank?: string | null;
   /** salary 项目专属：职级中文标签（"P5(高级/独立负责)"） */
   salary_rank_label?: string | null;
+  /** hazard 项目专属：场景 id（general / hospital ...） */
+  scenario?: string | null;
+  /** hazard 项目专属：场景中文名 */
+  scenario_label?: string | null;
+  /** hazard 项目专属：本次识别出几条隐患 */
+  hazard_count?: number | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -101,6 +108,7 @@ export async function GET(req: NextRequest) {
     const startupReady = isStartupDbReady();
     const tailorReady = isTailorDbReady();
     const salaryReady = isSalaryDbReady();
+    const hazardReady = isHazardDbReady();
 
     // 如果指定项目的库不可用，自动降级到 report-only
     let effectiveProject: ProjectFilter = project;
@@ -108,6 +116,7 @@ export async function GET(req: NextRequest) {
     else if (project === "startup" && !startupReady) effectiveProject = "report";
     else if (project === "tailor" && !tailorReady) effectiveProject = "report";
     else if (project === "salary" && !salaryReady) effectiveProject = "report";
+    else if (project === "hazard" && !hazardReady) effectiveProject = "report";
 
     // 通用 conditions（应用到 report 和 nav 两侧）
     const conditions: string[] = [];
@@ -374,6 +383,58 @@ export async function GET(req: NextRequest) {
     if (to) salaryBaseParams.push(new Date(to).getTime() + 86400000);
     if (position) salaryBaseParams.push(`%${position}%`);
 
+    // hazard：表结构跟其他项目不一样（无 has_resume / user_name / target_position / company / city）
+    // 列对齐 ReportRow：把 scenario_label 映射到 target_position（作为列表"主标题"）
+    // 新增字段 scenario / scenario_label / hazard_count 通过 ReportRow 可选字段透出
+    const hazardOnlyConditions: string[] = [];
+    const hazardOnlyParams: (string | number)[] = [];
+    if (phone) {
+      hazardOnlyConditions.push("hr.user_phone LIKE ?");
+      hazardOnlyParams.push(`%${phone}%`);
+    }
+    const hazardConditionsCombined = [
+      ...conditions
+        .filter(
+          (c) =>
+            !c.startsWith("target_position") && !c.startsWith("has_resume"),
+        )
+        .map((c) => c.replace(/^(created_at)\b/, "hr.$1")),
+      // position URL 参数复用为「场景中文名」模糊搜索
+      ...(position ? ["hr.scenario_label LIKE ?"] : []),
+      ...hazardOnlyConditions,
+    ];
+    const whereHazard =
+      hazardConditionsCombined.length > 0
+        ? `WHERE ${hazardConditionsCombined.join(" AND ")}`
+        : "";
+    const hazardSelect = `
+      SELECT hr.id, hr.created_at, 'hazard' AS project,
+             hr.scenario_label AS target_position,
+             NULL              AS target_education,
+             NULL              AS work_years,
+             NULL              AS user_name,
+             hr.user_phone     AS user_phone,
+             NULL              AS target_company,
+             NULL              AS target_city_tier,
+             0                 AS has_resume,
+             NULL              AS resume_filename,
+             NULL              AS user_identity,
+             NULL              AS uuid,
+             hr.duration_ms,
+             NULL              AS sections_status,
+             hr.ip,
+             NULL              AS tracking_id,
+             hr.scenario       AS scenario,
+             hr.scenario_label AS scenario_label,
+             hr.hazard_count   AS hazard_count
+      FROM hazard.reports hr
+      ${whereHazard}
+    `;
+    const hazardBaseParams: (string | number)[] = [];
+    if (from) hazardBaseParams.push(new Date(from).getTime());
+    if (to) hazardBaseParams.push(new Date(to).getTime() + 86400000);
+    if (position) hazardBaseParams.push(`%${position}%`);
+
     // 根据 project filter 决定查哪一侧或两侧 UNION
     let listQuery: string;
     let countQuery: string;
@@ -404,6 +465,11 @@ export async function GET(req: NextRequest) {
       countQuery = `SELECT COUNT(*) AS c FROM salary.reports sr ${whereSalary}`;
       queryParams = [...salaryBaseParams, ...salaryOnlyParams];
       countParams = [...salaryBaseParams, ...salaryOnlyParams];
+    } else if (effectiveProject === "hazard") {
+      listQuery = `${hazardSelect} ORDER BY hr.created_at DESC LIMIT ? OFFSET ?`;
+      countQuery = `SELECT COUNT(*) AS c FROM hazard.reports hr ${whereHazard}`;
+      queryParams = [...hazardBaseParams, ...hazardOnlyParams];
+      countParams = [...hazardBaseParams, ...hazardOnlyParams];
     } else {
       // all: UNION ALL，report 用 params，nav 用 params + navOnlyParams
       listQuery = `${reportSelect} UNION ALL ${navSelect} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
@@ -573,6 +639,36 @@ export async function GET(req: NextRequest) {
           weekCount: weekRow.c ?? 0,
         };
       }
+      // hazard 项目专属：本月/本周（无简历、无转服务，同 salary 模式）
+      if (p === "hazard") {
+        const monthStart = startOfMonthCN();
+        const weekStart = startOfWeekCN();
+        const totalRow = db
+          .prepare(`SELECT COUNT(*) AS total,
+            SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS today_count,
+            AVG(duration_ms) AS avg_dur
+            FROM hazard.reports`)
+          .get(todayTs) as {
+            total: number;
+            today_count: number | null;
+            avg_dur: number | null;
+          };
+        const monthRow = db
+          .prepare("SELECT COUNT(*) AS c FROM hazard.reports WHERE created_at >= ?")
+          .get(monthStart) as { c: number };
+        const weekRow = db
+          .prepare("SELECT COUNT(*) AS c FROM hazard.reports WHERE created_at >= ?")
+          .get(weekStart) as { c: number };
+        const tt = totalRow.total ?? 0;
+        return {
+          total: tt,
+          todayCount: totalRow.today_count ?? 0,
+          resumeRate: 0,
+          avgDurationSec: totalRow.avg_dur ? Math.round(totalRow.avg_dur / 1000) : null,
+          monthCount: monthRow.c ?? 0,
+          weekCount: weekRow.c ?? 0,
+        };
+      }
       // tailor 项目专属：本月/本周（无转服务）
       if (p === "tailor") {
         const monthStart = startOfMonthCN();
@@ -620,7 +716,9 @@ export async function GET(req: NextRequest) {
     }
 
     let stats;
-    if (effectiveProject === "salary" && salaryReady) {
+    if (effectiveProject === "hazard" && hazardReady) {
+      stats = statForProject("hazard");
+    } else if (effectiveProject === "salary" && salaryReady) {
       stats = statForProject("salary");
     } else if (effectiveProject === "tailor" && tailorReady) {
       stats = statForProject("tailor");
@@ -646,6 +744,7 @@ export async function GET(req: NextRequest) {
       startupReady,
       tailorReady,
       salaryReady,
+      hazardReady,
       stats,
     });
   } catch (e) {
