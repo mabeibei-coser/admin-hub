@@ -838,19 +838,41 @@ function AdminReportsContent() {
 
         {/* 桌面表格 */}
         <div className="surface-panel overflow-hidden hidden md:block">
-          <Table>
+          <Table className={project === "hazard" ? "table-fixed" : ""}>
             <TableHeader>
               <TableRow className="text-xs text-muted-foreground border-b border-[var(--report-border)]">
                 {columns.map((c) => {
-                  // 只保留必要的居中：操作 / 详情 / 转服务状态。
-                  // hazard 的"识别条数 / 缩略图"故意不居中——居中会让 cell 中间产生大块空白带，
-                  // 用左对齐让所有内容贴 cell 左边，视觉上紧凑无伪空列。
+                  // hazard 表格：所有标题居中（语义对称）；
+                  // 列宽显式定值，唯独"检查场景"留 auto，吃掉剩余空间——
+                  // 数字/缩略图列保持紧凑（80-90px），居中后两侧空白可控；
+                  // 多余空间集中在"检查场景"列内部，文字左对齐时右侧空白就像段落留白，自然。
                   const centered =
-                    c === "操作" || c === "详情" || c === "转服务状态";
+                    project === "hazard" ||
+                    c === "操作" ||
+                    c === "详情" ||
+                    c === "转服务状态";
+                  const width =
+                    project === "hazard"
+                      ? c === "时间"
+                        ? "w-[140px]"
+                        : c === "手机号"
+                          ? "w-[130px]"
+                          : c === "服务项目"
+                            ? "w-[100px]"
+                            : c === "识别条数"
+                              ? "w-[90px]"
+                              : c === "耗时"
+                                ? "w-[80px]"
+                                : c === "缩略图"
+                                  ? "w-[90px]"
+                                  : c === "操作"
+                                    ? "w-[110px]"
+                                    : "" // 检查场景留空，吃剩余空间
+                      : "";
                   return (
                     <TableHead
                       key={c}
-                      className={centered ? "text-center" : ""}
+                      className={`${centered ? "text-center" : ""} ${width}`}
                     >
                       {c}
                     </TableHead>
@@ -1301,14 +1323,16 @@ function ReportRowItem({
         >
           {row.scenario_label || row.target_position || "—"}
         </TableCell>
-        <TableCell className="tabular-nums text-foreground">
+        <TableCell className="text-center tabular-nums text-foreground">
           {count}
         </TableCell>
-        <TableCell className="tabular-nums text-xs text-muted-foreground">
+        <TableCell className="text-center tabular-nums text-xs text-muted-foreground">
           {durationCell}
         </TableCell>
         <TableCell>
-          <HazardThumb id={row.id} hasPhoto={!!row.has_photo} />
+          <div className="flex items-center justify-center">
+            <HazardThumb id={row.id} hasPhoto={!!row.has_photo} />
+          </div>
         </TableCell>
         <TableCell>
           <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
