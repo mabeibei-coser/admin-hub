@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "smoke": "node scripts/smoke-admin.mjs",
-    "sync-salary": "node scripts/sync-salary-contracts.mjs"
+    "sync-contracts": "node scripts/sync-contracts.mjs",
+    "sync-salary": "node scripts/sync-contracts.mjs salary"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

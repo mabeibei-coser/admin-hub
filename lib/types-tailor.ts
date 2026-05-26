@@ -1,6 +1,12 @@
-// admin-hub × resume-tailor 类型文件
-// 物理复制自 resume-tailor/lib/types.ts（无法 import 跨 repo）
-// 只保留报告渲染需要的部分，去掉 Zod schema（admin-hub 不做入口校验）
+/**
+ * ⚠️ 自动生成文件，不要手改。
+ * 来源：resume-tailor/contracts/resume-tailor.ts
+ * 同步命令：npm run sync-contracts tailor
+ *
+ * 想改这份 types，先去 resume-tailor 项目改 contracts/resume-tailor.ts，
+ * 再来 admin-hub 跑 sync，然后 commit + 部署。两边任何一边单独改都不算数。
+ * 上次同步：2026-05-26T14:30:15.102Z
+ */
 
 export type TailorMode = "moderate" | "aggressive";
 

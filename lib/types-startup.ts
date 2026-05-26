@@ -1,5 +1,12 @@
-// 从 startup-dig/lib/types.ts 物理复制。admin-hub 跨 repo 无法 import，只能复制。
-// startup-dig 改类型时需要同步更新这里（owner: startup-dig + admin-hub 双拥有）。
+/**
+ * ⚠️ 自动生成文件，不要手改。
+ * 来源：startup-dig/contracts/startup-dig.ts
+ * 同步命令：npm run sync-contracts startup
+ *
+ * 想改这份 types，先去 startup-dig 项目改 contracts/startup-dig.ts，
+ * 再来 admin-hub 跑 sync，然后 commit + 部署。两边任何一边单独改都不算数。
+ * 上次同步：2026-05-26T14:30:15.102Z
+ */
 
 // ========== 表单输入类型 ==========
 
