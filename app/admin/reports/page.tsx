@@ -838,7 +838,7 @@ function AdminReportsContent() {
 
         {/* 桌面表格 */}
         <div className="surface-panel overflow-hidden hidden md:block">
-          <Table>
+          <Table className={project === "hazard" ? "table-fixed" : ""}>
             <TableHeader>
               <TableRow className="text-xs text-muted-foreground border-b border-[var(--report-border)]">
                 {columns.map((c) => {
@@ -849,14 +849,33 @@ function AdminReportsContent() {
                     c === "识别条数" ||
                     c === "缩略图" ||
                     c === "转服务状态";
+                  // hazard 表格每列都显式定宽，避免 table-layout: auto 把剩余空间塞到检查场景右侧
                   const width =
-                    c === "识别条数"
-                      ? "w-[96px]"
-                      : c === "缩略图"
+                    project === "hazard"
+                      ? c === "时间"
+                        ? "w-[140px]"
+                        : c === "手机号"
+                          ? "w-[120px]"
+                          : c === "服务项目"
+                            ? "w-[100px]"
+                            : c === "检查场景"
+                              ? "w-[200px]"
+                              : c === "识别条数"
+                                ? "w-[96px]"
+                                : c === "耗时"
+                                  ? "w-[72px]"
+                                  : c === "缩略图"
+                                    ? "w-[96px]"
+                                    : c === "操作"
+                                      ? "w-[100px]"
+                                      : ""
+                      : c === "识别条数"
                         ? "w-[96px]"
-                        : c === "耗时"
-                          ? "w-[72px]"
-                          : "";
+                        : c === "缩略图"
+                          ? "w-[96px]"
+                          : c === "耗时"
+                            ? "w-[72px]"
+                            : "";
                   return (
                     <TableHead
                       key={c}
@@ -1306,7 +1325,7 @@ function ReportRowItem({
           </span>
         </TableCell>
         <TableCell
-          className="font-medium max-w-[180px] truncate"
+          className="font-medium truncate"
           title={row.scenario_label || row.scenario || undefined}
         >
           {row.scenario_label || row.target_position || "—"}
