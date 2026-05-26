@@ -841,14 +841,31 @@ function AdminReportsContent() {
           <Table>
             <TableHeader>
               <TableRow className="text-xs text-muted-foreground border-b border-[var(--report-border)]">
-                {columns.map((c) => (
-                  <TableHead
-                    key={c}
-                    className={c === "操作" || c === "详情" ? "text-center" : ""}
-                  >
-                    {c}
-                  </TableHead>
-                ))}
+                {columns.map((c) => {
+                  // 居中标题 + 固定宽度，保证 header 与 cell 内容在同一垂直线
+                  const centered =
+                    c === "操作" ||
+                    c === "详情" ||
+                    c === "识别条数" ||
+                    c === "缩略图" ||
+                    c === "转服务状态";
+                  const width =
+                    c === "识别条数"
+                      ? "w-[96px]"
+                      : c === "缩略图"
+                        ? "w-[96px]"
+                        : c === "耗时"
+                          ? "w-[72px]"
+                          : "";
+                  return (
+                    <TableHead
+                      key={c}
+                      className={`${centered ? "text-center" : ""} ${width}`}
+                    >
+                      {c}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1300,8 +1317,10 @@ function ReportRowItem({
         <TableCell className="tabular-nums text-xs text-muted-foreground">
           {durationCell}
         </TableCell>
-        <TableCell className="text-center">
-          <HazardThumb id={row.id} hasPhoto={!!row.has_photo} />
+        <TableCell>
+          <div className="flex items-center justify-center">
+            <HazardThumb id={row.id} hasPhoto={!!row.has_photo} />
+          </div>
         </TableCell>
         <TableCell>
           <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
