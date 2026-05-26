@@ -24,6 +24,7 @@ import { Breadcrumb } from "@/components/admin/breadcrumb";
 import { Alert } from "@/components/admin/alert";
 import { StatusPill } from "@/components/admin/status-pill";
 import { DataRow } from "@/components/admin/data-row";
+import { HazardReportRenderer } from "@/components/admin/hazard-report-renderer";
 
 type ProjectId = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
 
@@ -579,31 +580,47 @@ export default async function ReportDetailPage({
               )}
             </DataRow>
           )}
-          <DataRow label="报告附件">
-            {hasReportData ? (
-              <Link
-                href={`/admin/reports/${String(row.id as number)}/preview?project=${project}`}
-                target="_blank"
-                className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
-              >
-                <Download className="size-3.5" />
-                {project === "nav"
-                  ? "职业导航报告"
-                  : project === "startup"
-                    ? "创业诊断报告"
-                    : project === "tailor"
-                      ? "简历定制报告"
-                      : project === "salary"
-                        ? "薪酬查询报告"
-                        : project === "hazard"
-                          ? "隐患识别报告"
+          {/* 报告附件链接：hazard 项目把报告直接渲染在下方 Section，不再单独跳 preview 页 */}
+          {project !== "hazard" && (
+            <DataRow label="报告附件">
+              {hasReportData ? (
+                <Link
+                  href={`/admin/reports/${String(row.id as number)}/preview?project=${project}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-[var(--blue-700)] hover:underline"
+                >
+                  <Download className="size-3.5" />
+                  {project === "nav"
+                    ? "职业导航报告"
+                    : project === "startup"
+                      ? "创业诊断报告"
+                      : project === "tailor"
+                        ? "简历定制报告"
+                        : project === "salary"
+                          ? "薪酬查询报告"
                           : "职业定位报告"}
-              </Link>
-            ) : (
-              <span className="text-muted-foreground">未生成</span>
-            )}
-          </DataRow>
+                </Link>
+              ) : (
+                <span className="text-muted-foreground">未生成</span>
+              )}
+            </DataRow>
+          )}
         </Section>
+
+        {/* ── 隐患识别报告（hazard 专属，内嵌渲染，每条左侧大图）─────────── */}
+        {project === "hazard" && hazardReportData && (
+          <Section title="安全隐患识别报告">
+            <HazardReportRenderer
+              reportData={hazardReportData}
+              scenarioLabel={row.scenario_label as string | null}
+              photoUrl={
+                (row.image_base64 as string | null)
+                  ? withBase(`/api/admin/reports/${String(row.id as number)}/photo?project=hazard`)
+                  : null
+              }
+            />
+          </Section>
+        )}
 
         {/* ── 量表作答（report 侧） ───────────────────────────────────── */}
         {project === "report" && reportQuizAnswers.length > 0 && (

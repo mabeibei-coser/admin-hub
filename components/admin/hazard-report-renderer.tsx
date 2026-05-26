@@ -6,6 +6,8 @@ import { AlertTriangle, AlertCircle, AlertOctagon } from "lucide-react";
 interface Props {
   reportData: HazardReportData | null;
   scenarioLabel?: string | null;
+  /** 隐患识别原图 URL。传入时每条隐患左侧渲染同一张照片（admin 档案页用）。 */
+  photoUrl?: string | null;
 }
 
 /** 隐患等级 → 配色 + 图标 */
@@ -30,7 +32,7 @@ const LEVEL_STYLES: Record<string, { bg: string; text: string; ring: string; Ico
   },
 };
 
-export function HazardReportRenderer({ reportData, scenarioLabel }: Props) {
+export function HazardReportRenderer({ reportData, scenarioLabel, photoUrl }: Props) {
   if (!reportData || !Array.isArray(reportData) || reportData.length === 0) {
     return (
       <div className="rounded-xl border border-[var(--amber-200)] bg-[var(--amber-50)] px-5 py-4 text-sm text-[var(--amber-700)]">
@@ -63,11 +65,8 @@ export function HazardReportRenderer({ reportData, scenarioLabel }: Props) {
         {reportData.map((item, i) => {
           const style = LEVEL_STYLES[item.hazard_level] ?? LEVEL_STYLES["中"];
           const Icon = style.Icon;
-          return (
-            <div
-              key={i}
-              className="rounded-xl border border-[oklch(0.93_0.006_240)] bg-card p-5 shadow-[0_1px_2px_oklch(0.55_0.2_252_/_0.05)]"
-            >
+          const body = (
+            <>
               {/* 标题 + 等级 chip */}
               <div className="flex items-start gap-3 mb-3">
                 <div className="size-7 rounded-lg bg-[oklch(0.97_0.02_252_/_0.6)] text-[var(--blue-700)] flex items-center justify-center text-xs font-semibold shrink-0">
@@ -115,6 +114,38 @@ export function HazardReportRenderer({ reportData, scenarioLabel }: Props) {
                   {item.estimated_budget}
                 </span>
               </Field>
+            </>
+          );
+
+          // 有 photoUrl 时两栏：左侧大图 + 右侧文字；无图时仍走单栏
+          return (
+            <div
+              key={i}
+              className="rounded-xl border border-[oklch(0.93_0.006_240)] bg-card p-5 shadow-[0_1px_2px_oklch(0.55_0.2_252_/_0.05)]"
+            >
+              {photoUrl ? (
+                <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-4 items-start">
+                  <a
+                    href={photoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="点击查看原图"
+                    className="block rounded-lg overflow-hidden ring-1 ring-border bg-muted hover:ring-[var(--amber-300)] transition-shadow"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- 动态 API 路由 */}
+                    <img
+                      src={photoUrl}
+                      alt="隐患原始照片"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-auto block"
+                    />
+                  </a>
+                  <div className="min-w-0">{body}</div>
+                </div>
+              ) : (
+                body
+              )}
             </div>
           );
         })}
