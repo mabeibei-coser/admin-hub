@@ -1,7 +1,11 @@
 /**
- * 薪酬查询报告数据契约。
- * 来源：salary-report 项目 server.js 里 validateAndNormalize 之后的 JSON。
- * 这里手抄一份是因为 admin-hub 跟 salary-report 跨 repo 无法 import。
+ * ⚠️ 自动生成文件，不要手改。
+ * 来源：salary-report/contracts/salary-report.ts
+ * 同步命令：npm run sync-salary
+ *
+ * 想改这份 types，先去 salary-report 项目改 contracts/salary-report.ts，
+ * 再来 admin-hub 跑 sync，然后 commit + 部署。两边任何一边单独改都不算数。
+ * 上次同步：2026-05-26T14:22:40.120Z
  */
 
 export type RankCategory = "tech" | "mgmt";
@@ -60,7 +64,7 @@ export interface SalaryReportData {
   highEarnerTraits: string;
 }
 
-/** salary.reports 表里直接列（admin-hub 详情 API meta 字段） */
+/** salary-report 数据库 reports 表的直接列（非 report_json 内字段） */
 export interface SalaryReportMeta {
   id: number;
   user_id: number;

@@ -7,6 +7,7 @@ import { OverviewSection } from "@/components/report/salary/overview-section";
 import { MarketSection } from "@/components/report/salary/market-section";
 import { CitySection } from "@/components/report/salary/city-section";
 import { IndustrySection } from "@/components/report/salary/industry-section";
+import { SectionErrorBoundary } from "@/components/admin/section-error-boundary";
 import type { SalaryReportData } from "@/lib/types-salary";
 
 interface Props {
@@ -29,11 +30,21 @@ export function SalaryReportRenderer({ reportData }: Props) {
   return (
     <ReportRenderContext.Provider value={ctxValue}>
       <div className="space-y-5">
-        <HeaderSection data={reportData} index={1} total={TOTAL} />
-        <OverviewSection data={reportData} index={2} total={TOTAL} />
-        <MarketSection data={reportData} index={3} total={TOTAL} />
-        <CitySection data={reportData.cityAnalysis} index={4} total={TOTAL} />
-        <IndustrySection data={reportData.industryAnalysis} index={5} total={TOTAL} />
+        <SectionErrorBoundary name="查询参数">
+          <HeaderSection data={reportData} index={1} total={TOTAL} />
+        </SectionErrorBoundary>
+        <SectionErrorBoundary name="薪酬总览">
+          <OverviewSection data={reportData} index={2} total={TOTAL} />
+        </SectionErrorBoundary>
+        <SectionErrorBoundary name="市场定位分析">
+          <MarketSection data={reportData} index={3} total={TOTAL} />
+        </SectionErrorBoundary>
+        <SectionErrorBoundary name="城市对比">
+          <CitySection data={reportData.cityAnalysis} index={4} total={TOTAL} />
+        </SectionErrorBoundary>
+        <SectionErrorBoundary name="细分行业分析">
+          <IndustrySection data={reportData.industryAnalysis} index={5} total={TOTAL} />
+        </SectionErrorBoundary>
       </div>
     </ReportRenderContext.Provider>
   );

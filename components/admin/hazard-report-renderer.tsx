@@ -2,6 +2,7 @@
 
 import type { HazardReportData } from "@/lib/types-hazard";
 import { AlertTriangle, AlertCircle, AlertOctagon } from "lucide-react";
+import { SectionErrorBoundary } from "@/components/admin/section-error-boundary";
 
 interface Props {
   reportData: HazardReportData | null;
@@ -119,34 +120,33 @@ export function HazardReportRenderer({ reportData, scenarioLabel, photoUrl }: Pr
 
           // 有 photoUrl 时两栏：左侧大图 + 右侧文字；无图时仍走单栏
           return (
-            <div
-              key={i}
-              className="rounded-xl border border-[oklch(0.93_0.006_240)] bg-card p-5 shadow-[0_1px_2px_oklch(0.55_0.2_252_/_0.05)]"
-            >
-              {photoUrl ? (
-                <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-4 items-start">
-                  <a
-                    href={photoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="点击查看原图"
-                    className="block rounded-lg overflow-hidden ring-1 ring-border bg-muted hover:ring-[var(--amber-300)] transition-shadow"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- 动态 API 路由 */}
-                    <img
-                      src={photoUrl}
-                      alt="隐患原始照片"
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-auto block"
-                    />
-                  </a>
-                  <div className="min-w-0">{body}</div>
-                </div>
-              ) : (
-                body
-              )}
-            </div>
+            <SectionErrorBoundary key={i} name={`隐患条目 #${i + 1}`}>
+              <div className="rounded-xl border border-[oklch(0.93_0.006_240)] bg-card p-5 shadow-[0_1px_2px_oklch(0.55_0.2_252_/_0.05)]">
+                {photoUrl ? (
+                  <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-4 items-start">
+                    <a
+                      href={photoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="点击查看原图"
+                      className="block rounded-lg overflow-hidden ring-1 ring-border bg-muted hover:ring-[var(--amber-300)] transition-shadow"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- 动态 API 路由 */}
+                      <img
+                        src={photoUrl}
+                        alt="隐患原始照片"
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-auto block"
+                      />
+                    </a>
+                    <div className="min-w-0">{body}</div>
+                  </div>
+                ) : (
+                  body
+                )}
+              </div>
+            </SectionErrorBoundary>
           );
         })}
       </div>

@@ -15,6 +15,7 @@ import { StartupReportRenderer } from "@/components/admin/startup-report-rendere
 import { TailorReportRenderer } from "@/components/admin/tailor-report-renderer";
 import { SalaryReportRenderer } from "@/components/admin/salary-report-renderer";
 import { HazardReportRenderer } from "@/components/admin/hazard-report-renderer";
+import { SectionErrorBoundary } from "@/components/admin/section-error-boundary";
 import type { ReportData, JobFormData } from "@/lib/types";
 import type {
   ReportData as NavReportData,
@@ -206,45 +207,57 @@ export default function ReportPreviewPage() {
       {banner}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         {report.overview && (
-          <OverviewSection data={report.overview} index={1} total={TOTAL_REPORT} />
+          <SectionErrorBoundary name="职业概览">
+            <OverviewSection data={report.overview} index={1} total={TOTAL_REPORT} />
+          </SectionErrorBoundary>
         )}
         {report.salary && (
-          <SalarySection
-            data={report.salary}
-            positionName={position}
-            targetEducation={education}
-            index={2}
-            total={TOTAL_REPORT}
-          />
+          <SectionErrorBoundary name="薪资分析">
+            <SalarySection
+              data={report.salary}
+              positionName={position}
+              targetEducation={education}
+              index={2}
+              total={TOTAL_REPORT}
+            />
+          </SectionErrorBoundary>
         )}
         {report.positionInfo && (
-          <PositionInfoSection
-            data={report.positionInfo}
-            positionName={position}
-            index={3}
-            total={TOTAL_REPORT}
-          />
+          <SectionErrorBoundary name="岗位信息">
+            <PositionInfoSection
+              data={report.positionInfo}
+              positionName={position}
+              index={3}
+              total={TOTAL_REPORT}
+            />
+          </SectionErrorBoundary>
         )}
         {report.resumeDiagnosis && (
-          <ResumeDiagnosisSection
-            data={report.resumeDiagnosis}
-            index={4}
-            total={TOTAL_REPORT}
-          />
+          <SectionErrorBoundary name="简历诊断">
+            <ResumeDiagnosisSection
+              data={report.resumeDiagnosis}
+              index={4}
+              total={TOTAL_REPORT}
+            />
+          </SectionErrorBoundary>
         )}
         {report.salaryNegotiation && (
-          <NegotiationSection
-            data={report.salaryNegotiation}
-            index={5}
-            total={TOTAL_REPORT}
-          />
+          <SectionErrorBoundary name="薪资谈判">
+            <NegotiationSection
+              data={report.salaryNegotiation}
+              index={5}
+              total={TOTAL_REPORT}
+            />
+          </SectionErrorBoundary>
         )}
         {report.workplaceInsight && (
-          <WorkplaceInsightSection
-            data={report.workplaceInsight}
-            index={6}
-            total={TOTAL_REPORT}
-          />
+          <SectionErrorBoundary name="职场洞察">
+            <WorkplaceInsightSection
+              data={report.workplaceInsight}
+              index={6}
+              total={TOTAL_REPORT}
+            />
+          </SectionErrorBoundary>
         )}
       </div>
     </ReportRenderContext.Provider>

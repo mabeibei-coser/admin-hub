@@ -5,6 +5,7 @@ import { ReportRenderContext } from "@/components/report/startup/report-context"
 import { OverviewSection } from "@/components/report/startup/overview-section";
 import { DimensionDetailsSection } from "@/components/report/startup/dimension-details-section";
 import { RiskSection } from "@/components/report/startup/risk-section";
+import { SectionErrorBoundary } from "@/components/admin/section-error-boundary";
 import type {
   ReportData,
   JobFormData,
@@ -52,13 +53,19 @@ export function StartupReportRenderer({ reportData, interviewQ1Q2, formData, sco
     <ReportRenderContext.Provider value={ctxValue}>
       <div className="space-y-5">
         {overview && (
-          <OverviewSection data={overview} meta={effectiveMeta} index={1} total={TOTAL} />
+          <SectionErrorBoundary name="创业概览">
+            <OverviewSection data={overview} meta={effectiveMeta} index={1} total={TOTAL} />
+          </SectionErrorBoundary>
         )}
         {dimensionDetails && (
-          <DimensionDetailsSection data={dimensionDetails} index={2} total={TOTAL} />
+          <SectionErrorBoundary name="六维详细分析">
+            <DimensionDetailsSection data={dimensionDetails} index={2} total={TOTAL} />
+          </SectionErrorBoundary>
         )}
         {riskAssessment && (
-          <RiskSection data={riskAssessment} index={3} total={TOTAL} />
+          <SectionErrorBoundary name="风险评估">
+            <RiskSection data={riskAssessment} index={3} total={TOTAL} />
+          </SectionErrorBoundary>
         )}
       </div>
     </ReportRenderContext.Provider>

@@ -7,6 +7,7 @@ import StrengthSection from "@/components/report/nav/strength-section";
 import PositioningSection from "@/components/report/nav/positioning-section";
 import ResumeDiagnosisSection from "@/components/report/nav/resume-diagnosis-section";
 import AdviceSection from "@/components/report/nav/advice-section";
+import { SectionErrorBoundary } from "@/components/admin/section-error-boundary";
 import type {
   ReportData,
   JobFormData,
@@ -47,19 +48,29 @@ export function NavReportRenderer({ reportData, interviewQ1Q2, formData, scoring
     <ReportRenderContext.Provider value={ctxValue}>
       <div className="space-y-5">
         {overview && (
-          <OverviewSection data={overview} meta={effectiveMeta} index={1} total={TOTAL} />
+          <SectionErrorBoundary name="职业概览">
+            <OverviewSection data={overview} meta={effectiveMeta} index={1} total={TOTAL} />
+          </SectionErrorBoundary>
         )}
         {strength && (
-          <StrengthSection data={strength} index={2} total={TOTAL} />
+          <SectionErrorBoundary name="优势分析">
+            <StrengthSection data={strength} index={2} total={TOTAL} />
+          </SectionErrorBoundary>
         )}
         {positioning && (
-          <PositioningSection data={positioning} index={3} total={TOTAL} />
+          <SectionErrorBoundary name="职业定位">
+            <PositioningSection data={positioning} index={3} total={TOTAL} />
+          </SectionErrorBoundary>
         )}
         {resumeDiagnosis !== undefined && (
-          <ResumeDiagnosisSection data={resumeDiagnosis} index={4} total={TOTAL} />
+          <SectionErrorBoundary name="简历诊断">
+            <ResumeDiagnosisSection data={resumeDiagnosis} index={4} total={TOTAL} />
+          </SectionErrorBoundary>
         )}
         {advice && (
-          <AdviceSection data={advice} index={5} total={TOTAL} />
+          <SectionErrorBoundary name="建议">
+            <AdviceSection data={advice} index={5} total={TOTAL} />
+          </SectionErrorBoundary>
         )}
       </div>
     </ReportRenderContext.Provider>

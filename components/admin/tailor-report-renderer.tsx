@@ -3,6 +3,7 @@
 import type { TailorReport } from "@/lib/types-tailor";
 import { SuggestionsSection } from "@/components/report/tailor/suggestions-section";
 import { InterviewSection } from "@/components/report/tailor/interview-section";
+import { SectionErrorBoundary } from "@/components/admin/section-error-boundary";
 
 interface Props {
   reportData: TailorReport | null;
@@ -24,10 +25,14 @@ export function TailorReportRenderer({ reportData }: Props) {
   return (
     <div className="space-y-5">
       {suggestions && suggestions.length > 0 && (
-        <SuggestionsSection suggestions={suggestions} index={1} total={TOTAL} />
+        <SectionErrorBoundary name="改写建议">
+          <SuggestionsSection suggestions={suggestions} index={1} total={TOTAL} />
+        </SectionErrorBoundary>
       )}
       {interview && interview.length > 0 && (
-        <InterviewSection interview={interview} index={2} total={TOTAL} />
+        <SectionErrorBoundary name="面试问答">
+          <InterviewSection interview={interview} index={2} total={TOTAL} />
+        </SectionErrorBoundary>
       )}
     </div>
   );
