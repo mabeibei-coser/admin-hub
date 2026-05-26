@@ -838,14 +838,20 @@ function AdminReportsContent() {
 
         {/* 桌面表格 */}
         <div className="surface-panel overflow-hidden hidden md:block">
-          <Table className={project === "hazard" ? "table-fixed" : ""}>
+          {/* hazard 字段少（8 列内容总宽 ~870px），不撑满 wrapper（max-w-7xl），
+              让 table 按自然宽度居中显示。其他项目仍 w-full 撑满。 */}
+          <Table
+            className={
+              project === "hazard"
+                ? "!w-auto !mx-auto !my-0 table-fixed"
+                : ""
+            }
+          >
             <TableHeader>
               <TableRow className="text-xs text-muted-foreground border-b border-[var(--report-border)]">
                 {columns.map((c) => {
-                  // hazard 表格：所有标题居中（语义对称）；
-                  // 列宽显式定值，唯独"检查场景"留 auto，吃掉剩余空间——
-                  // 数字/缩略图列保持紧凑（80-90px），居中后两侧空白可控；
-                  // 多余空间集中在"检查场景"列内部，文字左对齐时右侧空白就像段落留白，自然。
+                  // hazard 标题统一居中；所有列都设固定宽度（包括检查场景），
+                  // 加上 table.!w-auto，table 按列宽总和自然展示，不再被父容器撑大。
                   const centered =
                     project === "hazard" ||
                     c === "操作" ||
@@ -854,20 +860,22 @@ function AdminReportsContent() {
                   const width =
                     project === "hazard"
                       ? c === "时间"
-                        ? "w-[140px]"
+                        ? "w-[150px]"
                         : c === "手机号"
                           ? "w-[130px]"
                           : c === "服务项目"
                             ? "w-[100px]"
-                            : c === "识别条数"
-                              ? "w-[90px]"
-                              : c === "耗时"
-                                ? "w-[80px]"
-                                : c === "缩略图"
-                                  ? "w-[90px]"
-                                  : c === "操作"
-                                    ? "w-[110px]"
-                                    : "" // 检查场景留空，吃剩余空间
+                            : c === "检查场景"
+                              ? "w-[180px]"
+                              : c === "识别条数"
+                                ? "w-[90px]"
+                                : c === "耗时"
+                                  ? "w-[80px]"
+                                  : c === "缩略图"
+                                    ? "w-[90px]"
+                                    : c === "操作"
+                                      ? "w-[100px]"
+                                      : ""
                       : "";
                   return (
                     <TableHead
@@ -1318,7 +1326,7 @@ function ReportRowItem({
           </span>
         </TableCell>
         <TableCell
-          className="font-medium truncate"
+          className="font-medium truncate text-center"
           title={row.scenario_label || row.scenario || undefined}
         >
           {row.scenario_label || row.target_position || "—"}
