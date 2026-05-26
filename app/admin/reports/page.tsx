@@ -1294,18 +1294,8 @@ function ReportRowItem({
         >
           {row.scenario_label || row.target_position || "—"}
         </TableCell>
-        <TableCell className="text-center">
-          <span
-            className={`inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 rounded text-[12px] font-semibold ${
-              count >= 5
-                ? "bg-[oklch(0.96_0.05_25)] text-[oklch(0.45_0.18_25)] ring-1 ring-[oklch(0.85_0.1_25)]/60"
-                : count >= 1
-                  ? "bg-[var(--amber-100)] text-[var(--amber-700)] ring-1 ring-[var(--amber-200)]/60"
-                  : "bg-[oklch(0.96_0.05_155)] text-[var(--semantic-positive)] ring-1 ring-[oklch(0.85_0.08_155)]/40"
-            }`}
-          >
-            {count}
-          </span>
+        <TableCell className="text-center tabular-nums text-foreground">
+          {count}
         </TableCell>
         <TableCell className="tabular-nums text-xs text-muted-foreground">
           {durationCell}
