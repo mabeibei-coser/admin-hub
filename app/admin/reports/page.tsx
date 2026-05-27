@@ -45,6 +45,7 @@ import { DataCard } from "@/components/admin/data-card";
 import { Alert } from "@/components/admin/alert";
 import { Pagination } from "@/components/admin/pagination";
 import { withBase } from "@/lib/url";
+import { formatSalaryRank } from "@/lib/salary-rank";
 
 interface MeData {
   adminId: number;
@@ -1422,9 +1423,9 @@ function ReportRowItem({
         </TableCell>
         <TableCell
           className="text-muted-foreground max-w-[180px] truncate"
-          title={row.salary_rank_label || row.salary_rank || undefined}
+          title={formatSalaryRank(row.salary_rank, row.salary_rank_label, "")}
         >
-          {row.salary_rank_label || row.salary_rank || "—"}
+          {formatSalaryRank(row.salary_rank, row.salary_rank_label)}
         </TableCell>
         <TableCell className="text-muted-foreground max-w-[110px] truncate">
           {row.target_company || "—"}

@@ -5,7 +5,7 @@
  *
  * 想改这份 types，先去 salary-report 项目改 contracts/salary-report.ts，
  * 再来 admin-hub 跑 sync，然后 commit + 部署。两边任何一边单独改都不算数。
- * 上次同步：2026-05-26T14:30:15.099Z
+ * 上次同步：2026-05-27T10:54:23.009Z
  */
 
 export type RankCategory = "tech" | "mgmt";
