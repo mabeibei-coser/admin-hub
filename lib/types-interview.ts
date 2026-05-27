@@ -1,7 +1,7 @@
 /**
  * ⚠️ 手动复制自动同步：暂无 sync 脚本，改一边记得改另一边。
- * 来源：D:\_workspace\01_项目-Coding\ai-interview2\lib\types.ts
- *      D:\_workspace\01_项目-Coding\ai-interview2\lib\form-options.ts
+ * 来源：D:\_workspace\01_项目-Coding\A200-模拟面试-ai-interview2\lib\types.ts
+ *      D:\_workspace\01_项目-Coding\A200-模拟面试-ai-interview2\lib\form-options.ts
  * 上次同步：2026-05-27
  *
  * admin-hub 只用作展示（reports 列表 + 详情 + 报告渲染）。
