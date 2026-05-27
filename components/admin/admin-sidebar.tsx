@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
   Laptop,
+  Home,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PROJECTS, type ProjectId } from "@/lib/projects";
@@ -171,6 +172,16 @@ export function AdminSidebar() {
         <div className="px-5 mb-1">
           <div className="h-px bg-[oklch(0.93_0.006_240)]" />
         </div>
+
+        {/* === 首页 — 常驻顶部入口 === */}
+        <nav className="px-3 pt-3 flex flex-col gap-0.5">
+          <SidebarNavItem
+            label="首页"
+            icon={Home}
+            active={pathname === "/admin/home" || pathname === "/admin/home/"}
+            href="/admin/home"
+          />
+        </nav>
 
         {/* === 报告管理 section === */}
         <SectionHeader label="报告管理" />
@@ -373,6 +384,11 @@ export function AdminMobileBar() {
         </Link>
         <div className="h-4 w-px bg-border shrink-0" />
         <div className="flex gap-1.5 shrink-0 overflow-x-auto">
+          <MobilePill
+            href="/admin/home"
+            active={pathname === "/admin/home" || pathname === "/admin/home/"}
+            label="首页"
+          />
           {visibleProjects.map((pid) => {
             const meta = PROJECTS[pid as keyof typeof PROJECTS];
             if (!meta) return null;

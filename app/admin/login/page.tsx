@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
         return;
       }
       // Full page navigation — 避免 Next.js 客户端路由与 middleware 重定向冲突
-      window.location.href = withBase("/admin/reports");
+      window.location.href = withBase("/admin/home");
     } catch {
       setError("网络错误，请重试");
       refreshCaptcha();
