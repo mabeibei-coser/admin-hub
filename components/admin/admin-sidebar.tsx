@@ -12,7 +12,6 @@ import {
   Mic,
   LogOut,
   Users,
-  KeyRound,
   ShieldCheck,
   LifeBuoy,
   ClipboardList,
@@ -23,7 +22,6 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PROJECTS, type ProjectId } from "@/lib/projects";
-import { ChangePasswordDialog } from "./change-password-dialog";
 import { useTheme, type Theme } from "./theme-provider";
 import { withBase } from "@/lib/url";
 
@@ -73,7 +71,6 @@ export function AdminSidebar() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const [loggingOut, setLoggingOut] = useState(false);
-  const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
   const me = useAdminMe();
 
   const currentProject = (searchParams.get("project") ?? "report") as ProjectFilter;
@@ -94,11 +91,6 @@ export function AdminSidebar() {
 
   return (
     <>
-      <ChangePasswordDialog
-        open={pwdDialogOpen}
-        onClose={() => setPwdDialogOpen(false)}
-      />
-
       <aside className="hidden md:flex md:flex-col md:w-60 lg:w-64 shrink-0 border-r border-sidebar-border bg-sidebar">
         {/* === Logo block — 标志性 brand mark === */}
         <div className="px-5 pt-5 pb-4">
@@ -120,9 +112,9 @@ export function AdminSidebar() {
           </Link>
         </div>
 
-        {/* === 用户卡 + 操作（主题 / 改密码 / 登出） === */}
+        {/* === 用户卡 + 主题切换 === */}
         <div className="px-3 pb-3">
-          {/* 用户身份块 — monogram + status dot */}
+          {/* 用户身份块 — monogram + 名字 + 右侧 LogOut */}
           <div className="px-2 py-2 flex items-center gap-3 mb-2 rounded-xl bg-[oklch(0.97_0.02_252_/_0.4)]">
             <div className="relative shrink-0">
               <div className="size-9 rounded-xl bg-gradient-to-br from-[var(--blue-100)] to-[var(--blue-50)] text-[var(--blue-700)] flex items-center justify-center text-sm font-semibold ring-1 ring-[var(--blue-200)]/60 shadow-sm">
@@ -149,24 +141,18 @@ export function AdminSidebar() {
                   : ""}
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              title={loggingOut ? "登出中…" : "登出"}
+              aria-label="登出"
+              className="shrink-0 size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-rose-600 hover:bg-rose-50 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)] cursor-pointer"
+            >
+              <LogOut className="size-3.5" strokeWidth={2} />
+            </button>
           </div>
 
           <ThemeSwitcher />
-          <button
-            onClick={() => setPwdDialogOpen(true)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
-          >
-            <KeyRound className="size-4 text-muted-foreground" />
-            修改密码
-          </button>
-          <button
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
-          >
-            <LogOut className="size-4 text-muted-foreground" />
-            {loggingOut ? "登出中…" : "登出"}
-          </button>
         </div>
 
         <div className="px-5 mb-1">
@@ -339,7 +325,6 @@ function SidebarNavItem({
 export function AdminMobileBar() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const me = useAdminMe();
 
@@ -366,10 +351,6 @@ export function AdminMobileBar() {
 
   return (
     <>
-      <ChangePasswordDialog
-        open={pwdDialogOpen}
-        onClose={() => setPwdDialogOpen(false)}
-      />
       <div className="md:hidden border-b border-sidebar-border bg-sidebar px-4 py-2.5 flex items-center gap-3 overflow-x-auto">
         <Link
           href="/admin/reports"
@@ -409,15 +390,8 @@ export function AdminMobileBar() {
             />
           )}
         </div>
-        {/* 右侧操作：修改密码 + 退出登录 */}
+        {/* 右侧操作：退出登录 */}
         <div className="ml-auto flex items-center gap-1 shrink-0">
-          <button
-            onClick={() => setPwdDialogOpen(true)}
-            className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--blue-50)]/60 cursor-pointer"
-            aria-label="修改密码"
-          >
-            <KeyRound className="size-3.5" />
-          </button>
           <button
             onClick={handleLogout}
             disabled={loggingOut}
