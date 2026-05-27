@@ -92,3 +92,11 @@ playwright-report/
 test-results/
 e2e/fixtures/.tmp-*
 .gstack/
+
+# dev 临时日志和实验产物（npm run dev 重定向、preview 截图等）
+.dev*.log
+.start.log
+.preview_*.html
+body.html
+# 项目级别的实验目录（独立的本地工具，不属于 admin-hub 核心代码）
+admin-hub-course/
