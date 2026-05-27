@@ -60,10 +60,10 @@ export function MarketSection({ data, index, total }: Props) {
           )}
         </div>
 
-        {/* 右侧：近 5 年薪酬趋势 */}
-        <div className="md:col-span-7">
+        {/* 右侧：近 5 年薪酬趋势（与左侧框同款 + grid stretch 自动齐平） */}
+        <div className="md:col-span-7 rounded-lg border border-[var(--report-border)] bg-[oklch(0.985_0.006_240)] p-4 flex flex-col">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-[11.5px] font-medium text-[var(--report-ink-muted)]">
+            <div className="text-[12px] font-semibold text-[var(--cyan-700)]">
               该岗位近 5 年薪酬水平
             </div>
             {trendPoints.length >= 2 && (
@@ -82,7 +82,7 @@ export function MarketSection({ data, index, total }: Props) {
           </div>
 
           {trendPoints.length >= 2 ? (
-            <div className="rounded-lg border border-[var(--report-border)] bg-white p-1.5">
+            <div className="rounded-md bg-white p-2 flex-1 flex items-center">
               <svg viewBox={`0 0 ${VBW} ${VBH}`} className="w-full h-auto block">
                 <defs>
                   <linearGradient id="salaryTrendArea" x1="0" y1="0" x2="0" y2="1">
@@ -154,7 +154,7 @@ export function MarketSection({ data, index, total }: Props) {
               </svg>
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-[var(--report-border)] px-3 py-6 text-center text-[12px] text-[var(--report-ink-muted)]">
+            <div className="rounded-md border border-dashed border-[var(--report-border)] px-3 py-6 text-center text-[12px] text-[var(--report-ink-muted)] flex-1 flex items-center justify-center">
               暂无近 5 年趋势数据
             </div>
           )}
