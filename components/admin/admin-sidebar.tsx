@@ -9,6 +9,7 @@ import {
   FilePen,
   Coins,
   AlertTriangle,
+  Mic,
   LogOut,
   Users,
   KeyRound,
@@ -44,10 +45,11 @@ const PROJECT_ICONS: Record<string, React.ComponentType<{ className?: string; st
   tailor: FilePen,
   salary: Coins,
   hazard: AlertTriangle,
+  interview: Mic,
 };
 
 /** me.visibleProjects 加载前的兜底（与 PROJECTS 的 key 顺序一致） */
-const FALLBACK_PROJECTS = ["report", "nav", "startup", "tailor", "salary", "hazard"];
+const FALLBACK_PROJECTS = ["report", "nav", "startup", "tailor", "salary", "hazard", "interview"];
 
 /** 从 /api/admin/me 获取当前用户数据。加载中返回 null。
  *  登录页跳过 fetch — 避免匿名用户的 401 console 噪音 + 多一次 RT。 */

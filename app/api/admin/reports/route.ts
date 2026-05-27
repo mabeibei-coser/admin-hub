@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady, isHazardDbReady } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady, isHazardDbReady, isInterviewDbReady } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-session";
 import { canViewMenu } from "@/lib/menus";
 import { startOfMonthCN, startOfWeekCN } from "@/lib/cn-time";
 
 export const runtime = "nodejs";
 
-type ProjectFilter = "all" | "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
+type ProjectFilter = "all" | "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview";
 
 function parseProject(v: string | null): ProjectFilter {
-  if (v === "report" || v === "nav" || v === "startup" || v === "tailor" || v === "salary" || v === "hazard") return v;
+  if (v === "report" || v === "nav" || v === "startup" || v === "tailor" || v === "salary" || v === "hazard" || v === "interview") return v;
   return "all";
 }
 
@@ -31,6 +31,7 @@ function clampProject(
   if (canViewMenu(session, "tailor")) return "tailor";
   if (canViewMenu(session, "salary")) return "salary";
   if (canViewMenu(session, "hazard")) return "hazard";
+  if (canViewMenu(session, "interview")) return "interview";
   if (canViewMenu(session, "all")) return "all";
   return "report"; // 兜底
 }
@@ -38,7 +39,7 @@ function clampProject(
 interface ReportRow {
   id: number;
   created_at: number;
-  project: "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
+  project: "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview";
   target_position: string;
   target_education: string | null;
   work_years: string | null;
@@ -75,6 +76,14 @@ interface ReportRow {
   hazard_count?: number | null;
   /** hazard 项目专属：是否存了缩略图（1 = 有图，可走 /photo 路由）；老数据为 0 */
   has_photo?: number | null;
+  /** interview 项目专属：面试岗位（来自 form_data_json.position） */
+  interview_position?: string | null;
+  /** interview 项目专属：岗位职级 enum key（来自 form_data_json.jobLevel） */
+  interview_job_level?: string | null;
+  /** interview 项目专属：面试语言 enum key（来自 form_data_json.interviewLanguage） */
+  interview_language?: string | null;
+  /** interview 项目专属：企业性质 enum key（来自 form_data_json.companyType） */
+  interview_company_type?: string | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -103,6 +112,10 @@ export async function GET(req: NextRequest) {
     const startupExperience = searchParams.get("startupExperience");
     // tailor 专属筛选
     const tailorMode = searchParams.get("tailorMode"); // "moderate" | "aggressive"
+    // interview 专属筛选
+    const interviewJobLevel = searchParams.get("interviewJobLevel"); // junior / intermediate / senior
+    const interviewLanguage = searchParams.get("interviewLanguage"); // zh / en / mixed
+    const interviewCompanyType = searchParams.get("interviewCompanyType"); // startup / private / ...
     const project = clampProject(parseProject(searchParams.get("project")), session);
 
     const db = getAdminDb();
@@ -111,6 +124,7 @@ export async function GET(req: NextRequest) {
     const tailorReady = isTailorDbReady();
     const salaryReady = isSalaryDbReady();
     const hazardReady = isHazardDbReady();
+    const interviewReady = isInterviewDbReady();
 
     // hazard 缩略图字段是 2026-05-26 才加的——如果用户还没重启 hazard-detect 跑过 migration，
     // 老 schema 里没有 image_base64 列，这里动态守门避免 SELECT 时报 "no such column"。
@@ -132,6 +146,7 @@ export async function GET(req: NextRequest) {
     else if (project === "tailor" && !tailorReady) effectiveProject = "report";
     else if (project === "salary" && !salaryReady) effectiveProject = "report";
     else if (project === "hazard" && !hazardReady) effectiveProject = "report";
+    else if (project === "interview" && !interviewReady) effectiveProject = "report";
 
     // 通用 conditions（应用到 report 和 nav 两侧）
     const conditions: string[] = [];
@@ -453,6 +468,67 @@ export async function GET(req: NextRequest) {
     if (to) hazardBaseParams.push(new Date(to).getTime() + 86400000);
     if (position) hazardBaseParams.push(`%${position}%`);
 
+    // interview (模拟面试)：表结构同 startup（form_data_json 存所有面试字段）
+    // 列对齐 ReportRow：position 映射到 target_position（列表"主标题"），其余 4 个面试字段透传
+    // 不参与 service_tracking（Q3 用户选了不支持转服务），所以无 tracking_id
+    const interviewOnlyConditions: string[] = [];
+    const interviewOnlyParams: (string | number)[] = [];
+    if (name) {
+      interviewOnlyConditions.push("json_extract(iv.form_data_json, '$.name') LIKE ?");
+      interviewOnlyParams.push(`%${name}%`);
+    }
+    if (phone) {
+      interviewOnlyConditions.push("json_extract(iv.form_data_json, '$.phone') LIKE ?");
+      interviewOnlyParams.push(`%${phone}%`);
+    }
+    if (position) {
+      // 复用 position URL 参数搜索「面试岗位」
+      interviewOnlyConditions.push("json_extract(iv.form_data_json, '$.position') LIKE ?");
+      interviewOnlyParams.push(`%${position}%`);
+    }
+    if (interviewJobLevel) {
+      interviewOnlyConditions.push("json_extract(iv.form_data_json, '$.jobLevel') = ?");
+      interviewOnlyParams.push(interviewJobLevel);
+    }
+    if (interviewLanguage) {
+      interviewOnlyConditions.push("json_extract(iv.form_data_json, '$.interviewLanguage') = ?");
+      interviewOnlyParams.push(interviewLanguage);
+    }
+    if (interviewCompanyType) {
+      interviewOnlyConditions.push("json_extract(iv.form_data_json, '$.companyType') = ?");
+      interviewOnlyParams.push(interviewCompanyType);
+    }
+    const interviewConditionsCombined = [
+      ...conditions
+        .filter((c) => !c.startsWith("target_position"))
+        .map((c) => c.replace(/^(created_at|has_resume)\b/, "iv.$1")),
+      ...interviewOnlyConditions,
+    ];
+    const whereInterview = interviewConditionsCombined.length > 0
+      ? `WHERE ${interviewConditionsCombined.join(" AND ")}`
+      : "";
+    const interviewSelect = `
+      SELECT iv.id, iv.created_at, 'interview' AS project,
+             json_extract(iv.form_data_json, '$.position') AS target_position,
+             NULL AS target_education,
+             NULL AS work_years,
+             json_extract(iv.form_data_json, '$.name') AS user_name,
+             json_extract(iv.form_data_json, '$.phone') AS user_phone,
+             NULL AS target_company, NULL AS target_city_tier,
+             iv.has_resume, iv.resume_filename, NULL AS user_identity, iv.uuid,
+             iv.duration_ms, iv.sections_status, iv.ip,
+             NULL AS tracking_id,
+             json_extract(iv.form_data_json, '$.position') AS interview_position,
+             json_extract(iv.form_data_json, '$.jobLevel') AS interview_job_level,
+             json_extract(iv.form_data_json, '$.interviewLanguage') AS interview_language,
+             json_extract(iv.form_data_json, '$.companyType') AS interview_company_type
+      FROM interview.reports iv
+      ${whereInterview}
+    `;
+    const interviewBaseParams: (string | number)[] = [];
+    if (from) interviewBaseParams.push(new Date(from).getTime());
+    if (to) interviewBaseParams.push(new Date(to).getTime() + 86400000);
+
     // 根据 project filter 决定查哪一侧或两侧 UNION
     let listQuery: string;
     let countQuery: string;
@@ -488,6 +564,11 @@ export async function GET(req: NextRequest) {
       countQuery = `SELECT COUNT(*) AS c FROM hazard.reports hr ${whereHazard}`;
       queryParams = [...hazardBaseParams, ...hazardOnlyParams];
       countParams = [...hazardBaseParams, ...hazardOnlyParams];
+    } else if (effectiveProject === "interview") {
+      listQuery = `${interviewSelect} ORDER BY iv.created_at DESC LIMIT ? OFFSET ?`;
+      countQuery = `SELECT COUNT(*) AS c FROM interview.reports iv ${whereInterview}`;
+      queryParams = [...interviewBaseParams, ...interviewOnlyParams];
+      countParams = [...interviewBaseParams, ...interviewOnlyParams];
     } else {
       // all: UNION ALL，report 用 params，nav 用 params + navOnlyParams
       listQuery = `${reportSelect} UNION ALL ${navSelect} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
@@ -687,6 +768,39 @@ export async function GET(req: NextRequest) {
           weekCount: weekRow.c ?? 0,
         };
       }
+      // interview 项目专属：本月/本周（无转服务，同 tailor 模式）
+      if (p === "interview") {
+        const monthStart = startOfMonthCN();
+        const weekStart = startOfWeekCN();
+        const totalRow = db
+          .prepare(`SELECT COUNT(*) AS total,
+            SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS today_count,
+            SUM(CASE WHEN has_resume = 1 THEN 1 ELSE 0 END) AS resume_count,
+            AVG(duration_ms) AS avg_dur
+            FROM interview.reports`)
+          .get(todayTs) as {
+            total: number;
+            today_count: number | null;
+            resume_count: number | null;
+            avg_dur: number | null;
+          };
+        const monthRow = db
+          .prepare("SELECT COUNT(*) AS c FROM interview.reports WHERE created_at >= ?")
+          .get(monthStart) as { c: number };
+        const weekRow = db
+          .prepare("SELECT COUNT(*) AS c FROM interview.reports WHERE created_at >= ?")
+          .get(weekStart) as { c: number };
+        const tt = totalRow.total ?? 0;
+        const rc = totalRow.resume_count ?? 0;
+        return {
+          total: tt,
+          todayCount: totalRow.today_count ?? 0,
+          resumeRate: tt > 0 ? Math.round((rc / tt) * 100) : 0,
+          avgDurationSec: totalRow.avg_dur ? Math.round(totalRow.avg_dur / 1000) : null,
+          monthCount: monthRow.c ?? 0,
+          weekCount: weekRow.c ?? 0,
+        };
+      }
       // tailor 项目专属：本月/本周（无转服务）
       if (p === "tailor") {
         const monthStart = startOfMonthCN();
@@ -734,7 +848,9 @@ export async function GET(req: NextRequest) {
     }
 
     let stats;
-    if (effectiveProject === "hazard" && hazardReady) {
+    if (effectiveProject === "interview" && interviewReady) {
+      stats = statForProject("interview");
+    } else if (effectiveProject === "hazard" && hazardReady) {
       stats = statForProject("hazard");
     } else if (effectiveProject === "salary" && salaryReady) {
       stats = statForProject("salary");
@@ -763,6 +879,7 @@ export async function GET(req: NextRequest) {
       tailorReady,
       salaryReady,
       hazardReady,
+      interviewReady,
       stats,
     });
   } catch (e) {

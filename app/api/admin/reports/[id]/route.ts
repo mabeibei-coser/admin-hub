@@ -4,7 +4,7 @@ import fs from "fs";
 
 export const runtime = "nodejs";
 
-type Project = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
+type Project = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview";
 
 function parseProject(v: string | null): Project | null {
   if (
@@ -13,7 +13,8 @@ function parseProject(v: string | null): Project | null {
     v === "startup" ||
     v === "tailor" ||
     v === "salary" ||
-    v === "hazard"
+    v === "hazard" ||
+    v === "interview"
   )
     return v;
   return null;
@@ -43,7 +44,7 @@ export async function GET(
     const project = parseProject(req.nextUrl.searchParams.get("project"));
     if (!project) {
       return NextResponse.json(
-        { error: "缺少 project 参数（report|nav|startup|tailor|salary|hazard）" },
+        { error: "缺少 project 参数（report|nav|startup|tailor|salary|hazard|interview）" },
         { status: 400 }
       );
     }
@@ -56,6 +57,7 @@ export async function GET(
       tailor: "tailor.reports",
       salary: "salary.reports",
       hazard: "hazard.reports",
+      interview: "interview.reports",
     };
     const table = tableMap[project];
 
@@ -74,10 +76,11 @@ export async function GET(
     let quizAnswers: unknown = null;
     let scoring: unknown = null;
 
-    if (project === "nav" || project === "startup") {
-      // career-nav / startup-diagnostic: 直接从 report_json 列拿（finalize 后这是单一真相来源）
-      // 两者 JSON 列字段名完全一致：report_json / interview_q1q2_json / form_data_json
+    if (project === "nav" || project === "startup" || project === "interview") {
+      // career-nav / startup-diagnostic / ai-interview2: 直接从 report_json 列拿（finalize 后这是单一真相来源）
+      // 三者 JSON 列字段名完全一致：report_json / interview_q1q2_json / form_data_json
       // / quiz_answers_json / scoring_json
+      // 注：interview 的 interview_q1q2_json 其实存的是 Q1~Q8（InterviewQ1Q6 接口已扩展，向后兼容）
       reportData = safeJsonParse(row.report_json);
       interviewQ1Q2 = safeJsonParse(row.interview_q1q2_json);
       formData = safeJsonParse(row.form_data_json);

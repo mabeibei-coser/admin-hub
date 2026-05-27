@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isInterviewDbReady } from "@/lib/db";
 import fs from "fs";
 import path from "path";
 
 export const runtime = "nodejs";
 
-type Project = "report" | "nav" | "startup" | "tailor";
+type Project = "report" | "nav" | "startup" | "tailor" | "interview";
 
 export async function GET(
   req: NextRequest,
@@ -26,7 +26,9 @@ export async function GET(
           ? "startup"
           : rawProject === "tailor"
             ? "tailor"
-            : "report";
+            : rawProject === "interview"
+              ? "interview"
+              : "report";
 
     if (project === "nav" && !isNavDbReady()) {
       return NextResponse.json({ error: "职业导航数据库暂不可用" }, { status: 503 });
@@ -37,6 +39,9 @@ export async function GET(
     if (project === "tailor" && !isTailorDbReady()) {
       return NextResponse.json({ error: "简历定制数据库暂不可用" }, { status: 503 });
     }
+    if (project === "interview" && !isInterviewDbReady()) {
+      return NextResponse.json({ error: "模拟面试数据库暂不可用" }, { status: 503 });
+    }
 
     const db = getAdminDb();
     const tableMap: Record<Project, string> = {
@@ -44,6 +49,7 @@ export async function GET(
       nav: "nav.reports",
       startup: "startup.reports",
       tailor: "tailor.reports",
+      interview: "interview.reports",
     };
     const table = tableMap[project];
     const row = db

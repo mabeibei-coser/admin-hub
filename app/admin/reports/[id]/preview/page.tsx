@@ -15,6 +15,7 @@ import { StartupReportRenderer } from "@/components/admin/startup-report-rendere
 import { TailorReportRenderer } from "@/components/admin/tailor-report-renderer";
 import { SalaryReportRenderer } from "@/components/admin/salary-report-renderer";
 import { HazardReportRenderer } from "@/components/admin/hazard-report-renderer";
+import { InterviewReportRenderer } from "@/components/admin/interview-report-renderer";
 import { SectionErrorBoundary } from "@/components/admin/section-error-boundary";
 import type { ReportData, JobFormData } from "@/lib/types";
 import type {
@@ -32,9 +33,10 @@ import type {
 import type { TailorReport } from "@/lib/types-tailor";
 import type { SalaryReportData } from "@/lib/types-salary";
 import type { HazardReportData } from "@/lib/types-hazard";
+import type { InterviewReport } from "@/lib/types-interview";
 import { withBase } from "@/lib/url";
 
-type Project = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
+type Project = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview";
 
 interface ApiResponse {
   project: Project;
@@ -45,6 +47,7 @@ interface ApiResponse {
     | StartupReportData
     | SalaryReportData
     | HazardReportData
+    | InterviewReport
     | null;
   interviewQ1Q2?: InterviewQ1Q2 | StartupInterviewQ1Q6 | null;
   formData: JobFormData | NavJobFormData | StartupJobFormData | null;
@@ -68,7 +71,9 @@ export default function ReportPreviewPage() {
             ? "salary"
             : rawProject === "hazard"
               ? "hazard"
-              : "report";
+              : rawProject === "interview"
+                ? "interview"
+                : "report";
 
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -190,6 +195,19 @@ export default function ReportPreviewPage() {
           <HazardReportRenderer
             reportData={apiData.reportData as HazardReportData | null}
             scenarioLabel={meta.scenario_label as string | null}
+          />
+        </div>
+      </>
+    );
+  }
+
+  if (project === "interview") {
+    return (
+      <>
+        {banner}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <InterviewReportRenderer
+            reportData={apiData.reportData as InterviewReport | null}
           />
         </div>
       </>

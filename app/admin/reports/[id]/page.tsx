@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady, isHazardDbReady, getStartupDbDir } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady, isHazardDbReady, isInterviewDbReady, getStartupDbDir, getInterviewDbDir } from "@/lib/db";
 import fs from "fs";
 import path from "path";
-import { Download, Compass, Briefcase, Rocket, FilePen, Coins, AlertTriangle } from "lucide-react";
+import { Download, Compass, Briefcase, Rocket, FilePen, Coins, AlertTriangle, Mic } from "lucide-react";
 import { withBase } from "@/lib/url";
 import type { JobFormData, QuizAnswer } from "@/lib/types";
 import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2, QuizBank, QuizQuestion as NavQuizQuestion } from "@/lib/types-nav";
@@ -18,6 +18,18 @@ import type {
 import type { TailorFormData, TailorReport } from "@/lib/types-tailor";
 import type { SalaryReportData } from "@/lib/types-salary";
 import type { HazardReportData } from "@/lib/types-hazard";
+import type {
+  JobFormData as InterviewJobFormData,
+  QuizAnswer as InterviewQuizAnswer,
+  InterviewReport,
+  InterviewQ1Q6,
+  QuizBank as InterviewQuizBank,
+} from "@/lib/types-interview";
+import {
+  COMPANY_TYPE_LABELS,
+  JOB_LEVEL_LABELS,
+  INTERVIEW_LANGUAGE_LABELS,
+} from "@/lib/types-interview";
 import { PROJECTS } from "@/lib/projects";
 import { PageHeader } from "@/components/admin/page-header";
 import { Breadcrumb } from "@/components/admin/breadcrumb";
@@ -25,8 +37,9 @@ import { Alert } from "@/components/admin/alert";
 import { StatusPill } from "@/components/admin/status-pill";
 import { DataRow } from "@/components/admin/data-row";
 import { HazardReportRenderer } from "@/components/admin/hazard-report-renderer";
+import { InterviewReportRenderer } from "@/components/admin/interview-report-renderer";
 
-type ProjectId = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard";
+type ProjectId = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview";
 
 function parseProject(v: string | undefined): ProjectId {
   if (v === "nav") return "nav";
@@ -34,6 +47,7 @@ function parseProject(v: string | undefined): ProjectId {
   if (v === "tailor") return "tailor";
   if (v === "salary") return "salary";
   if (v === "hazard") return "hazard";
+  if (v === "interview") return "interview";
   return "report";
 }
 
@@ -181,6 +195,21 @@ export default async function ReportDetailPage({
       </div>
     );
   }
+  if (project === "interview" && !isInterviewDbReady()) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-3xl mx-auto space-y-5">
+          <Breadcrumb
+            items={[
+              { label: "报告列表", href: "/admin/reports" },
+              { label: "模拟面试报告" },
+            ]}
+          />
+          <Alert tone="warning">模拟面试数据库暂不可用，无法加载此报告。</Alert>
+        </div>
+      </div>
+    );
+  }
 
   const db = getAdminDb();
   const tableMap: Record<ProjectId, string> = {
@@ -190,6 +219,7 @@ export default async function ReportDetailPage({
     tailor: "tailor.reports",
     salary: "salary.reports",
     hazard: "hazard.reports",
+    interview: "interview.reports",
   };
   const table = tableMap[project];
   const row = db
@@ -220,6 +250,12 @@ export default async function ReportDetailPage({
   let salaryReportData: SalaryReportData | null = null;
   // hazard 专属解析（report_json 是 hazards 数组）
   let hazardReportData: HazardReportData | null = null;
+  // interview 专属解析（report_json 是 InterviewReport 3 模块）
+  let interviewReportData: InterviewReport | null = null;
+  let interviewFormData: InterviewJobFormData | null = null;
+  let interviewAnswers: InterviewQ1Q6 | null = null;
+  let interviewQuizAnswers: InterviewQuizAnswer[] | null = null;
+  const interviewQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
 
   if (project === "nav") {
     try { reportData = JSON.parse(row.report_json as string) as NavReportData; } catch { /* empty */ }
@@ -274,6 +310,23 @@ export default async function ReportDetailPage({
     try { salaryReportData = JSON.parse(row.report_json as string) as SalaryReportData; } catch { /* empty */ }
   } else if (project === "hazard") {
     try { hazardReportData = JSON.parse(row.report_json as string) as HazardReportData; } catch { /* empty */ }
+  } else if (project === "interview") {
+    try { interviewReportData = JSON.parse(row.report_json as string) as InterviewReport; } catch { /* empty */ }
+    try { interviewFormData = JSON.parse(row.form_data_json as string) as InterviewJobFormData; } catch { /* empty */ }
+    try { interviewAnswers = JSON.parse(row.interview_q1q2_json as string) as InterviewQ1Q6; } catch { /* empty */ }
+    try { interviewQuizAnswers = JSON.parse(row.quiz_answers_json as string) as InterviewQuizAnswer[]; } catch { /* empty */ }
+    // 量表 bank：ai-interview2 的 psych-quiz-bank 在 data 同级目录（如果存在则加载，否则静默）
+    try {
+      const bank = JSON.parse(
+        fs.readFileSync(path.join(getInterviewDbDir(), "psych-quiz-bank.json"), "utf-8")
+      ) as InterviewQuizBank;
+      for (const q of bank.fixedQuestions) {
+        interviewQuizBankMap.set(q.id, {
+          text: q.text,
+          options: q.options.map((o) => ({ label: o.label, text: o.text })),
+        });
+      }
+    } catch { /* quiz bank missing or unreadable — admin 仍可显示 question id */ }
   } else {
     const storagePath = row.report_storage_path as string | null;
     if (storagePath) {
@@ -302,7 +355,9 @@ export default async function ReportDetailPage({
             ? !!salaryReportData
             : project === "hazard"
               ? !!hazardReportData
-              : !!reportFormData;
+              : project === "interview"
+                ? !!interviewReportData
+                : !!reportFormData;
 
   // 用户友好的页头副信息：「张三 · 13800138001」或仅项目名
   // salary 没有 user_name，只有 user_phone（直接列）
@@ -313,7 +368,9 @@ export default async function ReportDetailPage({
         ? startupFormData?.name
         : project === "tailor"
           ? (row.user_name as string | null)
-          : null;
+          : project === "interview"
+            ? interviewFormData?.name
+            : null;
   const userPhone =
     project === "nav"
       ? navFormData?.phone
@@ -325,7 +382,9 @@ export default async function ReportDetailPage({
             ? (row.user_phone as string | null)
             : project === "hazard"
               ? (row.user_phone as string | null)
-              : null;
+              : project === "interview"
+                ? interviewFormData?.phone
+                : null;
 
   // startup 的 target_position 列实际是 form_data_json.projectName（同 nav 的存法），
   // row.target_position 在 startup-diagnostic 里就直接是 projectName（finalize 时写入）
@@ -340,7 +399,9 @@ export default async function ReportDetailPage({
           ? ((row.position as string) ?? "—")
           : project === "hazard"
             ? ((row.scenario_label as string) ?? (row.scenario as string) ?? "—")
-            : ((row.target_position as string) ?? "—");
+            : project === "interview"
+              ? (interviewFormData?.position ?? (row.target_position as string) ?? "—")
+              : ((row.target_position as string) ?? "—");
 
   return (
     <div className="min-h-screen bg-background p-6 print:bg-white print:p-0">
@@ -363,7 +424,9 @@ export default async function ReportDetailPage({
                             ? "info"
                             : project === "hazard"
                               ? "warning"
-                              : "info"
+                              : project === "interview"
+                                ? "warning"
+                                : "info"
                     }
                   >
                     {projectMeta.label}
@@ -388,7 +451,9 @@ export default async function ReportDetailPage({
                       ? Coins
                       : project === "hazard"
                         ? AlertTriangle
-                        : Briefcase
+                        : project === "interview"
+                          ? Mic
+                          : Briefcase
             }
             eyebrow={`${projectMeta.label} · 报告 #${row.id as number}`}
             title={userName ? `${userName} · ${headerPosition}` : headerPosition}
@@ -409,7 +474,9 @@ export default async function ReportDetailPage({
                       ? "cyan"
                       : project === "hazard"
                         ? "amber"
-                        : "blue"
+                        : project === "interview"
+                          ? "rose"
+                          : "blue"
             }
           />
         </div>
@@ -420,8 +487,8 @@ export default async function ReportDetailPage({
           <DataRow label="创建时间">
             {new Date(row.created_at as number).toLocaleString("zh-CN")}
           </DataRow>
-          {/* 姓名 / 手机号（nav/startup/tailor 侧从 form_data_json 或专属列取；report 侧暂无） */}
-          {(project === "nav" || project === "startup" || project === "tailor") && (
+          {/* 姓名 / 手机号（nav/startup/tailor/interview 侧从 form_data_json 或专属列取；report 侧暂无） */}
+          {(project === "nav" || project === "startup" || project === "tailor" || project === "interview") && (
             <>
               <DataRow label="姓名">{userName ?? "—"}</DataRow>
               <DataRow label="手机号">{userPhone ?? "—"}</DataRow>
@@ -529,6 +596,25 @@ export default async function ReportDetailPage({
                 </DataRow>
               )}
             </>
+          ) : project === "interview" ? (
+            <>
+              <DataRow label="面试岗位">{interviewFormData?.position ?? "—"}</DataRow>
+              <DataRow label="岗位职级">
+                {interviewFormData?.jobLevel
+                  ? JOB_LEVEL_LABELS[interviewFormData.jobLevel] ?? interviewFormData.jobLevel
+                  : "—"}
+              </DataRow>
+              <DataRow label="面试语言">
+                {interviewFormData?.interviewLanguage
+                  ? INTERVIEW_LANGUAGE_LABELS[interviewFormData.interviewLanguage] ?? interviewFormData.interviewLanguage
+                  : "—"}
+              </DataRow>
+              <DataRow label="企业性质">
+                {interviewFormData?.companyType
+                  ? COMPANY_TYPE_LABELS[interviewFormData.companyType] ?? interviewFormData.companyType
+                  : "—"}
+              </DataRow>
+            </>
           ) : (
             <>
               <DataRow label="意向岗位">{(row.target_position as string) ?? "—"}</DataRow>
@@ -598,7 +684,9 @@ export default async function ReportDetailPage({
                         ? "简历定制报告"
                         : project === "salary"
                           ? "薪酬查询报告"
-                          : "职业定位报告"}
+                          : project === "interview"
+                            ? "模拟面试报告"
+                            : "职业定位报告"}
                 </Link>
               ) : (
                 <span className="text-muted-foreground">未生成</span>
@@ -770,6 +858,69 @@ export default async function ReportDetailPage({
               </div>
             </Section>
           )}
+
+        {/* ── 量表作答（interview 侧）─ 结构同 startup ─────────────── */}
+        {project === "interview" && interviewQuizAnswers && interviewQuizAnswers.length > 0 && (
+          <Section title={`量表作答（${interviewQuizAnswers.length} 题）`}>
+            <div className="divide-y divide-[var(--report-divider)]">
+              {interviewQuizAnswers.map((a, i) => {
+                const q = interviewQuizBankMap.get(a.questionId);
+                const opt = q?.options.find((o) => o.label === a.selectedLabel);
+                return (
+                  <div key={a.questionId} className="py-2.5">
+                    <div className="flex items-start gap-2 mb-1.5">
+                      <span className="text-muted-foreground text-xs shrink-0 mt-0.5">Q{i + 1}</span>
+                      <div>
+                        <span className="text-xs font-mono text-muted-foreground mr-1.5">{a.questionId}</span>
+                        <span className="text-sm text-foreground">{q?.text ?? "—"}</span>
+                      </div>
+                    </div>
+                    <div className="ml-6">
+                      <span className="report-chip">
+                        <span className="font-semibold">{a.selectedLabel}.</span>
+                        <span>{opt?.text ?? a.selectedLabel}</span>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+        )}
+
+        {/* ── 访谈内容（interview 侧）— Q1-Q8 循环 ─────────────────── */}
+        {project === "interview" &&
+          interviewAnswers &&
+          Object.values(interviewAnswers).some((v) => v) && (
+            <Section title="访谈内容（Q1 – Q8）">
+              <div className="space-y-3">
+                <Alert tone="warning">
+                  以下内容为用户访谈原始回答，含个人陈述、PII 敏感信息。请勿截图传播或对外汇报。
+                </Alert>
+                {(["Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8"] as const).map((qKey) => {
+                  const answer = interviewAnswers?.[qKey];
+                  if (!answer) return null;
+                  return (
+                    <div key={qKey}>
+                      <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                        {qKey} 面试问答
+                      </div>
+                      <pre className="text-sm text-foreground bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
+                        {answer}
+                      </pre>
+                    </div>
+                  );
+                })}
+              </div>
+            </Section>
+          )}
+
+        {/* ── 模拟面试报告（interview 专属，内嵌渲染 3 模块）─────────── */}
+        {project === "interview" && interviewReportData && (
+          <Section title="模拟面试评分报告">
+            <InterviewReportRenderer reportData={interviewReportData} />
+          </Section>
+        )}
       </div>
     </div>
   );

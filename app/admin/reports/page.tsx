@@ -14,11 +14,17 @@ import {
   FilePen,
   Coins,
   AlertTriangle,
+  Mic,
   Sparkles,
   Calendar,
   CalendarDays,
   ImageOff,
 } from "lucide-react";
+import {
+  COMPANY_TYPE_LABELS,
+  JOB_LEVEL_LABELS,
+  INTERVIEW_LANGUAGE_LABELS,
+} from "@/lib/types-interview";
 import {
   Table,
   TableBody,
@@ -90,6 +96,14 @@ interface ReportRow {
   hazard_count?: number | null;
   /** hazard 项目专属：是否存了缩略图（1 = 有图，可走 /photo 路由）；老数据为 0 */
   has_photo?: number | null;
+  /** interview 项目专属：面试岗位（form_data_json.position） */
+  interview_position?: string | null;
+  /** interview 项目专属：岗位职级 enum key（junior / intermediate / senior） */
+  interview_job_level?: string | null;
+  /** interview 项目专属：面试语言 enum key（zh / en / mixed） */
+  interview_language?: string | null;
+  /** interview 项目专属：企业性质 enum key（startup / private / ...） */
+  interview_company_type?: string | null;
 }
 
 interface Stats {
@@ -116,6 +130,7 @@ interface ApiResponse {
   tailorReady: boolean;
   salaryReady: boolean;
   hazardReady: boolean;
+  interviewReady: boolean;
   stats: Stats;
 }
 
@@ -175,7 +190,9 @@ function ProjectBadge({ project }: { project: ProjectId }) {
           ? "bg-[var(--orange-500)]"
           : meta.color === "cyan"
             ? "bg-[var(--cyan-500)]"
-            : "bg-[var(--blue-500)]";
+            : meta.color === "rose"
+              ? "bg-[var(--rose-500)]"
+              : "bg-[var(--blue-500)]";
   // purple / orange / cyan 走内联类（status-pill 的 data-tone 没枚举，直接 inline 控色）
   if (meta.color === "purple") {
     return (
@@ -209,6 +226,14 @@ function ProjectBadge({ project }: { project: ProjectId }) {
       </span>
     );
   }
+  if (meta.color === "rose") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--rose-50)] text-[var(--rose-700)] ring-1 ring-[var(--rose-200)]/60">
+        <span className={`size-1.5 rounded-full bg-[var(--rose-500)]`} />
+        {meta.shortLabel}
+      </span>
+    );
+  }
   return (
     <span className="status-pill" data-tone={tone}>
       <span className={`size-1.5 rounded-full ${dotColor}`} />
@@ -225,7 +250,8 @@ function readProjectFromUrl(p: string | null): ProjectFilter {
     p === "startup" ||
     p === "tailor" ||
     p === "salary" ||
-    p === "hazard"
+    p === "hazard" ||
+    p === "interview"
   )
     return p;
   return "report";
@@ -275,6 +301,10 @@ function AdminReportsContent() {
   const [startupExperience, setStartupExperience] = useState("");
   // tailor 专属筛选
   const [tailorMode, setTailorMode] = useState("");
+  // interview 专属筛选（3 个枚举下拉）
+  const [interviewJobLevel, setInterviewJobLevel] = useState("");
+  const [interviewLanguage, setInterviewLanguage] = useState("");
+  const [interviewCompanyType, setInterviewCompanyType] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
@@ -319,6 +349,9 @@ function AdminReportsContent() {
     setStartupCapital("");
     setStartupExperience("");
     setTailorMode("");
+    setInterviewJobLevel("");
+    setInterviewLanguage("");
+    setInterviewCompanyType("");
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [project]);
 
@@ -345,6 +378,9 @@ function AdminReportsContent() {
       if (startupCapital) params.set("startupCapital", startupCapital);
       if (startupExperience) params.set("startupExperience", startupExperience);
       if (tailorMode) params.set("tailorMode", tailorMode);
+      if (interviewJobLevel) params.set("interviewJobLevel", interviewJobLevel);
+      if (interviewLanguage) params.set("interviewLanguage", interviewLanguage);
+      if (interviewCompanyType) params.set("interviewCompanyType", interviewCompanyType);
       params.set("project", project);
       params.set("page", String(page));
       params.set("pageSize", String(pageSize));
@@ -357,7 +393,7 @@ function AdminReportsContent() {
     } finally {
       setLoading(false);
     }
-  }, [from, to, position, hasResume, name, phone, userIdentity, transferStatus, startupCapital, startupExperience, tailorMode, project, page]);
+  }, [from, to, position, hasResume, name, phone, userIdentity, transferStatus, startupCapital, startupExperience, tailorMode, interviewJobLevel, interviewLanguage, interviewCompanyType, project, page]);
 
   useEffect(() => {
     // 筛选条件变化时重新拉列表
@@ -384,6 +420,9 @@ function AdminReportsContent() {
     setStartupCapital("");
     setStartupExperience("");
     setTailorMode("");
+    setInterviewJobLevel("");
+    setInterviewLanguage("");
+    setInterviewCompanyType("");
     setPage(1);
   }
 
@@ -398,7 +437,10 @@ function AdminReportsContent() {
     transferStatus ||
     startupCapital ||
     startupExperience ||
-    tailorMode
+    tailorMode ||
+    interviewJobLevel ||
+    interviewLanguage ||
+    interviewCompanyType
   );
 
   // 只在 navReady===false / startupReady===false 时提示（避免 pm2 重启首次请求的短暂 false 污染状态）
@@ -407,6 +449,7 @@ function AdminReportsContent() {
   const tailorDegraded = data && project === "tailor" && !data.tailorReady;
   const salaryDegraded = data && project === "salary" && !data.salaryReady;
   const hazardDegraded = data && project === "hazard" && !data.hazardReady;
+  const interviewDegraded = data && project === "interview" && !data.interviewReady;
 
   // 列定义（项目专属）
   const columns = useMemo(() => {
@@ -430,6 +473,8 @@ function AdminReportsContent() {
       ];
     if (project === "hazard")
       return ["时间", "手机号", "服务项目", "检查场景", "识别条数", "耗时", "缩略图", "操作"];
+    if (project === "interview")
+      return ["时间", "姓名", "手机号", "服务项目", "面试岗位", "岗位职级", "面试语言", "企业性质", "操作"];
     // 职业导航：HR 关心节奏 + 用户身份 + 服务转化状态
     return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
   }, [project]);
@@ -465,7 +510,9 @@ function AdminReportsContent() {
                     ? Coins
                     : project === "hazard"
                       ? AlertTriangle
-                      : Briefcase
+                      : project === "interview"
+                        ? Mic
+                        : Briefcase
           }
           title={currentProjectLabel}
           subtitle={PROJECTS[project].description ?? null}
@@ -480,7 +527,9 @@ function AdminReportsContent() {
                     ? "cyan"
                     : project === "hazard"
                       ? "amber"
-                      : "blue"
+                      : project === "interview"
+                        ? "rose"
+                        : "blue"
           }
         />
 
@@ -513,6 +562,12 @@ function AdminReportsContent() {
           <Alert tone="warning">
             「隐患识别」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
             <code>HAZARD_DB_PATH</code>。
+          </Alert>
+        )}
+        {interviewDegraded && (
+          <Alert tone="warning">
+            「模拟面试」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
+            <code>INTERVIEW_DB_PATH</code>。
           </Alert>
         )}
 
@@ -775,6 +830,86 @@ function AdminReportsContent() {
                 />
               </div>
             </>
+          ) : project === "interview" ? (
+            <>
+              <div>
+                <label htmlFor="filter-name" className="block text-xs text-muted-foreground mb-1">姓名</label>
+                <Input
+                  id="filter-name"
+                  placeholder="关键词"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-8 text-sm w-28 bg-card text-foreground border border-input"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <label htmlFor="filter-phone" className="block text-xs text-muted-foreground mb-1">手机号</label>
+                <Input
+                  id="filter-phone"
+                  placeholder="关键词"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-8 text-sm w-28 bg-card text-foreground border border-input"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <label htmlFor="filter-position" className="block text-xs text-muted-foreground mb-1">面试岗位</label>
+                <Input
+                  id="filter-position"
+                  placeholder="关键词"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <label htmlFor="filter-job-level" className="block text-xs text-muted-foreground mb-1">岗位职级</label>
+                <select
+                  id="filter-job-level"
+                  value={interviewJobLevel}
+                  onChange={(e) => setInterviewJobLevel(e.target.value)}
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)] cursor-pointer"
+                >
+                  <option value="">全部</option>
+                  <option value="junior">初级（0-3 年）</option>
+                  <option value="intermediate">中级（3-5 年）</option>
+                  <option value="senior">高级（5 年以上）</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="filter-language" className="block text-xs text-muted-foreground mb-1">面试语言</label>
+                <select
+                  id="filter-language"
+                  value={interviewLanguage}
+                  onChange={(e) => setInterviewLanguage(e.target.value)}
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)] cursor-pointer"
+                >
+                  <option value="">全部</option>
+                  <option value="zh">全普通话</option>
+                  <option value="en">全英语</option>
+                  <option value="mixed">部分英语</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="filter-company-type" className="block text-xs text-muted-foreground mb-1">企业性质</label>
+                <select
+                  id="filter-company-type"
+                  value={interviewCompanyType}
+                  onChange={(e) => setInterviewCompanyType(e.target.value)}
+                  className="h-8 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)] cursor-pointer"
+                >
+                  <option value="">全部</option>
+                  <option value="startup">初创企业</option>
+                  <option value="private">民营企业</option>
+                  <option value="joint-venture">合资企业</option>
+                  <option value="foreign">外资企业</option>
+                  <option value="public-institution">事业单位</option>
+                </select>
+              </div>
+            </>
           ) : (
             <>
               <div>
@@ -990,8 +1125,8 @@ function KpiStrip({
 }) {
   const skeleton = loading && data === null;
 
-  // salary / hazard 项目：报告总数 / 本月新增 / 本周新增 / 今日新增（同款 KPI）
-  if (project === "salary" || project === "hazard") {
+  // salary / hazard / interview 项目：报告总数 / 本月新增 / 本周新增 / 今日新增（同款 KPI）
+  if (project === "salary" || project === "hazard" || project === "interview") {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <DataCard
@@ -1341,6 +1476,51 @@ function ReportRowItem({
           <div className="flex items-center justify-center">
             <HazardThumb id={row.id} hasPhoto={!!row.has_photo} />
           </div>
+        </TableCell>
+        <TableCell>
+          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  // tab=interview：时间 / 姓名 / 手机号 / 服务项目 / 面试岗位 / 岗位职级 / 面试语言 / 企业性质 / 操作
+  if (project === "interview") {
+    const interviewMeta = PROJECTS.interview;
+    return (
+      <TableRow className="text-sm hover:bg-[var(--blue-50)]/40 transition-colors duration-150">
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {formatTs(row.created_at)}
+        </TableCell>
+        <TableCell className="text-foreground max-w-[100px] truncate">
+          {row.user_name || "—"}
+        </TableCell>
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {row.user_phone || "—"}
+        </TableCell>
+        <TableCell>
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--rose-700)]">
+            <span className="size-1.5 rounded-full bg-[var(--rose-500)]" />
+            {interviewMeta.label}
+          </span>
+        </TableCell>
+        <TableCell className="font-medium max-w-[140px] truncate">
+          {row.interview_position || row.target_position || "—"}
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {row.interview_job_level
+            ? JOB_LEVEL_LABELS[row.interview_job_level] ?? row.interview_job_level
+            : "—"}
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {row.interview_language
+            ? INTERVIEW_LANGUAGE_LABELS[row.interview_language] ?? row.interview_language
+            : "—"}
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {row.interview_company_type
+            ? COMPANY_TYPE_LABELS[row.interview_company_type] ?? row.interview_company_type
+            : "—"}
         </TableCell>
         <TableCell>
           <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
