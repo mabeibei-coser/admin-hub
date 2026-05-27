@@ -11,6 +11,10 @@ interface Props {
   photoUrl?: string | null;
 }
 
+// 预算字段末尾常带"元"单位,显示时去掉(如"¥0 - 500 元" → "¥0 - 500")
+const stripYuan = (text: unknown): string =>
+  (text ?? "").toString().replace(/\s*元\s*$/, "").trim();
+
 /** 隐患等级 → 配色 + 图标 */
 const LEVEL_STYLES: Record<string, { bg: string; text: string; ring: string; Icon: typeof AlertTriangle }> = {
   高: {
@@ -112,7 +116,7 @@ export function HazardReportRenderer({ reportData, scenarioLabel, photoUrl }: Pr
               {/* 预算 */}
               <Field label="预算经费">
                 <span className="font-semibold text-[var(--blue-700)]">
-                  {item.estimated_budget}
+                  {stripYuan(item.estimated_budget)}
                 </span>
               </Field>
             </>
