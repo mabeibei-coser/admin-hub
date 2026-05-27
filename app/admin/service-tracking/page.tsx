@@ -94,7 +94,7 @@ const COLUMNS = [
   "手机号",
   "服务项目",
   "服务分类",
-  "首次服务时间",
+  "转服务时间",
   "更新日期",
   "服务状态",
   "转入人",
@@ -287,7 +287,7 @@ function ListContent() {
         {/* 筛选 — Tabler 风：包成轻卡。条件为草稿态，点「搜索」才提交 */}
         <div className="surface-panel p-4 flex flex-wrap gap-3 items-end">
           <div>
-            <label htmlFor="st-filter-from" className="block text-xs text-muted-foreground mb-1">首次服务起始时间</label>
+            <label htmlFor="st-filter-from" className="block text-xs text-muted-foreground mb-1">转服务起始时间</label>
             <input
               id="st-filter-from"
               type="date"
@@ -298,7 +298,7 @@ function ListContent() {
             />
           </div>
           <div>
-            <label htmlFor="st-filter-to" className="block text-xs text-muted-foreground mb-1">首次服务截止时间</label>
+            <label htmlFor="st-filter-to" className="block text-xs text-muted-foreground mb-1">转服务截止时间</label>
             <input
               id="st-filter-to"
               type="date"

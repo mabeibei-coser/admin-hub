@@ -15,6 +15,7 @@ import {
   KeyRound,
   ShieldCheck,
   LifeBuoy,
+  ClipboardList,
   Sun,
   Moon,
   Laptop,
@@ -118,6 +119,55 @@ export function AdminSidebar() {
           </Link>
         </div>
 
+        {/* === 用户卡 + 操作（主题 / 改密码 / 登出） === */}
+        <div className="px-3 pb-3">
+          {/* 用户身份块 — monogram + status dot */}
+          <div className="px-2 py-2 flex items-center gap-3 mb-2 rounded-xl bg-[oklch(0.97_0.02_252_/_0.4)]">
+            <div className="relative shrink-0">
+              <div className="size-9 rounded-xl bg-gradient-to-br from-[var(--blue-100)] to-[var(--blue-50)] text-[var(--blue-700)] flex items-center justify-center text-sm font-semibold ring-1 ring-[var(--blue-200)]/60 shadow-sm">
+                {me?.name?.slice(0, 1) ?? "—"}
+              </div>
+              {me?.isSuper && (
+                <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-card shadow-sm flex items-center justify-center ring-1 ring-[var(--blue-200)]/60">
+                  <ShieldCheck className="size-2.5 text-[var(--blue-700)]" strokeWidth={2.5} />
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 leading-tight flex-1">
+              <div className="text-[13px] font-medium text-[var(--navy-900)] truncate flex items-center gap-1.5">
+                {me?.name ?? "—"}
+                {me?.isSuper && (
+                  <span className="text-[9px] font-medium uppercase tracking-wider text-[var(--blue-700)] bg-[var(--blue-50)] px-1.5 py-0.5 rounded-md ring-1 ring-[var(--blue-200)]/50">
+                    超管
+                  </span>
+                )}
+              </div>
+              <div className="text-[10px] text-muted-foreground tabular-nums mt-0.5">
+                {me?.username
+                  ? `${me.username.slice(0, 3)} •••• ${me.username.slice(-4)}`
+                  : ""}
+              </div>
+            </div>
+          </div>
+
+          <ThemeSwitcher />
+          <button
+            onClick={() => setPwdDialogOpen(true)}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+          >
+            <KeyRound className="size-4 text-muted-foreground" />
+            修改密码
+          </button>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
+          >
+            <LogOut className="size-4 text-muted-foreground" />
+            {loggingOut ? "登出中…" : "登出"}
+          </button>
+        </div>
+
         <div className="px-5 mb-1">
           <div className="h-px bg-[oklch(0.93_0.006_240)]" />
         </div>
@@ -171,58 +221,16 @@ export function AdminSidebar() {
                 active={pathname.startsWith("/admin/admins")}
                 href="/admin/admins"
               />
+              <SidebarNavItem
+                label="隐患检查项"
+                icon={ClipboardList}
+                active={pathname.startsWith("/admin/hazard-checklist")}
+                href="/admin/hazard-checklist"
+              />
             </nav>
           </>
         )}
 
-        {/* === Bottom: 用户卡 + 操作 === */}
-        <div className="mt-auto p-3 pt-4 border-t border-[oklch(0.93_0.006_240)]">
-          {/* 用户身份块 — monogram + status dot */}
-          <div className="px-2 py-2 flex items-center gap-3 mb-2 rounded-xl bg-[oklch(0.97_0.02_252_/_0.4)]">
-            <div className="relative shrink-0">
-              <div className="size-9 rounded-xl bg-gradient-to-br from-[var(--blue-100)] to-[var(--blue-50)] text-[var(--blue-700)] flex items-center justify-center text-sm font-semibold ring-1 ring-[var(--blue-200)]/60 shadow-sm">
-                {me?.name?.slice(0, 1) ?? "—"}
-              </div>
-              {me?.isSuper && (
-                <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-card shadow-sm flex items-center justify-center ring-1 ring-[var(--blue-200)]/60">
-                  <ShieldCheck className="size-2.5 text-[var(--blue-700)]" strokeWidth={2.5} />
-                </div>
-              )}
-            </div>
-            <div className="min-w-0 leading-tight flex-1">
-              <div className="text-[13px] font-medium text-[var(--navy-900)] truncate flex items-center gap-1.5">
-                {me?.name ?? "—"}
-                {me?.isSuper && (
-                  <span className="text-[9px] font-medium uppercase tracking-wider text-[var(--blue-700)] bg-[var(--blue-50)] px-1.5 py-0.5 rounded-md ring-1 ring-[var(--blue-200)]/50">
-                    超管
-                  </span>
-                )}
-              </div>
-              <div className="text-[10px] text-muted-foreground tabular-nums mt-0.5">
-                {me?.username
-                  ? `${me.username.slice(0, 3)} •••• ${me.username.slice(-4)}`
-                  : ""}
-              </div>
-            </div>
-          </div>
-
-          <ThemeSwitcher />
-          <button
-            onClick={() => setPwdDialogOpen(true)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
-          >
-            <KeyRound className="size-4 text-muted-foreground" />
-            修改密码
-          </button>
-          <button
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:bg-[oklch(0.97_0.02_252_/_0.5)] hover:text-[var(--navy-800)] transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]"
-          >
-            <LogOut className="size-4 text-muted-foreground" />
-            {loggingOut ? "登出中…" : "登出"}
-          </button>
-        </div>
       </aside>
     </>
   );
