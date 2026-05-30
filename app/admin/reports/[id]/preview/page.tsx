@@ -16,6 +16,7 @@ import { TailorReportRenderer } from "@/components/admin/tailor-report-renderer"
 import { SalaryReportRenderer } from "@/components/admin/salary-report-renderer";
 import { HazardReportRenderer } from "@/components/admin/hazard-report-renderer";
 import { InterviewReportRenderer } from "@/components/admin/interview-report-renderer";
+import { TeachingReportRenderer } from "@/components/admin/teaching-report-renderer";
 import { SectionErrorBoundary } from "@/components/admin/section-error-boundary";
 import type { ReportData, JobFormData } from "@/lib/types";
 import type {
@@ -34,9 +35,10 @@ import type { TailorReport } from "@/lib/types-tailor";
 import type { SalaryReportData } from "@/lib/types-salary";
 import type { HazardReportData } from "@/lib/types-hazard";
 import type { InterviewReport } from "@/lib/types-interview";
+import type { TeachingReport } from "@/lib/types-teaching";
 import { withBase } from "@/lib/url";
 
-type Project = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview";
+type Project = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview" | "teaching";
 
 interface ApiResponse {
   project: Project;
@@ -48,6 +50,7 @@ interface ApiResponse {
     | SalaryReportData
     | HazardReportData
     | InterviewReport
+    | TeachingReport
     | null;
   interviewQ1Q2?: InterviewQ1Q2 | StartupInterviewQ1Q6 | null;
   formData: JobFormData | NavJobFormData | StartupJobFormData | null;
@@ -73,7 +76,9 @@ export default function ReportPreviewPage() {
               ? "hazard"
               : rawProject === "interview"
                 ? "interview"
-                : "report";
+                : rawProject === "teaching"
+                  ? "teaching"
+                  : "report";
 
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,6 +124,7 @@ export default function ReportPreviewPage() {
     (meta.target_position as string | undefined) ??
     (meta.position as string | undefined) ??
     (meta.scenario_label as string | undefined) ??
+    (meta.topic as string | undefined) ??
     "—";
   const createdAt = meta.created_at
     ? new Date(meta.created_at as number).toLocaleString("zh-CN")
@@ -208,6 +214,20 @@ export default function ReportPreviewPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
           <InterviewReportRenderer
             reportData={apiData.reportData as InterviewReport | null}
+          />
+        </div>
+      </>
+    );
+  }
+
+  if (project === "teaching") {
+    return (
+      <>
+        {banner}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <TeachingReportRenderer
+            reportData={apiData.reportData as TeachingReport | null}
+            type={(meta.type as string | null) ?? null}
           />
         </div>
       </>

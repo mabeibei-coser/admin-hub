@@ -23,6 +23,7 @@ import {
   Coins,
   AlertTriangle,
   Mic,
+  Presentation,
   LifeBuoy,
   Users,
   ClipboardList,
@@ -59,6 +60,7 @@ const PROJECT_ICONS: Record<ProjectId, React.ComponentType<{ className?: string;
   salary: Coins,
   hazard: AlertTriangle,
   interview: Mic,
+  teaching: Presentation,
 };
 
 /** 项目色 → 色点 + 文字配色（只用 token 变量，避免硬编码） */
@@ -70,6 +72,7 @@ const PROJECT_DOT: Record<string, { dot: string; text: string }> = {
   cyan: { dot: "bg-[var(--cyan-500)]", text: "text-[var(--cyan-700)]" },
   amber: { dot: "bg-[var(--amber-500)]", text: "text-[var(--amber-700)]" },
   rose: { dot: "bg-[var(--rose-500)]", text: "text-[var(--rose-700)]" },
+  indigo: { dot: "bg-[var(--indigo-500)]", text: "text-[var(--indigo-700)]" },
 };
 
 function getGreeting(hour: number): string {

@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady, isHazardDbReady, isInterviewDbReady, getStartupDbDir, getInterviewDbDir } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady, isHazardDbReady, isInterviewDbReady, isTeachingDbReady, getStartupDbDir, getInterviewDbDir } from "@/lib/db";
 import fs from "fs";
 import path from "path";
-import { Download, Compass, Briefcase, Rocket, FilePen, Coins, AlertTriangle, Mic } from "lucide-react";
+import { Download, Compass, Briefcase, Rocket, FilePen, Coins, AlertTriangle, Mic, Presentation } from "lucide-react";
 import { withBase } from "@/lib/url";
 import type { JobFormData, QuizAnswer } from "@/lib/types";
 import type { JobFormData as NavJobFormData, QuizAnswer as NavQuizAnswer, ReportData as NavReportData, InterviewQ1Q2, QuizBank, QuizQuestion as NavQuizQuestion } from "@/lib/types-nav";
@@ -38,8 +38,10 @@ import { StatusPill } from "@/components/admin/status-pill";
 import { DataRow } from "@/components/admin/data-row";
 import { HazardReportRenderer } from "@/components/admin/hazard-report-renderer";
 import { InterviewReportRenderer } from "@/components/admin/interview-report-renderer";
+import { TeachingReportRenderer } from "@/components/admin/teaching-report-renderer";
+import { TEACHING_TYPE_LABELS, type TeachingReport } from "@/lib/types-teaching";
 
-type ProjectId = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview";
+type ProjectId = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview" | "teaching";
 
 function parseProject(v: string | undefined): ProjectId {
   if (v === "nav") return "nav";
@@ -48,7 +50,16 @@ function parseProject(v: string | undefined): ProjectId {
   if (v === "salary") return "salary";
   if (v === "hazard") return "hazard";
   if (v === "interview") return "interview";
+  if (v === "teaching") return "teaching";
   return "report";
+}
+
+/** 字节数 → 人类可读（teaching 附件大小） */
+function formatBytes(bytes: number | null | undefined): string {
+  if (bytes == null || bytes <= 0) return "—";
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)}KB`;
+  return `${bytes}B`;
 }
 
 const STARTUP_CAPITAL_LABELS: Record<string, string> = {
@@ -210,6 +221,21 @@ export default async function ReportDetailPage({
       </div>
     );
   }
+  if (project === "teaching" && !isTeachingDbReady()) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-3xl mx-auto space-y-5">
+          <Breadcrumb
+            items={[
+              { label: "报告列表", href: "/admin/reports" },
+              { label: "智能课件记录" },
+            ]}
+          />
+          <Alert tone="warning">智能课件数据库暂不可用，无法加载此记录。</Alert>
+        </div>
+      </div>
+    );
+  }
 
   const db = getAdminDb();
   const tableMap: Record<ProjectId, string> = {
@@ -220,6 +246,7 @@ export default async function ReportDetailPage({
     salary: "salary.reports",
     hazard: "hazard.reports",
     interview: "interview.reports",
+    teaching: "teaching.reports",
   };
   const table = tableMap[project];
   const row = db
@@ -256,6 +283,8 @@ export default async function ReportDetailPage({
   let interviewAnswers: InterviewQ1Q6 | null = null;
   let interviewQuizAnswers: InterviewQuizAnswer[] | null = null;
   const interviewQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
+  // teaching 专属解析（report_json 是 CoursewareReport 或 InteractionReport）
+  let teachingReportData: TeachingReport | null = null;
 
   if (project === "nav") {
     try { reportData = JSON.parse(row.report_json as string) as NavReportData; } catch { /* empty */ }
@@ -327,6 +356,8 @@ export default async function ReportDetailPage({
         });
       }
     } catch { /* quiz bank missing or unreadable — admin 仍可显示 question id */ }
+  } else if (project === "teaching") {
+    try { teachingReportData = JSON.parse(row.report_json as string) as TeachingReport; } catch { /* empty */ }
   } else {
     const storagePath = row.report_storage_path as string | null;
     if (storagePath) {
@@ -357,7 +388,9 @@ export default async function ReportDetailPage({
               ? !!hazardReportData
               : project === "interview"
                 ? !!interviewReportData
-                : !!reportFormData;
+                : project === "teaching"
+                  ? !!teachingReportData
+                  : !!reportFormData;
 
   // 用户友好的页头副信息：「张三 · 13800138001」或仅项目名
   // salary 没有 user_name，只有 user_phone（直接列）
@@ -384,7 +417,9 @@ export default async function ReportDetailPage({
               ? (row.user_phone as string | null)
               : project === "interview"
                 ? interviewFormData?.phone
-                : null;
+                : project === "teaching"
+                  ? (row.user_phone as string | null)
+                  : null;
 
   // startup 的 target_position 列实际是 form_data_json.projectName（同 nav 的存法），
   // row.target_position 在 startup-diagnostic 里就直接是 projectName（finalize 时写入）
@@ -401,7 +436,9 @@ export default async function ReportDetailPage({
             ? ((row.scenario_label as string) ?? (row.scenario as string) ?? "—")
             : project === "interview"
               ? (interviewFormData?.position ?? (row.target_position as string) ?? "—")
-              : ((row.target_position as string) ?? "—");
+              : project === "teaching"
+                ? ((row.topic as string) ?? "—")
+                : ((row.target_position as string) ?? "—");
 
   return (
     <div className="min-h-screen bg-background p-6 print:bg-white print:p-0">
@@ -453,7 +490,9 @@ export default async function ReportDetailPage({
                         ? AlertTriangle
                         : project === "interview"
                           ? Mic
-                          : Briefcase
+                          : project === "teaching"
+                            ? Presentation
+                            : Briefcase
             }
             eyebrow={`${projectMeta.label} · 报告 #${row.id as number}`}
             title={userName ? `${userName} · ${headerPosition}` : headerPosition}
@@ -476,7 +515,9 @@ export default async function ReportDetailPage({
                         ? "amber"
                         : project === "interview"
                           ? "rose"
-                          : "blue"
+                          : project === "teaching"
+                            ? "indigo"
+                            : "blue"
             }
           />
         </div>
@@ -497,6 +538,10 @@ export default async function ReportDetailPage({
           {/* salary / hazard 只有手机号，没姓名 */}
           {(project === "salary" || project === "hazard") && (
             <DataRow label="手机号">{userPhone ?? "—"}</DataRow>
+          )}
+          {/* teaching：登录即手机号，用「用户名」标签呈现 */}
+          {project === "teaching" && (
+            <DataRow label="用户名">{userPhone ?? "—"}</DataRow>
           )}
 
           {project === "tailor" ? (
@@ -615,6 +660,27 @@ export default async function ReportDetailPage({
                   : "—"}
               </DataRow>
             </>
+          ) : project === "teaching" ? (
+            <>
+              <DataRow label="主题内容">{(row.topic as string) ?? "—"}</DataRow>
+              <DataRow label="类型">
+                {(row.type as string | null)
+                  ? TEACHING_TYPE_LABELS[row.type as string] ?? (row.type as string)
+                  : "—"}
+              </DataRow>
+              {(row.case_type as string | null) && (
+                <DataRow label="互动类型">{row.case_type as string}</DataRow>
+              )}
+              {(row.difficulty as string | null) && (
+                <DataRow label="难易程度">{row.difficulty as string}</DataRow>
+              )}
+              <DataRow label="附件大小">{formatBytes(row.attachment_size as number | null)}</DataRow>
+              {row.duration_ms != null && (
+                <DataRow label="生成耗时">
+                  <span className="tabular-nums">{Math.round((row.duration_ms as number) / 1000)}</span> 秒
+                </DataRow>
+              )}
+            </>
           ) : (
             <>
               <DataRow label="意向岗位">{(row.target_position as string) ?? "—"}</DataRow>
@@ -644,7 +710,7 @@ export default async function ReportDetailPage({
           )}
 
           {/* 简历文件：salary / tailor / hazard 项目没有简历模块 */}
-          {project !== "tailor" && project !== "salary" && project !== "hazard" && (
+          {project !== "tailor" && project !== "salary" && project !== "hazard" && project !== "teaching" && (
             <DataRow label="简历文件">
               {(row.has_resume as number) ? (
                 hasResumeFile ? (
@@ -666,8 +732,8 @@ export default async function ReportDetailPage({
               )}
             </DataRow>
           )}
-          {/* 报告附件链接：hazard 项目把报告直接渲染在下方 Section，不再单独跳 preview 页 */}
-          {project !== "hazard" && (
+          {/* 报告附件链接：hazard / teaching 项目把报告直接渲染在下方 Section，不再单独跳 preview 页 */}
+          {project !== "hazard" && project !== "teaching" && (
             <DataRow label="报告附件">
               {hasReportData ? (
                 <Link
@@ -919,6 +985,16 @@ export default async function ReportDetailPage({
         {project === "interview" && interviewReportData && (
           <Section title="模拟面试评分报告">
             <InterviewReportRenderer reportData={interviewReportData} />
+          </Section>
+        )}
+
+        {/* ── 智能课件内容（teaching 专属，内嵌渲染：课件图 / 互动方案）─── */}
+        {project === "teaching" && teachingReportData && (
+          <Section title={(row.type as string) === "interaction" ? "课堂互动方案" : "课件内容"}>
+            <TeachingReportRenderer
+              reportData={teachingReportData}
+              type={row.type as string | null}
+            />
           </Section>
         )}
       </div>

@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady, isHazardDbReady, isInterviewDbReady } from "@/lib/db";
+import { getAdminDb, isNavDbReady, isStartupDbReady, isTailorDbReady, isSalaryDbReady, isHazardDbReady, isInterviewDbReady, isTeachingDbReady } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-session";
 import { canViewMenu } from "@/lib/menus";
 import { startOfMonthCN, startOfWeekCN } from "@/lib/cn-time";
 
 export const runtime = "nodejs";
 
-type ProjectFilter = "all" | "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview";
+type ProjectFilter = "all" | "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview" | "teaching";
 
 function parseProject(v: string | null): ProjectFilter {
-  if (v === "report" || v === "nav" || v === "startup" || v === "tailor" || v === "salary" || v === "hazard" || v === "interview") return v;
+  if (v === "report" || v === "nav" || v === "startup" || v === "tailor" || v === "salary" || v === "hazard" || v === "interview" || v === "teaching") return v;
   return "all";
 }
 
@@ -32,6 +32,7 @@ function clampProject(
   if (canViewMenu(session, "salary")) return "salary";
   if (canViewMenu(session, "hazard")) return "hazard";
   if (canViewMenu(session, "interview")) return "interview";
+  if (canViewMenu(session, "teaching")) return "teaching";
   if (canViewMenu(session, "all")) return "all";
   return "report"; // 兜底
 }
@@ -39,7 +40,7 @@ function clampProject(
 interface ReportRow {
   id: number;
   created_at: number;
-  project: "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview";
+  project: "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview" | "teaching";
   target_position: string;
   target_education: string | null;
   work_years: string | null;
@@ -84,6 +85,10 @@ interface ReportRow {
   interview_language?: string | null;
   /** interview 项目专属：企业性质 enum key（来自 form_data_json.companyType） */
   interview_company_type?: string | null;
+  /** teaching 项目专属：记录类型（courseware / interaction） */
+  teaching_type?: string | null;
+  /** teaching 项目专属：附件（课件图片）字节大小；互动类为 NULL */
+  attachment_size?: number | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -125,6 +130,7 @@ export async function GET(req: NextRequest) {
     const salaryReady = isSalaryDbReady();
     const hazardReady = isHazardDbReady();
     const interviewReady = isInterviewDbReady();
+    const teachingReady = isTeachingDbReady();
 
     // hazard 缩略图字段是 2026-05-26 才加的——如果用户还没重启 hazard-detect 跑过 migration，
     // 老 schema 里没有 image_base64 列，这里动态守门避免 SELECT 时报 "no such column"。
@@ -147,6 +153,7 @@ export async function GET(req: NextRequest) {
     else if (project === "salary" && !salaryReady) effectiveProject = "report";
     else if (project === "hazard" && !hazardReady) effectiveProject = "report";
     else if (project === "interview" && !interviewReady) effectiveProject = "report";
+    else if (project === "teaching" && !teachingReady) effectiveProject = "report";
 
     // 通用 conditions（应用到 report 和 nav 两侧）
     const conditions: string[] = [];
@@ -529,6 +536,57 @@ export async function GET(req: NextRequest) {
     if (from) interviewBaseParams.push(new Date(from).getTime());
     if (to) interviewBaseParams.push(new Date(to).getTime() + 86400000);
 
+    // teaching (智能课件)：表结构全是真列（user_phone / topic / type / attachment_size），无需 json_extract
+    // 不参与 service_tracking（Q3 用户选了不支持转服务），所以无 tracking_id
+    // position URL 参数复用为「主题内容」模糊搜索
+    const teachingOnlyConditions: string[] = [];
+    const teachingOnlyParams: (string | number)[] = [];
+    if (phone) {
+      teachingOnlyConditions.push("tc.user_phone LIKE ?");
+      teachingOnlyParams.push(`%${phone}%`);
+    }
+    const teachingConditionsCombined = [
+      ...conditions
+        .filter(
+          (c) =>
+            !c.startsWith("target_position") && !c.startsWith("has_resume"),
+        )
+        .map((c) => c.replace(/^(created_at)\b/, "tc.$1")),
+      ...(position ? ["tc.topic LIKE ?"] : []),
+      ...teachingOnlyConditions,
+    ];
+    const whereTeaching =
+      teachingConditionsCombined.length > 0
+        ? `WHERE ${teachingConditionsCombined.join(" AND ")}`
+        : "";
+    const teachingSelect = `
+      SELECT tc.id, tc.created_at, 'teaching' AS project,
+             tc.topic           AS target_position,
+             NULL               AS target_education,
+             NULL               AS work_years,
+             NULL               AS user_name,
+             tc.user_phone      AS user_phone,
+             NULL               AS target_company,
+             NULL               AS target_city_tier,
+             0                  AS has_resume,
+             NULL               AS resume_filename,
+             NULL               AS user_identity,
+             NULL               AS uuid,
+             tc.duration_ms,
+             NULL               AS sections_status,
+             tc.ip,
+             NULL               AS tracking_id,
+             tc.type            AS teaching_type,
+             tc.attachment_size AS attachment_size
+      FROM teaching.reports tc
+      ${whereTeaching}
+    `;
+    // teaching base params 顺序与 conditionsCombined 一致：from / to / position(topic)
+    const teachingBaseParams: (string | number)[] = [];
+    if (from) teachingBaseParams.push(new Date(from).getTime());
+    if (to) teachingBaseParams.push(new Date(to).getTime() + 86400000);
+    if (position) teachingBaseParams.push(`%${position}%`);
+
     // 根据 project filter 决定查哪一侧或两侧 UNION
     let listQuery: string;
     let countQuery: string;
@@ -569,6 +627,11 @@ export async function GET(req: NextRequest) {
       countQuery = `SELECT COUNT(*) AS c FROM interview.reports iv ${whereInterview}`;
       queryParams = [...interviewBaseParams, ...interviewOnlyParams];
       countParams = [...interviewBaseParams, ...interviewOnlyParams];
+    } else if (effectiveProject === "teaching") {
+      listQuery = `${teachingSelect} ORDER BY tc.created_at DESC LIMIT ? OFFSET ?`;
+      countQuery = `SELECT COUNT(*) AS c FROM teaching.reports tc ${whereTeaching}`;
+      queryParams = [...teachingBaseParams, ...teachingOnlyParams];
+      countParams = [...teachingBaseParams, ...teachingOnlyParams];
     } else {
       // all: UNION ALL，report 用 params，nav 用 params + navOnlyParams
       listQuery = `${reportSelect} UNION ALL ${navSelect} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
@@ -801,6 +864,36 @@ export async function GET(req: NextRequest) {
           weekCount: weekRow.c ?? 0,
         };
       }
+      // teaching 项目专属：本月/本周（无简历、无转服务，同 tailor 模式）
+      if (p === "teaching") {
+        const monthStart = startOfMonthCN();
+        const weekStart = startOfWeekCN();
+        const totalRow = db
+          .prepare(`SELECT COUNT(*) AS total,
+            SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS today_count,
+            AVG(duration_ms) AS avg_dur
+            FROM teaching.reports`)
+          .get(todayTs) as {
+            total: number;
+            today_count: number | null;
+            avg_dur: number | null;
+          };
+        const monthRow = db
+          .prepare("SELECT COUNT(*) AS c FROM teaching.reports WHERE created_at >= ?")
+          .get(monthStart) as { c: number };
+        const weekRow = db
+          .prepare("SELECT COUNT(*) AS c FROM teaching.reports WHERE created_at >= ?")
+          .get(weekStart) as { c: number };
+        const tt = totalRow.total ?? 0;
+        return {
+          total: tt,
+          todayCount: totalRow.today_count ?? 0,
+          resumeRate: 0,
+          avgDurationSec: totalRow.avg_dur ? Math.round(totalRow.avg_dur / 1000) : null,
+          monthCount: monthRow.c ?? 0,
+          weekCount: weekRow.c ?? 0,
+        };
+      }
       // tailor 项目专属：本月/本周（无转服务）
       if (p === "tailor") {
         const monthStart = startOfMonthCN();
@@ -848,7 +941,9 @@ export async function GET(req: NextRequest) {
     }
 
     let stats;
-    if (effectiveProject === "interview" && interviewReady) {
+    if (effectiveProject === "teaching" && teachingReady) {
+      stats = statForProject("teaching");
+    } else if (effectiveProject === "interview" && interviewReady) {
       stats = statForProject("interview");
     } else if (effectiveProject === "hazard" && hazardReady) {
       stats = statForProject("hazard");
@@ -880,6 +975,7 @@ export async function GET(req: NextRequest) {
       salaryReady,
       hazardReady,
       interviewReady,
+      teachingReady,
       stats,
     });
   } catch (e) {

@@ -10,6 +10,7 @@ import {
   Coins,
   AlertTriangle,
   Mic,
+  Presentation,
   LogOut,
   Users,
   ShieldCheck,
@@ -46,10 +47,11 @@ const PROJECT_ICONS: Record<string, React.ComponentType<{ className?: string; st
   salary: Coins,
   hazard: AlertTriangle,
   interview: Mic,
+  teaching: Presentation,
 };
 
 /** me.visibleProjects 加载前的兜底（与 PROJECTS 的 key 顺序一致） */
-const FALLBACK_PROJECTS = ["report", "nav", "startup", "tailor", "salary", "hazard", "interview"];
+const FALLBACK_PROJECTS = ["report", "nav", "startup", "tailor", "salary", "hazard", "interview", "teaching"];
 
 /** 从 /api/admin/me 获取当前用户数据。加载中返回 null。
  *  登录页跳过 fetch — 避免匿名用户的 401 console 噪音 + 多一次 RT。 */

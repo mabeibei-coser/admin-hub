@@ -8,7 +8,7 @@
  * 添加新项目（如徐汇/浦东）：在 PROJECTS 里加一项 + admin API 加 schema 即可。
  */
 
-export type ProjectId = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview";
+export type ProjectId = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview" | "teaching";
 
 export interface ProjectMeta {
   id: ProjectId;
@@ -17,7 +17,7 @@ export interface ProjectMeta {
   /** UI 短标签（Badge、列表标记） */
   shortLabel: string;
   /** Badge 主色（Tailwind 兼容） */
-  color: "blue" | "green" | "purple" | "orange" | "cyan" | "amber" | "rose";
+  color: "blue" | "green" | "purple" | "orange" | "cyan" | "amber" | "rose" | "indigo";
   /** 报告章节数（详情页用来标题里显示，可选） */
   sectionCount: number;
   /** 业务描述（sidebar / 标题副文案） */
@@ -80,6 +80,14 @@ export const PROJECTS: Record<ProjectId, ProjectMeta> = {
     color: "rose",
     sectionCount: 3,
     description: "AI 模拟面试评分报告",
+  },
+  teaching: {
+    id: "teaching",
+    label: "智能课件",
+    shortLabel: "课件",
+    color: "indigo",
+    sectionCount: 1,
+    description: "AI 课件创作 + 课堂互动方案",
   },
 };
 

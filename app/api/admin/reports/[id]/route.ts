@@ -4,7 +4,7 @@ import fs from "fs";
 
 export const runtime = "nodejs";
 
-type Project = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview";
+type Project = "report" | "nav" | "startup" | "tailor" | "salary" | "hazard" | "interview" | "teaching";
 
 function parseProject(v: string | null): Project | null {
   if (
@@ -14,7 +14,8 @@ function parseProject(v: string | null): Project | null {
     v === "tailor" ||
     v === "salary" ||
     v === "hazard" ||
-    v === "interview"
+    v === "interview" ||
+    v === "teaching"
   )
     return v;
   return null;
@@ -44,7 +45,7 @@ export async function GET(
     const project = parseProject(req.nextUrl.searchParams.get("project"));
     if (!project) {
       return NextResponse.json(
-        { error: "缺少 project 参数（report|nav|startup|tailor|salary|hazard|interview）" },
+        { error: "缺少 project 参数（report|nav|startup|tailor|salary|hazard|interview|teaching）" },
         { status: 400 }
       );
     }
@@ -58,6 +59,7 @@ export async function GET(
       salary: "salary.reports",
       hazard: "hazard.reports",
       interview: "interview.reports",
+      teaching: "teaching.reports",
     };
     const table = tableMap[project];
 
@@ -102,6 +104,10 @@ export async function GET(
       // 场景元信息（scenario / scenario_label / hazard_count）在直接列，前端从 meta 取
       reportData = safeJsonParse(row.report_json);
       // hazard 无 form_data_json / quiz / scoring / interviewQ1Q2
+    } else if (project === "teaching") {
+      // smart-teaching：report_json 是 CoursewareReport(含 imageDataUrl) 或 InteractionReport(三段式)
+      // 记录类型 / 主题 / 附件大小在直接列（type / topic / attachment_size），前端从 meta 取
+      reportData = safeJsonParse(row.report_json);
     } else {
       // career-report: 从磁盘读 data/reports/{id}.json（沿用现有逻辑）
       const storagePath = row.report_storage_path as string | null;

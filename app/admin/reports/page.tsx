@@ -19,12 +19,14 @@ import {
   Calendar,
   CalendarDays,
   ImageOff,
+  Presentation,
 } from "lucide-react";
 import {
   COMPANY_TYPE_LABELS,
   JOB_LEVEL_LABELS,
   INTERVIEW_LANGUAGE_LABELS,
 } from "@/lib/types-interview";
+import { TEACHING_TYPE_LABELS } from "@/lib/types-teaching";
 import {
   Table,
   TableBody,
@@ -105,6 +107,10 @@ interface ReportRow {
   interview_language?: string | null;
   /** interview 项目专属：企业性质 enum key（startup / private / ...） */
   interview_company_type?: string | null;
+  /** teaching 项目专属：记录类型（courseware / interaction） */
+  teaching_type?: string | null;
+  /** teaching 项目专属：附件（课件图片）字节大小 */
+  attachment_size?: number | null;
 }
 
 interface Stats {
@@ -132,6 +138,7 @@ interface ApiResponse {
   salaryReady: boolean;
   hazardReady: boolean;
   interviewReady: boolean;
+  teachingReady: boolean;
   stats: Stats;
 }
 
@@ -176,6 +183,14 @@ function formatTs(ms: number) {
   const d = new Date(ms);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** 字节数 → 人类可读（用于 teaching 附件大小列）。无值显示 — */
+function formatBytes(bytes: number | null | undefined): string {
+  if (bytes == null || bytes <= 0) return "—";
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)}KB`;
+  return `${bytes}B`;
 }
 
 function ProjectBadge({ project }: { project: ProjectId }) {
@@ -235,6 +250,14 @@ function ProjectBadge({ project }: { project: ProjectId }) {
       </span>
     );
   }
+  if (meta.color === "indigo") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--indigo-50)] text-[var(--indigo-700)] ring-1 ring-[var(--indigo-200)]/60">
+        <span className={`size-1.5 rounded-full bg-[var(--indigo-500)]`} />
+        {meta.shortLabel}
+      </span>
+    );
+  }
   return (
     <span className="status-pill" data-tone={tone}>
       <span className={`size-1.5 rounded-full ${dotColor}`} />
@@ -252,7 +275,8 @@ function readProjectFromUrl(p: string | null): ProjectFilter {
     p === "tailor" ||
     p === "salary" ||
     p === "hazard" ||
-    p === "interview"
+    p === "interview" ||
+    p === "teaching"
   )
     return p;
   return "report";
@@ -451,6 +475,7 @@ function AdminReportsContent() {
   const salaryDegraded = data && project === "salary" && !data.salaryReady;
   const hazardDegraded = data && project === "hazard" && !data.hazardReady;
   const interviewDegraded = data && project === "interview" && !data.interviewReady;
+  const teachingDegraded = data && project === "teaching" && !data.teachingReady;
 
   // 列定义（项目专属）
   const columns = useMemo(() => {
@@ -476,6 +501,8 @@ function AdminReportsContent() {
       return ["时间", "手机号", "服务项目", "检查场景", "识别条数", "耗时", "缩略图", "操作"];
     if (project === "interview")
       return ["时间", "姓名", "手机号", "服务项目", "面试岗位", "岗位职级", "面试语言", "企业性质", "操作"];
+    if (project === "teaching")
+      return ["时间", "用户名", "服务项目", "主题内容", "类型", "附件大小", "操作"];
     // 职业导航：HR 关心节奏 + 用户身份 + 服务转化状态
     return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
   }, [project]);
@@ -513,7 +540,9 @@ function AdminReportsContent() {
                       ? AlertTriangle
                       : project === "interview"
                         ? Mic
-                        : Briefcase
+                        : project === "teaching"
+                          ? Presentation
+                          : Briefcase
           }
           title={currentProjectLabel}
           subtitle={PROJECTS[project].description ?? null}
@@ -530,7 +559,9 @@ function AdminReportsContent() {
                       ? "amber"
                       : project === "interview"
                         ? "rose"
-                        : "blue"
+                        : project === "teaching"
+                          ? "indigo"
+                          : "blue"
           }
         />
 
@@ -569,6 +600,12 @@ function AdminReportsContent() {
           <Alert tone="warning">
             「模拟面试」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
             <code>INTERVIEW_DB_PATH</code>。
+          </Alert>
+        )}
+        {teachingDegraded && (
+          <Alert tone="warning">
+            「智能课件」数据源暂不可用，已自动切到「职业定位」。请联系开发人员检查{" "}
+            <code>TEACHING_DB_PATH</code>。
           </Alert>
         )}
 
@@ -911,6 +948,31 @@ function AdminReportsContent() {
                 </select>
               </div>
             </>
+          ) : project === "teaching" ? (
+            <>
+              <div>
+                <label htmlFor="filter-phone" className="block text-xs text-muted-foreground mb-1">手机号</label>
+                <Input
+                  id="filter-phone"
+                  placeholder="关键词"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-8 text-sm w-32 bg-card text-foreground border border-input"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+              <div>
+                <label htmlFor="filter-topic" className="block text-xs text-muted-foreground mb-1">主题内容</label>
+                <Input
+                  id="filter-topic"
+                  placeholder="关键词"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  className="h-8 text-sm w-36 bg-card text-foreground border border-input"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+            </>
           ) : (
             <>
               <div>
@@ -1126,8 +1188,8 @@ function KpiStrip({
 }) {
   const skeleton = loading && data === null;
 
-  // salary / hazard / interview 项目：报告总数 / 本月新增 / 本周新增 / 今日新增（同款 KPI）
-  if (project === "salary" || project === "hazard" || project === "interview") {
+  // salary / hazard / interview / teaching 项目：报告总数 / 本月新增 / 本周新增 / 今日新增（同款 KPI）
+  if (project === "salary" || project === "hazard" || project === "interview" || project === "teaching") {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <DataCard
@@ -1363,6 +1425,41 @@ function ReportRowItem({
             title={transferred ? "已转入服务" : "未转入"}
             className={`inline-block size-3 rounded-full ${transferred ? "bg-[var(--semantic-positive)] shadow-[0_0_0_3px_oklch(0.72_0.18_155_/_0.22)]" : "bg-muted-foreground/40"}`}
           />
+        </TableCell>
+        <TableCell>
+          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  // tab=teaching：时间 / 用户名(手机号) / 服务项目 / 主题内容 / 类型 / 附件大小 / 操作
+  if (project === "teaching") {
+    const teachingMeta = PROJECTS.teaching;
+    return (
+      <TableRow className="text-sm hover:bg-[var(--blue-50)]/40 transition-colors duration-150">
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {formatTs(row.created_at)}
+        </TableCell>
+        <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+          {row.user_phone || "—"}
+        </TableCell>
+        <TableCell>
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--indigo-700)]">
+            <span className="size-1.5 rounded-full bg-[var(--indigo-500)]" />
+            {teachingMeta.label}
+          </span>
+        </TableCell>
+        <TableCell className="font-medium max-w-[220px] truncate" title={row.target_position || undefined}>
+          {row.target_position || "—"}
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {row.teaching_type
+            ? TEACHING_TYPE_LABELS[row.teaching_type] ?? row.teaching_type
+            : "—"}
+        </TableCell>
+        <TableCell className="tabular-nums text-xs text-muted-foreground">
+          {formatBytes(row.attachment_size)}
         </TableCell>
         <TableCell>
           <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
@@ -1685,7 +1782,7 @@ function RowActions({
           target="_blank"
           className={`${ACTION_BTN_BASE} ${ACTION_BTN_NEUTRAL}`}
         >
-          报告
+          {row.project === "teaching" ? "课件" : "报告"}
         </Link>
       )}
       <Link
@@ -1727,8 +1824,9 @@ function ReportMobileCard({ row }: { row: ReportRow }) {
   const durationSec = row.duration_ms
     ? `${Math.round(row.duration_ms / 1000)}s`
     : null;
-  // salary / hazard 没有姓名，主标识用手机号；其它项目主标识用姓名 + 副位手机号
-  const noNameProject = row.project === "salary" || row.project === "hazard";
+  // salary / hazard / teaching 没有姓名，主标识用手机号；其它项目主标识用姓名 + 副位手机号
+  const noNameProject =
+    row.project === "salary" || row.project === "hazard" || row.project === "teaching";
   const primary = noNameProject
     ? row.user_phone || "—"
     : row.user_name || "—";
@@ -1736,7 +1834,9 @@ function ReportMobileCard({ row }: { row: ReportRow }) {
     ? (row.target_company || "—")
     : row.project === "hazard"
       ? (row.hazard_count != null ? `${row.hazard_count} 条隐患` : "—")
-      : (row.user_phone || "—");
+      : row.project === "teaching"
+        ? (row.teaching_type ? TEACHING_TYPE_LABELS[row.teaching_type] ?? row.teaching_type : "—")
+        : (row.user_phone || "—");
   return (
     <Link
       href={`/admin/reports/${row.id}?project=${row.project}`}

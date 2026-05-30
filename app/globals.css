@@ -136,6 +136,13 @@
   --rose-200: oklch(0.88 0.07 18);
   --rose-100: oklch(0.95 0.03 18);
   --rose-50: oklch(0.98 0.012 18);
+  /* —— Indigo scale — teaching(智能课件) 项目专属 accent（介于 blue 252 与 purple 305 之间）—— */
+  --indigo-700: oklch(0.5 0.2 277);
+  --indigo-600: oklch(0.57 0.19 277);
+  --indigo-500: oklch(0.63 0.18 277);
+  --indigo-200: oklch(0.87 0.07 277);
+  --indigo-100: oklch(0.94 0.03 277);
+  --indigo-50: oklch(0.975 0.012 277);
 
   /* —— Tinted neutrals for surfaces & shadows —— */
   --surface-tinted: oklch(0.985 0.006 240);
@@ -242,6 +249,13 @@
   --rose-200: oklch(0.45 0.1 18);
   --rose-100: oklch(0.33 0.07 18);
   --rose-50: oklch(0.24 0.04 18);
+  /* —— Indigo scale (dark) —— */
+  --indigo-700: oklch(0.78 0.13 277);
+  --indigo-600: oklch(0.72 0.15 277);
+  --indigo-500: oklch(0.65 0.17 277);
+  --indigo-200: oklch(0.4 0.12 277);
+  --indigo-100: oklch(0.32 0.08 277);
+  --indigo-50: oklch(0.24 0.05 277);
 
   /* —— Tinted surfaces & shadows —— */
   --surface-tinted: oklch(0.18 0.025 252);

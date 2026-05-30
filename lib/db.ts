@@ -23,6 +23,9 @@ const HAZARD_DB_PATH = process.env.HAZARD_DB_PATH ?? path.join(DATA_DIR, "hazard
 // ⚠️ ai-interview2 项目自己的 db 文件名是 startup-diagnostic.db（历史包袱，与 startup-dig 撞名），
 //   admin-hub 这边给一个不撞的默认名 ai-interview.db；生产 .env 必须显式指定 INTERVIEW_DB_PATH。
 const INTERVIEW_DB_PATH = process.env.INTERVIEW_DB_PATH ?? path.join(DATA_DIR, "ai-interview.db");
+// smart-teaching (智能课件) 数据库路径（ATTACH DATABASE 模式）。
+// 部署时通过 TEACHING_DB_PATH env 指向实际 smart-teaching 数据文件。
+const TEACHING_DB_PATH = process.env.TEACHING_DB_PATH ?? path.join(DATA_DIR, "smart-teaching.db");
 
 let _db: Database.Database | null = null;
 
@@ -204,6 +207,10 @@ export function getAdminDb(): Database.Database {
     const safePath = INTERVIEW_DB_PATH.replaceAll("'", "''");
     db.exec(`ATTACH DATABASE '${safePath}' AS interview`);
   }
+  if (!attached.some((d) => d.name === "teaching")) {
+    const safePath = TEACHING_DB_PATH.replaceAll("'", "''");
+    db.exec(`ATTACH DATABASE '${safePath}' AS teaching`);
+  }
   return db;
 }
 
@@ -293,4 +300,17 @@ export function isInterviewDbReady(): boolean {
 /** interview 数据库目录路径（用于读 quiz-bank.json 等附属文件）。 */
 export function getInterviewDbDir(): string {
   return path.dirname(INTERVIEW_DB_PATH);
+}
+
+/** admin 端检查 teaching（智能课件）库是否就绪（有 reports 表）。返回 false 时 admin 应降级到 'report' tab。 */
+export function isTeachingDbReady(): boolean {
+  try {
+    const db = getAdminDb();
+    const tables = db
+      .prepare("SELECT name FROM teaching.sqlite_master WHERE type='table' AND name='reports'")
+      .all() as Array<{ name: string }>;
+    return tables.length > 0;
+  } catch {
+    return false;
+  }
 }
