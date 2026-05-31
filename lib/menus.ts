@@ -5,13 +5,13 @@
  *
  * 两个来源：
  *   1) PROJECT_LIST 派生 → 每个项目自动一个菜单 key（report/nav/...）
- *   2) EXTRA_MENUS 手动添加 → 非项目类菜单（如 service 服务跟踪）
+ *   2) EXTRA_MENUS 手动添加 → 非项目类菜单（如 service 服务跟踪、courseware-users 课件用户）
  */
 
 import { PROJECT_LIST, type ProjectId } from "./projects";
 
 /** 非项目类菜单 key。新增独立菜单在这里追加。 */
-export type ExtraMenuKey = "service";
+export type ExtraMenuKey = "service" | "courseware-users";
 
 /** menus_json 里能存的所有 key 类型。"admins" 由 is_super 派生，不存这里。 */
 export type StoredMenuKey = "all" | ProjectId | ExtraMenuKey;
@@ -32,6 +32,11 @@ export const EXTRA_MENUS: ReadonlyArray<{
     key: "service",
     label: "服务跟踪",
     description: "咨询服务持续跟进记录",
+  },
+  {
+    key: "courseware-users",
+    label: "课件用户",
+    description: "智能课件白名单用户",
   },
 ];
 
@@ -73,6 +78,7 @@ export function deriveVisibleMenus(s: {
   showAll: boolean;
   visibleProjects: ProjectId[];
   showService: boolean;
+  showCoursewareUsers: boolean;
   showAdmins: boolean;
 } {
   return {
@@ -81,6 +87,7 @@ export function deriveVisibleMenus(s: {
       (p) => p.id
     ),
     showService: canViewMenu(s, "service"),
+    showCoursewareUsers: canViewMenu(s, "courseware-users"),
     showAdmins: !!s.isSuper,
   };
 }

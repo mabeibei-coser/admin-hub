@@ -168,6 +168,26 @@ export function getDb(): Database.Database {
     `);
   }
 
+  // 课件用户白名单：admin 加入的手机号才能登录智能课件(A700)。
+  // 「最后登录时间/使用次数」不存本表，列表查询时跨 ATTACH 只读 teaching 库算出。
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS courseware_users (
+      id                INTEGER PRIMARY KEY AUTOINCREMENT,
+      phone             TEXT    NOT NULL UNIQUE,
+      name              TEXT,
+      added_by_admin_id INTEGER NOT NULL,
+      note              TEXT,
+      note2             TEXT,
+      status            TEXT    NOT NULL DEFAULT 'active'
+                        CHECK (status IN ('active','disabled')),
+      created_at        INTEGER NOT NULL,
+      updated_at        INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_cu_phone ON courseware_users(phone);
+    CREATE INDEX IF NOT EXISTS idx_cu_added_by ON courseware_users(added_by_admin_id);
+    CREATE INDEX IF NOT EXISTS idx_cu_created ON courseware_users(created_at DESC);
+  `);
+
   return _db;
 }
 

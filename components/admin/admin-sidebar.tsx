@@ -15,6 +15,7 @@ import {
   Users,
   ShieldCheck,
   LifeBuoy,
+  GraduationCap,
   ClipboardList,
   Sun,
   Moon,
@@ -35,6 +36,7 @@ interface MeData {
   showAll: boolean;
   visibleProjects: string[];
   showService: boolean;
+  showCoursewareUsers: boolean;
   showAdmins: boolean;
 }
 
@@ -195,16 +197,26 @@ export function AdminSidebar() {
         </nav>
 
         {/* === 服务管理 section === */}
-        {(!me || me.showService) && (
+        {(!me || me.showService || me.showCoursewareUsers) && (
           <>
             <SectionHeader label="服务管理" />
             <nav className="px-3 flex flex-col gap-0.5">
-              <SidebarNavItem
-                label="服务跟踪"
-                icon={LifeBuoy}
-                active={pathname.startsWith("/admin/service-tracking")}
-                href="/admin/service-tracking"
-              />
+              {(!me || me.showService) && (
+                <SidebarNavItem
+                  label="服务跟踪"
+                  icon={LifeBuoy}
+                  active={pathname.startsWith("/admin/service-tracking")}
+                  href="/admin/service-tracking"
+                />
+              )}
+              {(!me || me.showCoursewareUsers) && (
+                <SidebarNavItem
+                  label="课件用户"
+                  icon={GraduationCap}
+                  active={pathname.startsWith("/admin/courseware-users")}
+                  href="/admin/courseware-users"
+                />
+              )}
             </nav>
           </>
         )}
@@ -349,7 +361,9 @@ export function AdminMobileBar() {
   // 在 me 加载前显示骨架（loading 状态）
   const visibleProjects: string[] = me ? me.visibleProjects : FALLBACK_PROJECTS;
   const showService = !me || me.showService;
+  const showCoursewareUsers = !me || me.showCoursewareUsers;
   const inServiceTracking = pathname.startsWith("/admin/service-tracking");
+  const inCoursewareUsers = pathname.startsWith("/admin/courseware-users");
 
   return (
     <>
@@ -389,6 +403,13 @@ export function AdminMobileBar() {
               href="/admin/service-tracking"
               active={inServiceTracking}
               label="服务跟踪"
+            />
+          )}
+          {showCoursewareUsers && (
+            <MobilePill
+              href="/admin/courseware-users"
+              active={inCoursewareUsers}
+              label="课件用户"
             />
           )}
         </div>

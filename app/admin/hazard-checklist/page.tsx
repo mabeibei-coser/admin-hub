@@ -1,16 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  AlertTriangle,
-  Save,
-  Plus,
-  Trash2,
-  Loader2,
-  Check,
-  ChevronUp,
-  ChevronDown,
-} from "lucide-react";
+import { AlertTriangle, Save, Loader2, Check } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +23,7 @@ export default function HazardChecklistPage() {
   const [data, setData] = useState<PromptsFile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string>("");
 
   useEffect(() => {
     fetch(withBase("/api/admin/hazard-prompts"))
@@ -39,7 +31,12 @@ export default function HazardChecklistPage() {
         if (!r.ok) throw new Error((await r.json()).error || "加载失败");
         return r.json();
       })
-      .then((d: PromptsFile) => setData(d))
+      .then((d: PromptsFile) => {
+        setData(d);
+        const ids = Object.keys(d.prompts);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (ids.length) setSelectedId(ids[0]);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
   }, []);
@@ -48,7 +45,7 @@ export default function HazardChecklistPage() {
     return (
       <div className="p-8 text-sm text-muted-foreground flex items-center gap-2">
         <Loader2 className="size-4 animate-spin" />
-        正在加载 36 个场景的检查项…
+        正在加载场景检查项…
       </div>
     );
   }
@@ -69,52 +66,74 @@ export default function HazardChecklistPage() {
     0,
   );
 
+  function handleScenarioSaved(id: string, updated: ScenarioPrompt) {
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            labels: { ...prev.labels, [id]: updated.name },
+            prompts: { ...prev.prompts, [id]: updated },
+          }
+        : prev,
+    );
+  }
+
+  const current = selectedId ? data.prompts[selectedId] : null;
+
   return (
     <div className="p-6">
-    <div className="max-w-7xl mx-auto space-y-5">
-      <PageHeader
-        icon={AlertTriangle}
-        title="隐患检查项"
-        accentColor="amber"
-        subtitle={
-          <>
-            <span className="font-medium text-foreground">
-              {scenarioIds.length}
-            </span>{" "}
-            个场景 ·{" "}
-            <span className="font-medium text-foreground">{totalFocus}</span>{" "}
-            条焦点检查项 · 这些内容会作为 AI 识图的提示词，保存后下一次用户上传图片即生效
-          </>
-        }
-      />
+      <div className="max-w-7xl mx-auto space-y-5">
+        <PageHeader
+          icon={AlertTriangle}
+          title="隐患检查项"
+          accentColor="amber"
+          subtitle={
+            <>
+              <span className="font-medium text-foreground">
+                {scenarioIds.length}
+              </span>{" "}
+              个场景 ·{" "}
+              <span className="font-medium text-foreground">{totalFocus}</span>{" "}
+              条焦点检查项 · 这些内容会作为 AI 识图的提示词，保存后下一次用户上传图片即生效
+            </>
+          }
+        />
 
-      <nav className="sticky top-0 z-10 -mx-4 px-4 sm:-mx-6 sm:px-6 bg-card/95 backdrop-blur border-y border-border py-2.5">
-        <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-semibold mb-1.5">
-          场景目录
+        {/* 场景选择（下拉，替代原横向「场景目录」标签排） */}
+        <div className="surface-panel p-4 flex flex-wrap items-center gap-3">
+          <label
+            htmlFor="scenario-select"
+            className="text-sm font-medium text-foreground shrink-0"
+          >
+            选择场景
+          </label>
+          <select
+            id="scenario-select"
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="h-9 min-w-[220px] text-sm border border-input rounded-md px-3 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--amber-400)]/30 cursor-pointer"
+          >
+            {scenarioIds.map((id) => (
+              <option key={id} value={id}>
+                {data.prompts[id].name}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-muted-foreground">
+            共 {scenarioIds.length} 个场景
+          </span>
         </div>
-        <div className="flex flex-wrap gap-1">
-          {scenarioIds.map((id) => (
-            <a
-              key={id}
-              href={`#scenario-${id}`}
-              className="px-2 py-0.5 text-[11.5px] rounded-md bg-muted text-muted-foreground hover:bg-[var(--amber-50)] hover:text-[var(--amber-700)] transition-colors"
-            >
-              {data.prompts[id].name}
-            </a>
-          ))}
-        </div>
-      </nav>
 
-      <div className="space-y-4">
-        {scenarioIds.map((id) => (
+        {/* 选中场景的编辑卡片（一次只显示一个） */}
+        {current && (
           <ScenarioCard
-            key={id}
-            scenarioId={id}
-            initial={data.prompts[id]}
+            key={selectedId}
+            scenarioId={selectedId}
+            initial={current}
+            onSaved={handleScenarioSaved}
           />
-        ))}
+        )}
       </div>
-    </div>
     </div>
   );
 }
@@ -122,18 +141,22 @@ export default function HazardChecklistPage() {
 interface ScenarioCardProps {
   scenarioId: string;
   initial: ScenarioPrompt;
+  onSaved: (id: string, updated: ScenarioPrompt) => void;
 }
 
-function ScenarioCard({ scenarioId, initial }: ScenarioCardProps) {
+function ScenarioCard({ scenarioId, initial, onSaved }: ScenarioCardProps) {
+  // focus 数组 ↔ 大文本框：加载时 join 成多行文本；保存时 split 回数组（底层结构不变）
+  const initialFocusText = initial.focus.join("\n");
+
   // savedState：上次成功保存（或加载）的快照，用于 dirty 判定
-  const [savedState, setSavedState] = useState<ScenarioPrompt>({
+  const [savedState, setSavedState] = useState({
     name: initial.name,
     context: initial.context,
-    focus: [...initial.focus],
+    focusText: initialFocusText,
   });
   const [name, setName] = useState(initial.name);
   const [context, setContext] = useState(initial.context);
-  const [focus, setFocus] = useState<string[]>([...initial.focus]);
+  const [focusText, setFocusText] = useState(initialFocusText);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -141,27 +164,40 @@ function ScenarioCard({ scenarioId, initial }: ScenarioCardProps) {
   const dirty =
     name !== savedState.name ||
     context !== savedState.context ||
-    focus.length !== savedState.focus.length ||
-    focus.some((f, i) => f !== savedState.focus[i]);
+    focusText !== savedState.focusText;
+
+  // 非空行数 = 实际会保存的 focus 条数
+  const focusCount = focusText
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean).length;
 
   async function handleSave() {
     setSaving(true);
     setError(null);
+    const focusArr = focusText
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
     try {
       const res = await fetch(
         withBase(`/api/admin/hazard-prompts/${scenarioId}`),
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, context, focus }),
+          body: JSON.stringify({ name, context, focus: focusArr }),
         },
       );
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || `保存失败 (HTTP ${res.status})`);
+        const d = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(d.error || `保存失败 (HTTP ${res.status})`);
       }
-      setSavedState({ name, context, focus: [...focus] });
+      // 规范化回填：保存后用拆分结果（去空行/去首尾空格）覆盖文本，保持显示与库一致
+      const normalizedText = focusArr.join("\n");
+      setFocusText(normalizedText);
+      setSavedState({ name, context, focusText: normalizedText });
       setSavedAt(Date.now());
+      onSaved(scenarioId, { name, context, focus: focusArr });
     } catch (e) {
       setError(e instanceof Error ? e.message : "保存失败");
     } finally {
@@ -169,28 +205,8 @@ function ScenarioCard({ scenarioId, initial }: ScenarioCardProps) {
     }
   }
 
-  function updateFocus(i: number, value: string) {
-    setFocus(focus.map((x, j) => (j === i ? value : x)));
-  }
-  function removeFocus(i: number) {
-    setFocus(focus.filter((_, j) => j !== i));
-  }
-  function addFocus() {
-    setFocus([...focus, ""]);
-  }
-  function moveFocus(i: number, dir: -1 | 1) {
-    const j = i + dir;
-    if (j < 0 || j >= focus.length) return;
-    const next = [...focus];
-    [next[i], next[j]] = [next[j], next[i]];
-    setFocus(next);
-  }
-
   return (
-    <section
-      id={`scenario-${scenarioId}`}
-      className="surface-panel p-5 sm:p-6 scroll-mt-32"
-    >
+    <section className="surface-panel p-5 sm:p-6">
       <header className="flex items-start justify-between gap-3 mb-4 pb-4 border-b border-border">
         <div className="flex-1 min-w-0">
           <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground mb-1">
@@ -235,6 +251,7 @@ function ScenarioCard({ scenarioId, initial }: ScenarioCardProps) {
         </div>
       </header>
 
+      {/* 场景背景（不变） */}
       <div className="mb-5">
         <label className="block text-[12px] font-medium text-muted-foreground mb-1.5">
           场景背景（context）
@@ -247,65 +264,26 @@ function ScenarioCard({ scenarioId, initial }: ScenarioCardProps) {
         />
       </div>
 
+      {/* 焦点检查项：合并为一个大文本框，每行一条 */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[12px] font-medium text-muted-foreground">
-            焦点检查项（focus）·{" "}
-            <span className="tabular-nums">{focus.length}</span> 条
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={addFocus}
-            className="h-7 px-2 text-xs gap-1"
-          >
-            <Plus className="size-3.5" />
-            添加
-          </Button>
-        </div>
-        <div className="space-y-1.5">
-          {focus.map((f, i) => (
-            <div key={i} className="flex gap-1.5 group">
-              <div className="text-[11px] tabular-nums text-muted-foreground pt-2.5 w-7 text-right shrink-0">
-                {i + 1}.
-              </div>
-              <Textarea
-                value={f}
-                onChange={(e) => updateFocus(i, e.target.value)}
-                rows={2}
-                className="text-[13px] flex-1 min-h-[42px]"
-              />
-              <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                <button
-                  type="button"
-                  onClick={() => moveFocus(i, -1)}
-                  disabled={i === 0}
-                  className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed p-0.5"
-                  aria-label="上移"
-                >
-                  <ChevronUp className="size-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => moveFocus(i, 1)}
-                  disabled={i === focus.length - 1}
-                  className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed p-0.5"
-                  aria-label="下移"
-                >
-                  <ChevronDown className="size-3.5" />
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => removeFocus(i)}
-                className="text-muted-foreground hover:text-rose-600 px-1.5 self-start pt-2 shrink-0"
-                aria-label="删除"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
+        <label
+          htmlFor={`focus-${scenarioId}`}
+          className="block text-[12px] font-medium text-muted-foreground mb-2"
+        >
+          焦点检查项（focus）· 每行一条 ·{" "}
+          <span className="tabular-nums">{focusCount}</span> 条
+        </label>
+        <Textarea
+          id={`focus-${scenarioId}`}
+          value={focusText}
+          onChange={(e) => setFocusText(e.target.value)}
+          rows={18}
+          className="text-[13px] leading-relaxed font-mono"
+          placeholder={"每行一条检查项，例如：\n消防安全：灭火器是否缺失或压力不足…\n电气安全：电线是否裸露…"}
+        />
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
+          每行一条；保存时自动忽略空行、去掉每行首尾空格。
+        </p>
       </div>
 
       {error && (

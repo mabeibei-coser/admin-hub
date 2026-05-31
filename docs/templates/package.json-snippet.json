@@ -1,0 +1,34 @@
+{
+  "_comment_": "把下面的 scripts / dependencies / devDependencies 块合并到你的 package.json。name 字段必须与项目目录名一致。",
+  "name": "<your-project>",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n vite,api -c green,cyan \"vite\" \"node server.js\"",
+    "dev:vite": "vite",
+    "dev:api": "node server.js",
+    "build": "vite build",
+    "start": "NODE_ENV=production node server.js",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "iron-session": "^8.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "concurrently": "^9.0.1",
+    "vite": "^5.0.0"
+  },
+  "_notes_": [
+    "better-sqlite3 用 ^12.10.0 与 admin-hub 保持 ABI 一致",
+    "type: module 让 .js 文件可以用 import / export（server.js 模板就是 ESM）",
+    "如果是 Vue 项目，把 @vitejs/plugin-react 换成 @vitejs/plugin-vue，react/react-dom 换成 vue",
+    "如果是 Next.js 项目，不用 vite / concurrently，scripts 改成 next dev / next build / next start"
+  ]
+}
