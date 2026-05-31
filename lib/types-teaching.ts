@@ -26,13 +26,19 @@ export interface InteractionReport {
   caseContent?: Record<string, unknown>;
   referenceAnswer?: Record<string, unknown>;
   keyPoints?: Record<string, unknown>;
+  /** 课堂互动方案的页面截图（用户端 html2canvas 上传），后台详情可预览 */
+  screenshotImage?: string;
 }
 
 export type TeachingReport = CoursewareReport | InteractionReport;
 
-/** 课件尺寸 / 类型 / 风格 / 线路的中文标签（列表 + 详情共用） */
+/**
+ * 服务子项中文标签（列表"服务子项"列 + 详情共用）。
+ * type 列的两种取值 → 用户侧两个功能入口的名字。
+ * 注意：项目名"智能课件"来自 PROJECTS.teaching.label，与此 map 无关。
+ */
 export const TEACHING_TYPE_LABELS: Record<string, string> = {
-  courseware: "智能课件",
+  courseware: "课件创作",
   interaction: "课堂互动",
 };
 

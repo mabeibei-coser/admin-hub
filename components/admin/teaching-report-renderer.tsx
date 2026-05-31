@@ -211,6 +211,31 @@ function CoursewareView({ data }: { data: CoursewareReport }) {
   );
 }
 
+/** 课堂互动方案截图（用户端 html2canvas 上传）—— 详情页预览 */
+function InteractionScreenshot({ src }: { src: string }) {
+  const [imgError, setImgError] = useState(false);
+  if (imgError) return null;
+  return (
+    <section className="surface-panel p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="size-6 rounded-lg bg-[var(--indigo-100)] text-[var(--indigo-700)] flex items-center justify-center">
+          <Presentation className="size-3.5" />
+        </span>
+        <h2 className="text-[15px] font-semibold text-[var(--navy-900)]">方案截图</h2>
+      </div>
+      <div className="rounded-xl overflow-hidden ring-1 ring-[var(--report-border)] bg-[var(--surface-tinted)]">
+        {/* eslint-disable-next-line @next/next/no-img-element -- base64 dataURL，next/image 无法优化 */}
+        <img
+          src={src}
+          alt="互动方案截图"
+          className="w-full h-auto block"
+          onError={() => setImgError(true)}
+        />
+      </div>
+    </section>
+  );
+}
+
 export function TeachingReportRenderer({ reportData, type }: Props) {
   if (!reportData) {
     return (
@@ -252,6 +277,9 @@ export function TeachingReportRenderer({ reportData, type }: Props) {
           />
         </SectionErrorBoundary>
       ))}
+      {interaction.screenshotImage && (
+        <InteractionScreenshot src={interaction.screenshotImage} />
+      )}
     </div>
   );
 }

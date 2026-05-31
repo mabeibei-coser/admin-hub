@@ -663,7 +663,7 @@ export default async function ReportDetailPage({
           ) : project === "teaching" ? (
             <>
               <DataRow label="主题内容">{(row.topic as string) ?? "—"}</DataRow>
-              <DataRow label="类型">
+              <DataRow label="服务子项">
                 {(row.type as string | null)
                   ? TEACHING_TYPE_LABELS[row.type as string] ?? (row.type as string)
                   : "—"}

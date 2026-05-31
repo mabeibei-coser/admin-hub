@@ -107,8 +107,10 @@ interface ReportRow {
   interview_language?: string | null;
   /** interview 项目专属：企业性质 enum key（startup / private / ...） */
   interview_company_type?: string | null;
-  /** teaching 项目专属：记录类型（courseware / interaction） */
+  /** teaching 项目专属：记录类型（courseware / interaction）→"服务子项"列 */
   teaching_type?: string | null;
+  /** teaching 项目专属：子类型（课件=全景图卡…/互动=案例分析…）→"类型"列 */
+  teaching_subtype?: string | null;
   /** teaching 项目专属：附件（课件图片）字节大小 */
   attachment_size?: number | null;
 }
@@ -502,7 +504,7 @@ function AdminReportsContent() {
     if (project === "interview")
       return ["时间", "姓名", "手机号", "服务项目", "面试岗位", "岗位职级", "面试语言", "企业性质", "操作"];
     if (project === "teaching")
-      return ["时间", "用户名", "服务项目", "主题内容", "类型", "附件大小", "操作"];
+      return ["时间", "用户名", "服务项目", "服务子项", "主题内容", "类型", "附件大小", "操作"];
     // 职业导航：HR 关心节奏 + 用户身份 + 服务转化状态
     return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
   }, [project]);
@@ -1433,7 +1435,7 @@ function ReportRowItem({
     );
   }
 
-  // tab=teaching：时间 / 用户名(手机号) / 服务项目 / 主题内容 / 类型 / 附件大小 / 操作
+  // tab=teaching：时间 / 用户名(手机号) / 服务项目 / 服务子项 / 主题内容 / 类型 / 附件大小 / 操作
   if (project === "teaching") {
     const teachingMeta = PROJECTS.teaching;
     return (
@@ -1450,13 +1452,18 @@ function ReportRowItem({
             {teachingMeta.label}
           </span>
         </TableCell>
-        <TableCell className="font-medium max-w-[220px] truncate" title={row.target_position || undefined}>
-          {row.target_position || "—"}
-        </TableCell>
+        {/* 服务子项：课件创作 / 课堂互动（来自 reports.type 列） */}
         <TableCell className="text-muted-foreground">
           {row.teaching_type
             ? TEACHING_TYPE_LABELS[row.teaching_type] ?? row.teaching_type
             : "—"}
+        </TableCell>
+        <TableCell className="font-medium max-w-[220px] truncate" title={row.target_position || undefined}>
+          {row.target_position || "—"}
+        </TableCell>
+        {/* 类型：课件类型(全景图卡…) / 互动类型(案例分析…)，从用户选择项带过来 */}
+        <TableCell className="text-muted-foreground">
+          {row.teaching_subtype || "—"}
         </TableCell>
         <TableCell className="tabular-nums text-xs text-muted-foreground">
           {formatBytes(row.attachment_size)}

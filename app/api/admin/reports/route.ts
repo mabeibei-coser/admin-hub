@@ -85,8 +85,10 @@ interface ReportRow {
   interview_language?: string | null;
   /** interview 项目专属：企业性质 enum key（来自 form_data_json.companyType） */
   interview_company_type?: string | null;
-  /** teaching 项目专属：记录类型（courseware / interaction） */
+  /** teaching 项目专属：记录类型（courseware / interaction）→ 列表"服务子项"列 */
   teaching_type?: string | null;
+  /** teaching 项目专属：子类型 → 列表"类型"列。课件=params_json.cardType（全景图卡…）；互动=case_type（案例分析…） */
+  teaching_subtype?: string | null;
   /** teaching 项目专属：附件（课件图片）字节大小；互动类为 NULL */
   attachment_size?: number | null;
 }
@@ -577,6 +579,7 @@ export async function GET(req: NextRequest) {
              tc.ip,
              NULL               AS tracking_id,
              tc.type            AS teaching_type,
+             COALESCE(tc.case_type, json_extract(tc.params_json, '$.cardType')) AS teaching_subtype,
              tc.attachment_size AS attachment_size
       FROM teaching.reports tc
       ${whereTeaching}
