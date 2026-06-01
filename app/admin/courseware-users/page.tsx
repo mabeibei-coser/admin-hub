@@ -10,13 +10,11 @@ import {
   GraduationCap,
   UserPlus,
   Pencil,
-  Trash2,
 } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { Alert } from "@/components/admin/alert";
 import { Pagination } from "@/components/admin/pagination";
 import { StatusPill, type StatusTone } from "@/components/admin/status-pill";
-import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { CoursewareUserDialog } from "@/components/admin/courseware-user-dialog";
 import {
   Table,
@@ -57,6 +55,8 @@ const COLUMNS = [
   "添加时间",
   "手机号",
   "姓名",
+  "备注",
+  "其他备注",
   "添加人",
   "最后登录",
   "使用次数",
@@ -109,11 +109,9 @@ function ListContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 新建/编辑弹窗 + 删除确认
+  // 新建/编辑弹窗
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ListRow | null>(null);
-  const [deleting, setDeleting] = useState<ListRow | null>(null);
-  const [deletingBusy, setDeletingBusy] = useState(false);
 
   const fetch_ = useCallback(async () => {
     setLoading(true);
@@ -168,27 +166,6 @@ function ListContent() {
   function openEdit(row: ListRow) {
     setEditing(row);
     setDialogOpen(true);
-  }
-
-  async function confirmDelete() {
-    if (!deleting) return;
-    setDeletingBusy(true);
-    try {
-      const res = await fetch(
-        withBase(`/api/admin/courseware-users/${deleting.id}`),
-        { method: "DELETE" }
-      );
-      if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(j.error ?? `HTTP ${res.status}`);
-      }
-      setDeleting(null);
-      fetch_();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "删除失败");
-    } finally {
-      setDeletingBusy(false);
-    }
   }
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / pageSize)) : 1;
@@ -338,6 +315,18 @@ function ListContent() {
                     <TableCell className="text-foreground max-w-[120px] truncate">
                       {row.name || "—"}
                     </TableCell>
+                    <TableCell
+                      className="text-xs text-muted-foreground max-w-[140px] truncate"
+                      title={row.note || undefined}
+                    >
+                      {row.note || "—"}
+                    </TableCell>
+                    <TableCell
+                      className="text-xs text-muted-foreground max-w-[140px] truncate"
+                      title={row.note2 || undefined}
+                    >
+                      {row.note2 || "—"}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {row.added_by_name || "—"}
                     </TableCell>
@@ -361,14 +350,6 @@ function ListContent() {
                         >
                           <Pencil className="size-3" />
                           编辑
-                        </button>
-                        <button
-                          onClick={() => setDeleting(row)}
-                          title="删除"
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-border text-muted-foreground hover:text-[var(--semantic-danger)] hover:bg-muted hover:ring-muted-foreground/30 transition-all duration-150 cursor-pointer"
-                        >
-                          <Trash2 className="size-3" />
-                          删除
                         </button>
                       </div>
                     </TableCell>
@@ -426,6 +407,12 @@ function ListContent() {
                   <div className="text-xs text-muted-foreground mb-2">
                     最后登录：{formatTs(row.last_login_at)} · 添加人：{row.added_by_name || "—"}
                   </div>
+                  {(row.note || row.note2) && (
+                    <div className="text-xs text-muted-foreground mb-2 space-y-0.5">
+                      {row.note && <div>备注：{row.note}</div>}
+                      {row.note2 && <div>其他备注：{row.note2}</div>}
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <button
                       onClick={() => openEdit(row)}
@@ -433,13 +420,6 @@ function ListContent() {
                     >
                       <Pencil className="size-3" />
                       编辑
-                    </button>
-                    <button
-                      onClick={() => setDeleting(row)}
-                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-border text-muted-foreground"
-                    >
-                      <Trash2 className="size-3" />
-                      删除
                     </button>
                   </div>
                 </div>
@@ -464,23 +444,6 @@ function ListContent() {
         onClose={() => setDialogOpen(false)}
         onSaved={fetch_}
       />
-
-      {/* 删除确认 */}
-      {deleting && (
-        <ConfirmDialog
-          icon={Trash2}
-          tone="danger"
-          title="删除课件用户"
-          confirmLabel="删除"
-          busy={deletingBusy}
-          onConfirm={confirmDelete}
-          onCancel={() => setDeleting(null)}
-        >
-          <p>
-            确定删除「{deleting.name || deleting.phone}」？删除后该手机号将无法登录智能课件。
-          </p>
-        </ConfirmDialog>
-      )}
     </div>
   );
 }

@@ -31,6 +31,9 @@ import {
   BookOpen,
   ArrowRight,
   Lock,
+  GraduationCap,
+  Crown,
+  FolderLock,
 } from "lucide-react";
 import { PROJECTS, type ProjectId } from "@/lib/projects";
 import { ChangePasswordDialog } from "@/components/admin/change-password-dialog";
@@ -44,6 +47,9 @@ interface MeData {
   showAll: boolean;
   visibleProjects: ProjectId[];
   showService: boolean;
+  showCoursewareUsers: boolean;
+  showAsgMembers: boolean;
+  showAsgDocuments: boolean;
   showAdmins: boolean;
 }
 
@@ -110,6 +116,7 @@ export default function AdminHomePage() {
 
   // 时间 — mount 后才设，避免 SSR/CSR hydration 不一致
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNow(new Date());
     const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
@@ -245,7 +252,11 @@ export default function AdminHomePage() {
         </Section>
 
         {/* ============ 服务与系统 list ============ */}
-        {(me?.showService || me?.showAdmins) && (
+        {(me?.showService ||
+          me?.showCoursewareUsers ||
+          me?.showAdmins ||
+          me?.showAsgDocuments ||
+          me?.showAsgMembers) && (
           <Section title="服务与系统">
             <List>
               {me.showService && (
@@ -254,6 +265,16 @@ export default function AdminHomePage() {
                   icon={LifeBuoy}
                   title="服务跟踪"
                   description="咨询服务持续跟进记录"
+                  dotClass="bg-muted-foreground/40"
+                  iconTextClass="text-muted-foreground"
+                />
+              )}
+              {me.showCoursewareUsers && (
+                <ListRow
+                  href="/admin/courseware-users"
+                  icon={GraduationCap}
+                  title="课件用户"
+                  description="智能课件白名单用户"
                   dotClass="bg-muted-foreground/40"
                   iconTextClass="text-muted-foreground"
                 />
@@ -279,6 +300,26 @@ export default function AdminHomePage() {
                     badge="超管"
                   />
                 </>
+              )}
+              {me.showAsgDocuments && (
+                <ListRow
+                  href="/admin/asg-documents"
+                  icon={FolderLock}
+                  title="文档资料"
+                  description="安防文档库内容管理"
+                  dotClass="bg-muted-foreground/40"
+                  iconTextClass="text-muted-foreground"
+                />
+              )}
+              {me.showAsgMembers && (
+                <ListRow
+                  href="/admin/asg-members"
+                  icon={Crown}
+                  title="安防平台用户"
+                  description="安全隐患域 VIP 会员与收款"
+                  dotClass="bg-muted-foreground/40"
+                  iconTextClass="text-muted-foreground"
+                />
               )}
             </List>
           </Section>

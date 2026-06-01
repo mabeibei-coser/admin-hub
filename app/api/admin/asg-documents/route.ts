@@ -21,8 +21,12 @@ export async function GET(req: NextRequest) {
   const qs = new URLSearchParams();
   const q = url.searchParams.get("q");
   const category = url.searchParams.get("category");
+  const subcategory = url.searchParams.get("subcategory");
+  const requiredTier = url.searchParams.get("requiredTier");
   if (q) qs.set("q", q);
   if (category) qs.set("category", category);
+  if (subcategory) qs.set("subcategory", subcategory);
+  if (requiredTier === "free" || requiredTier === "vip") qs.set("requiredTier", requiredTier);
 
   const { ok, status, data } = await docLibFetch(`/api/documents${qs.toString() ? "?" + qs : ""}`);
   if (!ok) return NextResponse.json({ error: "文档库读取失败" }, { status: status || 502 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { Inbox, RefreshCw, RotateCcw, Search, Crown, Users, Wallet } from "lucide-react";
+import { Inbox, RefreshCw, RotateCcw, Search, Crown, Users, Wallet, TrendingUp, Eye } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { Alert } from "@/components/admin/alert";
 import { Pagination } from "@/components/admin/pagination";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { withBase } from "@/lib/url";
+import { AsgMemberDetailDialog } from "@/components/admin/asg-member-detail-dialog";
 
 interface MemberRow {
   phone: string;
@@ -25,12 +26,14 @@ interface MemberRow {
   orderCount: number;
   paidOrderCount: number;
   updatedAt: number;
+  createdAt: number | null;
 }
 
 interface Stats {
   totalMembers: number;
   vipMembers: number;
   totalRevenueCents: number;
+  newThisWeek: number;
 }
 
 interface ListResponse {
@@ -42,7 +45,7 @@ interface ListResponse {
   stats?: Stats;
 }
 
-const COLUMNS = ["手机号", "会员状态", "VIP 到期", "累计付款", "成功订单", "更新时间"] as const;
+const COLUMNS = ["手机号", "会员状态", "VIP 到期", "累计付款", "成功订单", "注册日期", "更新时间", "操作"] as const;
 
 function fmtDate(ms: number | null | undefined) {
   if (!ms) return "—";
@@ -83,6 +86,23 @@ function AsgMembersInner() {
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [detailPhone, setDetailPhone] = useState<string | null>(null);
+  const [isSuper, setIsSuper] = useState(false);
+
+  // 拉 me 判断是否超管（决定详情弹窗是否显示编辑控件）
+  useEffect(() => {
+    let cancelled = false;
+    fetch(withBase("/api/admin/me"), { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { isSuper?: boolean } | null) => {
+        if (cancelled) return;
+        setIsSuper(!!d?.isSuper);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -106,6 +126,7 @@ function AsgMembersInner() {
   }, [page, pageSize, phone, status]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
@@ -125,11 +146,12 @@ function AsgMembersInner() {
         accentColor="orange"
       />
 
-      {/* KPI */}
+      {/* KPI — 4 个统计卡 */}
       {stats && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard icon={<Users className="size-5 text-slate-600" />} label="会员总数" value={String(stats.totalMembers)} />
-          <StatCard icon={<Crown className="size-5 text-amber-600" />} label="当前 VIP" value={String(stats.vipMembers)} accent="rgba(245,158,11,0.12)" />
+          <StatCard icon={<TrendingUp className="size-5 text-sky-600" />} label="本周新增" value={String(stats.newThisWeek)} accent="rgba(14,165,233,0.12)" />
+          <StatCard icon={<Crown className="size-5 text-amber-600" />} label="VIP 会员" value={String(stats.vipMembers)} accent="rgba(245,158,11,0.12)" />
           <StatCard icon={<Wallet className="size-5 text-emerald-600" />} label="累计收款" value={yuan(stats.totalRevenueCents)} accent="rgba(16,185,129,0.12)" />
         </div>
       )}
@@ -207,7 +229,18 @@ function AsgMembersInner() {
                   <TableCell className="tabular-nums">{r.isVip ? fmtDate(r.vipExpireAt) : "—"}</TableCell>
                   <TableCell className="tabular-nums font-medium">{yuan(r.totalPaidCents)}</TableCell>
                   <TableCell className="tabular-nums">{r.paidOrderCount}</TableCell>
+                  <TableCell className="tabular-nums text-muted-foreground">{fmtDate(r.createdAt)}</TableCell>
                   <TableCell className="tabular-nums text-muted-foreground">{fmtDateTime(r.updatedAt)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDetailPhone(r.phone)}
+                      className="text-[var(--blue-700)] hover:bg-[var(--blue-50)]"
+                    >
+                      <Eye className="size-3.5" /> 详情
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -221,6 +254,15 @@ function AsgMembersInner() {
         total={total}
         onPageChange={setPage}
       />
+
+      {detailPhone && (
+        <AsgMemberDetailDialog
+          phone={detailPhone}
+          isSuper={isSuper}
+          onClose={() => setDetailPhone(null)}
+          onSaved={load}
+        />
+      )}
     </div>
   );
 }

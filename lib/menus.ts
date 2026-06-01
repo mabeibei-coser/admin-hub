@@ -40,12 +40,12 @@ export const EXTRA_MENUS: ReadonlyArray<{
   },
   {
     key: "asg-members",
-    label: "安防会员",
+    label: "安防平台用户",
     description: "安全隐患域 VIP 会员与收款",
   },
   {
     key: "asg-documents",
-    label: "安防文档",
+    label: "文档资料",
     description: "安防文档库内容管理",
   },
 ];

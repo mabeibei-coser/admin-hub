@@ -225,48 +225,43 @@ export function AdminSidebar() {
           </>
         )}
 
-        {/* === 安防业务 section（安全隐患域会员中心 + 文档库）=== */}
-        {(!me || me.showAsgMembers || me.showAsgDocuments) && (
+        {/* === 系统管理 section — 含安防菜单（隐患检查项下面）=== */}
+        {(!me || me.showAdmins || me.showAsgMembers || me.showAsgDocuments) && (
           <>
-            <SectionHeader label="安防业务" />
+            <SectionHeader label="系统管理" />
             <nav className="px-3 flex flex-col gap-0.5">
-              {(!me || me.showAsgMembers) && (
+              {(!me || me.showAdmins) && (
                 <SidebarNavItem
-                  label="安防会员"
-                  icon={Crown}
-                  active={pathname.startsWith("/admin/asg-members")}
-                  href="/admin/asg-members"
+                  label="管理员管理"
+                  icon={Users}
+                  active={pathname.startsWith("/admin/admins")}
+                  href="/admin/admins"
+                />
+              )}
+              {(!me || me.showAdmins) && (
+                <SidebarNavItem
+                  label="隐患检查项"
+                  icon={ClipboardList}
+                  active={pathname.startsWith("/admin/hazard-checklist")}
+                  href="/admin/hazard-checklist"
                 />
               )}
               {(!me || me.showAsgDocuments) && (
                 <SidebarNavItem
-                  label="安防文档"
+                  label="文档资料"
                   icon={FolderLock}
                   active={pathname.startsWith("/admin/asg-documents")}
                   href="/admin/asg-documents"
                 />
               )}
-            </nav>
-          </>
-        )}
-
-        {/* === 系统管理 section — 仅超管可见 === */}
-        {(!me || me.showAdmins) && (
-          <>
-            <SectionHeader label="系统管理" />
-            <nav className="px-3 flex flex-col gap-0.5">
-              <SidebarNavItem
-                label="管理员管理"
-                icon={Users}
-                active={pathname.startsWith("/admin/admins")}
-                href="/admin/admins"
-              />
-              <SidebarNavItem
-                label="隐患检查项"
-                icon={ClipboardList}
-                active={pathname.startsWith("/admin/hazard-checklist")}
-                href="/admin/hazard-checklist"
-              />
+              {(!me || me.showAsgMembers) && (
+                <SidebarNavItem
+                  label="安防平台用户"
+                  icon={Crown}
+                  active={pathname.startsWith("/admin/asg-members")}
+                  href="/admin/asg-members"
+                />
+              )}
             </nav>
           </>
         )}
@@ -445,18 +440,18 @@ export function AdminMobileBar() {
               label="课件用户"
             />
           )}
-          {showAsgMembers && (
-            <MobilePill
-              href="/admin/asg-members"
-              active={inAsgMembers}
-              label="安防会员"
-            />
-          )}
           {showAsgDocuments && (
             <MobilePill
               href="/admin/asg-documents"
               active={inAsgDocuments}
-              label="安防文档"
+              label="文档资料"
+            />
+          )}
+          {showAsgMembers && (
+            <MobilePill
+              href="/admin/asg-members"
+              active={inAsgMembers}
+              label="安防平台用户"
             />
           )}
         </div>

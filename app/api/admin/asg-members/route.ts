@@ -11,8 +11,20 @@ interface MemberRow {
   vip_expire_at: number;
   total_paid_cents: number;
   updated_at: number;
+  created_at: number | null;
   order_count: number;
   paid_order_count: number;
+}
+
+/** 本周一 00:00 的时间戳（本地时区，周一为周首日）。 */
+function weekStartMs(now: number): number {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  // getDay: 0=周日,1=周一,...,6=周六；想要从周一起
+  const dayOfWeek = d.getDay();
+  const offsetToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  d.setDate(d.getDate() - offsetToMonday);
+  return d.getTime();
 }
 
 /**
@@ -74,9 +86,11 @@ export async function GET(req: NextRequest) {
          m.vip_expire_at,
          m.total_paid_cents,
          m.updated_at,
+         u.created_at AS created_at,
          (SELECT COUNT(*) FROM asg.orders o WHERE o.payer_phone = m.phone) AS order_count,
          (SELECT COUNT(*) FROM asg.orders o WHERE o.payer_phone = m.phone AND o.status = 'paid') AS paid_order_count
        FROM asg.memberships m
+       LEFT JOIN asg.users u ON u.phone = m.phone
        ${where}
        ORDER BY m.updated_at DESC
        LIMIT ? OFFSET ?`
@@ -94,6 +108,12 @@ export async function GET(req: NextRequest) {
     )
     .get(now) as { total_members: number; vip_members: number; total_revenue_cents: number };
 
+  // 本周新增：用户注册时间在本周一 0 点之后；users 表为登录账号源头
+  const weekStart = weekStartMs(now);
+  const weekRow = db
+    .prepare(`SELECT COUNT(*) AS c FROM asg.users WHERE created_at >= ?`)
+    .get(weekStart) as { c: number };
+
   return NextResponse.json({
     rows: rows.map((r) => ({
       phone: r.phone,
@@ -103,6 +123,7 @@ export async function GET(req: NextRequest) {
       orderCount: r.order_count,
       paidOrderCount: r.paid_order_count,
       updatedAt: r.updated_at,
+      createdAt: r.created_at,
     })),
     total,
     page,
@@ -112,6 +133,7 @@ export async function GET(req: NextRequest) {
       totalMembers: stats.total_members,
       vipMembers: stats.vip_members,
       totalRevenueCents: stats.total_revenue_cents,
+      newThisWeek: weekRow.c,
     },
   });
 }
