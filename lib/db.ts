@@ -27,6 +27,11 @@ const INTERVIEW_DB_PATH = process.env.INTERVIEW_DB_PATH ?? path.join(DATA_DIR, "
 // 部署时通过 TEACHING_DB_PATH env 指向实际 smart-teaching 数据文件。
 const TEACHING_DB_PATH = process.env.TEACHING_DB_PATH ?? path.join(DATA_DIR, "smart-teaching.db");
 
+// asg100 (安全隐患域会员中心) 数据库路径（ATTACH DATABASE 只读模式）。
+// 会员管理只读查 memberships / orders / membership_ledger。
+// 部署时通过 ASG_DB_PATH env 指向实际 asg100 数据文件。
+const ASG_DB_PATH = process.env.ASG_DB_PATH ?? path.join(DATA_DIR, "asg100.db");
+
 let _db: Database.Database | null = null;
 
 export function getDb(): Database.Database {
@@ -231,7 +236,24 @@ export function getAdminDb(): Database.Database {
     const safePath = TEACHING_DB_PATH.replaceAll("'", "''");
     db.exec(`ATTACH DATABASE '${safePath}' AS teaching`);
   }
+  if (!attached.some((d) => d.name === "asg")) {
+    const safePath = ASG_DB_PATH.replaceAll("'", "''");
+    db.exec(`ATTACH DATABASE '${safePath}' AS asg`);
+  }
   return db;
+}
+
+/** admin 端检查 asg 库是否就绪（有 memberships 表）。返回 false 时会员管理降级为空。 */
+export function isAsgDbReady(): boolean {
+  try {
+    const db = getAdminDb();
+    const tables = db
+      .prepare("SELECT name FROM asg.sqlite_master WHERE type='table' AND name='memberships'")
+      .all() as Array<{ name: string }>;
+    return tables.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 /** admin 端检查 nav 库是否就绪（有 reports 表）。返回 false 时 admin 应降级到 'report' tab。 */

@@ -8,8 +8,15 @@ export async function GET() {
     return NextResponse.json({ error: "未登录" }, { status: 401 });
   }
 
-  const { showAll, visibleProjects, showService, showCoursewareUsers, showAdmins } =
-    deriveVisibleMenus(session);
+  const {
+    showAll,
+    visibleProjects,
+    showService,
+    showCoursewareUsers,
+    showAsgMembers,
+    showAsgDocuments,
+    showAdmins,
+  } = deriveVisibleMenus(session);
 
   return NextResponse.json({
     adminId: session.adminId,
@@ -22,6 +29,8 @@ export async function GET() {
     visibleProjects,
     showService,
     showCoursewareUsers,
+    showAsgMembers,
+    showAsgDocuments,
     showAdmins,
   });
 }
