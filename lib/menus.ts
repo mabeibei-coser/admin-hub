@@ -11,7 +11,7 @@
 import { PROJECT_LIST, type ProjectId } from "./projects";
 
 /** 非项目类菜单 key。新增独立菜单在这里追加。 */
-export type ExtraMenuKey = "service" | "courseware-users";
+export type ExtraMenuKey = "service" | "courseware-users" | "asg-members" | "asg-documents";
 
 /** menus_json 里能存的所有 key 类型。"admins" 由 is_super 派生，不存这里。 */
 export type StoredMenuKey = "all" | ProjectId | ExtraMenuKey;
@@ -37,6 +37,16 @@ export const EXTRA_MENUS: ReadonlyArray<{
     key: "courseware-users",
     label: "课件用户",
     description: "智能课件白名单用户",
+  },
+  {
+    key: "asg-members",
+    label: "安防会员",
+    description: "安全隐患域 VIP 会员与收款",
+  },
+  {
+    key: "asg-documents",
+    label: "安防文档",
+    description: "安防文档库内容管理",
   },
 ];
 
@@ -79,6 +89,8 @@ export function deriveVisibleMenus(s: {
   visibleProjects: ProjectId[];
   showService: boolean;
   showCoursewareUsers: boolean;
+  showAsgMembers: boolean;
+  showAsgDocuments: boolean;
   showAdmins: boolean;
 } {
   return {
@@ -88,6 +100,8 @@ export function deriveVisibleMenus(s: {
     ),
     showService: canViewMenu(s, "service"),
     showCoursewareUsers: canViewMenu(s, "courseware-users"),
+    showAsgMembers: canViewMenu(s, "asg-members"),
+    showAsgDocuments: canViewMenu(s, "asg-documents"),
     showAdmins: !!s.isSuper,
   };
 }

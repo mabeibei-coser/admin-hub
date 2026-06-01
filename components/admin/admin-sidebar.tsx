@@ -16,6 +16,8 @@ import {
   ShieldCheck,
   LifeBuoy,
   GraduationCap,
+  Crown,
+  FolderLock,
   ClipboardList,
   Sun,
   Moon,
@@ -37,6 +39,8 @@ interface MeData {
   visibleProjects: string[];
   showService: boolean;
   showCoursewareUsers: boolean;
+  showAsgMembers: boolean;
+  showAsgDocuments: boolean;
   showAdmins: boolean;
 }
 
@@ -221,6 +225,31 @@ export function AdminSidebar() {
           </>
         )}
 
+        {/* === 安防业务 section（安全隐患域会员中心 + 文档库）=== */}
+        {(!me || me.showAsgMembers || me.showAsgDocuments) && (
+          <>
+            <SectionHeader label="安防业务" />
+            <nav className="px-3 flex flex-col gap-0.5">
+              {(!me || me.showAsgMembers) && (
+                <SidebarNavItem
+                  label="安防会员"
+                  icon={Crown}
+                  active={pathname.startsWith("/admin/asg-members")}
+                  href="/admin/asg-members"
+                />
+              )}
+              {(!me || me.showAsgDocuments) && (
+                <SidebarNavItem
+                  label="安防文档"
+                  icon={FolderLock}
+                  active={pathname.startsWith("/admin/asg-documents")}
+                  href="/admin/asg-documents"
+                />
+              )}
+            </nav>
+          </>
+        )}
+
         {/* === 系统管理 section — 仅超管可见 === */}
         {(!me || me.showAdmins) && (
           <>
@@ -362,8 +391,12 @@ export function AdminMobileBar() {
   const visibleProjects: string[] = me ? me.visibleProjects : FALLBACK_PROJECTS;
   const showService = !me || me.showService;
   const showCoursewareUsers = !me || me.showCoursewareUsers;
+  const showAsgMembers = !me || me.showAsgMembers;
+  const showAsgDocuments = !me || me.showAsgDocuments;
   const inServiceTracking = pathname.startsWith("/admin/service-tracking");
   const inCoursewareUsers = pathname.startsWith("/admin/courseware-users");
+  const inAsgMembers = pathname.startsWith("/admin/asg-members");
+  const inAsgDocuments = pathname.startsWith("/admin/asg-documents");
 
   return (
     <>
@@ -410,6 +443,20 @@ export function AdminMobileBar() {
               href="/admin/courseware-users"
               active={inCoursewareUsers}
               label="课件用户"
+            />
+          )}
+          {showAsgMembers && (
+            <MobilePill
+              href="/admin/asg-members"
+              active={inAsgMembers}
+              label="安防会员"
+            />
+          )}
+          {showAsgDocuments && (
+            <MobilePill
+              href="/admin/asg-documents"
+              active={inAsgDocuments}
+              label="安防文档"
             />
           )}
         </div>
