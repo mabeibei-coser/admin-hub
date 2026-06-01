@@ -372,13 +372,15 @@ function AsgDocumentsInner() {
   }
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        icon={FolderLock}
-        title="文档资料"
-        subtitle="安防文档库内容管理（新建 / 编辑 / 删除）"
-        accentColor="indigo"
-      />
+    <div className="relative p-6">
+      <div aria-hidden className="list-header-aurora" />
+      <div className="relative max-w-7xl mx-auto space-y-5">
+        <PageHeader
+          icon={FolderLock}
+          title="文档资料"
+          subtitle="安防文档库内容管理（新建 / 编辑 / 删除）"
+          accentColor="indigo"
+        />
 
       {/* 筛选 + 新建 */}
       <div className="flex flex-wrap items-end gap-3">
@@ -536,6 +538,7 @@ function AsgDocumentsInner() {
           确定删除这条资料吗？此操作不可撤销。
         </ConfirmDialog>
       )}
+      </div>
     </div>
   );
 }

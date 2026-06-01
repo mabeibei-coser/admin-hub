@@ -71,6 +71,13 @@ function formatTs(ms: number | null | undefined) {
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
 }
 
+function formatTsWithTime(ms: number | null | undefined) {
+  if (!ms) return "—";
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function CoursewareUsersPage() {
   return (
     <Suspense fallback={<PageSkeleton />}>
@@ -307,7 +314,7 @@ function ListContent() {
                 data?.rows.map((row) => (
                   <TableRow key={row.id} className="text-sm row-hover">
                     <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
-                      {formatTs(row.created_at)}
+                      {formatTsWithTime(row.created_at)}
                     </TableCell>
                     <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
                       {row.phone}

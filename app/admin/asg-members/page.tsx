@@ -138,13 +138,15 @@ function AsgMembersInner() {
   const hasFilters = phone || status;
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        icon={Crown}
-        title="安防会员"
-        subtitle="安全隐患域 VIP 会员名单与收款（只读）"
-        accentColor="orange"
-      />
+    <div className="relative p-6">
+      <div aria-hidden className="list-header-aurora" />
+      <div className="relative max-w-7xl mx-auto space-y-5">
+        <PageHeader
+          icon={Crown}
+          title="安防平台用户"
+          subtitle="安全隐患域 VIP 会员名单与收款（只读）"
+          accentColor="orange"
+        />
 
       {/* KPI — 4 个统计卡 */}
       {stats && (
@@ -263,6 +265,7 @@ function AsgMembersInner() {
           onSaved={load}
         />
       )}
+      </div>
     </div>
   );
 }
