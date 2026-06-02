@@ -201,7 +201,7 @@ export function AdminSidebar() {
         </nav>
 
         {/* === 服务管理 section === */}
-        {(!me || me.showService || me.showCoursewareUsers) && (
+        {(!me || me.showService || me.showCoursewareUsers || me.showAsgDocuments) && (
           <>
             <SectionHeader label="服务管理" />
             <nav className="px-3 flex flex-col gap-0.5">
@@ -221,12 +221,20 @@ export function AdminSidebar() {
                   href="/admin/courseware-users"
                 />
               )}
+              {(!me || me.showAsgDocuments) && (
+                <SidebarNavItem
+                  label="文档资料"
+                  icon={FolderLock}
+                  active={pathname.startsWith("/admin/asg-documents")}
+                  href="/admin/asg-documents"
+                />
+              )}
             </nav>
           </>
         )}
 
-        {/* === 系统管理 section — 含安防菜单（隐患检查项下面）=== */}
-        {(!me || me.showAdmins || me.showAsgMembers || me.showAsgDocuments) && (
+        {/* === 系统管理 section === */}
+        {(!me || me.showAdmins || me.showAsgMembers) && (
           <>
             <SectionHeader label="系统管理" />
             <nav className="px-3 flex flex-col gap-0.5">
@@ -244,14 +252,6 @@ export function AdminSidebar() {
                   icon={ClipboardList}
                   active={pathname.startsWith("/admin/hazard-checklist")}
                   href="/admin/hazard-checklist"
-                />
-              )}
-              {(!me || me.showAsgDocuments) && (
-                <SidebarNavItem
-                  label="文档资料"
-                  icon={FolderLock}
-                  active={pathname.startsWith("/admin/asg-documents")}
-                  href="/admin/asg-documents"
                 />
               )}
               {(!me || me.showAsgMembers) && (

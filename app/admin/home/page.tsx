@@ -279,6 +279,16 @@ export default function AdminHomePage() {
                   iconTextClass="text-muted-foreground"
                 />
               )}
+              {me.showAsgDocuments && (
+                <ListRow
+                  href="/admin/asg-documents"
+                  icon={FolderLock}
+                  title="文档资料"
+                  description="安防文档库内容管理"
+                  dotClass="bg-muted-foreground/40"
+                  iconTextClass="text-muted-foreground"
+                />
+              )}
               {me.showAdmins && (
                 <>
                   <ListRow
@@ -300,16 +310,6 @@ export default function AdminHomePage() {
                     badge="超管"
                   />
                 </>
-              )}
-              {me.showAsgDocuments && (
-                <ListRow
-                  href="/admin/asg-documents"
-                  icon={FolderLock}
-                  title="文档资料"
-                  description="安防文档库内容管理"
-                  dotClass="bg-muted-foreground/40"
-                  iconTextClass="text-muted-foreground"
-                />
               )}
               {me.showAsgMembers && (
                 <ListRow

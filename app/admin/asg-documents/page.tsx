@@ -8,7 +8,7 @@ import {
   FolderLock,
   Plus,
   Trash2,
-  FileText,
+  Pin,
   Upload,
   Pencil,
   RotateCcw,
@@ -38,6 +38,7 @@ interface DocRow {
   requiredTier: "free" | "vip";
   hasAttachment: boolean;
   attachmentName: string | null;
+  pinned: boolean;
   createdAt: number;
   viewCount: number;
 }
@@ -67,7 +68,7 @@ function fmtDate(ms: number) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-const COLUMNS = ["标题", "分类", "子分类", "档位", "附件", "查看人数", "上传时间", "操作"] as const;
+const COLUMNS = ["标题", "分类", "子分类", "档位", "查看人数", "上传时间", "操作"] as const;
 
 // ════════════ 新建 / 编辑 弹窗 ════════════
 function DocumentDialog({
@@ -85,6 +86,7 @@ function DocumentDialog({
   const [subcategory, setSubcategory] = useState(editing?.subcategory ?? "");
   const [description, setDescription] = useState(editing?.description ?? "");
   const [tier, setTier] = useState<"free" | "vip">(editing?.requiredTier ?? "free");
+  const [pinned, setPinned] = useState<boolean>(editing?.pinned ?? false);
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,6 +121,7 @@ function DocumentDialog({
         subcategory: subcategory || null,
         description: description.trim() || null,
         requiredTier: tier,
+        pinned,
       };
       if (attachmentField !== undefined) payload.attachment = attachmentField;
 
@@ -144,15 +147,20 @@ function DocumentDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      onClick={onClose}
     >
+      {/* 遮罩与内容并列为兄弟元素（对齐 ConfirmDialog / courseware-user-dialog）。
+          不要把 onClick 挂在「同时是遮罩又是内容父级」的外层容器上——拖选输入框文字
+          滑出到遮罩区松开时，click 会在公共祖先(外层容器)触发，绕过 stopPropagation
+          误关弹窗（“填一半框自己关”）。 */}
       <div
-        className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl bg-card shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+        className="fixed inset-0 bg-black/40"
+        onClick={submitting ? undefined : onClose}
+        aria-hidden="true"
+      />
+      <div className="relative z-10 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl bg-card shadow-xl">
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h3 className="text-lg font-semibold text-foreground">
             {isEdit ? "编辑资料" : "新建资料"}
@@ -242,6 +250,24 @@ function DocumentDialog({
                 VIP 专享
               </button>
             </div>
+          </div>
+
+          {/* 置顶 */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">置顶</label>
+            <button
+              type="button"
+              onClick={() => setPinned((v) => !v)}
+              className={`inline-flex items-center gap-2 h-10 rounded-md px-4 text-sm border transition-all ${
+                pinned
+                  ? "ring-2 ring-[var(--amber-500)] bg-[oklch(0.97_0.06_70)] text-[var(--amber-700)] border-transparent"
+                  : "border-input bg-background text-foreground hover:bg-muted"
+              }`}
+            >
+              <Pin className="size-4" />
+              {pinned ? "已置顶 · 排在列表最前" : "设为置顶"}
+            </button>
+            <p className="mt-1.5 text-xs text-muted-foreground">置顶后该资料会显示在文档库最前面</p>
           </div>
 
           {/* 说明 */}
@@ -469,22 +495,22 @@ function AsgDocumentsInner() {
             ) : (
               items.map((d) => (
                 <TableRow key={d.id}>
-                  <TableCell className="font-medium">{d.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <span className="inline-flex items-center gap-1.5">
+                      {d.pinned && (
+                        <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px] font-medium text-[var(--amber-700)] bg-[oklch(0.97_0.06_70)]">
+                          <Pin className="size-3" /> 置顶
+                        </span>
+                      )}
+                      {d.title}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{d.category || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{d.subcategory || "—"}</TableCell>
                   <TableCell>
                     <StatusPill tone={d.requiredTier === "vip" ? "info" : "success"}>
                       {d.requiredTier === "vip" ? "VIP" : "免费"}
                     </StatusPill>
-                  </TableCell>
-                  <TableCell>
-                    {d.hasAttachment ? (
-                      <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-                        <FileText className="size-3.5" /> {d.attachmentName}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
                   </TableCell>
                   <TableCell className="tabular-nums text-muted-foreground">{d.viewCount}</TableCell>
                   <TableCell className="tabular-nums text-muted-foreground">{fmtDate(d.createdAt)}</TableCell>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { Inbox, RefreshCw, RotateCcw, Search, Crown, Users, Wallet, TrendingUp, Eye } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
+import { DataCard } from "@/components/admin/data-card";
 import { Alert } from "@/components/admin/alert";
 import { Pagination } from "@/components/admin/pagination";
 import { StatusPill } from "@/components/admin/status-pill";
@@ -60,20 +61,6 @@ function fmtDateTime(ms: number | null | undefined) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 const yuan = (cents: number) => `¥${(cents / 100).toFixed(2)}`;
-
-function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
-      <div className="flex size-10 items-center justify-center rounded-lg" style={{ background: accent ?? "var(--muted)" }}>
-        {icon}
-      </div>
-      <div>
-        <div className="text-xl font-semibold tabular-nums text-foreground">{value}</div>
-        <div className="text-xs text-muted-foreground">{label}</div>
-      </div>
-    </div>
-  );
-}
 
 function AsgMembersInner() {
   const [rows, setRows] = useState<MemberRow[]>([]);
@@ -148,13 +135,13 @@ function AsgMembersInner() {
           accentColor="orange"
         />
 
-      {/* KPI — 4 个统计卡 */}
+      {/* KPI — 4 张数据卡（统一 DataCard，与 reports / service-tracking 对齐）*/}
       {stats && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard icon={<Users className="size-5 text-slate-600" />} label="会员总数" value={String(stats.totalMembers)} />
-          <StatCard icon={<TrendingUp className="size-5 text-sky-600" />} label="本周新增" value={String(stats.newThisWeek)} accent="rgba(14,165,233,0.12)" />
-          <StatCard icon={<Crown className="size-5 text-amber-600" />} label="VIP 会员" value={String(stats.vipMembers)} accent="rgba(245,158,11,0.12)" />
-          <StatCard icon={<Wallet className="size-5 text-emerald-600" />} label="累计收款" value={yuan(stats.totalRevenueCents)} accent="rgba(16,185,129,0.12)" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <DataCard label="会员总数" value={stats.totalMembers} icon={Users} accent="blue" highlight />
+          <DataCard label="本周新增" value={stats.newThisWeek} icon={TrendingUp} accent="sky" />
+          <DataCard label="VIP 会员" value={stats.vipMembers} icon={Crown} accent="amber" />
+          <DataCard label="累计收款" value={yuan(stats.totalRevenueCents)} icon={Wallet} accent="green" />
         </div>
       )}
 
