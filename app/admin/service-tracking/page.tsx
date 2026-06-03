@@ -90,14 +90,15 @@ interface StatsResponse {
 }
 
 const COLUMNS = [
+  "转服务时间",
   "姓名",
   "手机号",
   "服务项目",
   "服务分类",
-  "转服务时间",
   "更新日期",
   "服务状态",
   "转入人",
+  "协同服务",
   "操作",
 ] as const;
 
@@ -422,6 +423,9 @@ function ListContent() {
                     key={row.id}
                     className="text-sm row-hover"
                   >
+                    <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+                      {formatTs(row.first_service_at)}
+                    </TableCell>
                     <TableCell className="text-foreground max-w-[120px] truncate">
                       {row.user_name || "—"}
                     </TableCell>
@@ -435,9 +439,6 @@ function ListContent() {
                       <CategoryBadge value={row.service_category} />
                     </TableCell>
                     <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
-                      {formatTs(row.first_service_at)}
-                    </TableCell>
-                    <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
                       {row.last_service_at ? formatTs(row.last_service_at) : "—"}
                     </TableCell>
                     <TableCell>
@@ -445,6 +446,9 @@ function ListContent() {
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {row.recorder_name || "—"}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {row.staff2_name || "—"}
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="inline-flex items-center gap-1.5">

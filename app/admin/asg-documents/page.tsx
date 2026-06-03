@@ -498,7 +498,7 @@ function AsgDocumentsInner() {
                   <TableCell className="font-medium">
                     <span className="inline-flex items-center gap-1.5">
                       {d.pinned && (
-                        <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px] font-medium text-[var(--amber-700)] bg-[oklch(0.97_0.06_70)]">
+                        <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px] font-medium text-[var(--blue-700)] bg-[var(--blue-50)]">
                           <Pin className="size-3" /> 置顶
                         </span>
                       )}
@@ -508,7 +508,7 @@ function AsgDocumentsInner() {
                   <TableCell className="text-muted-foreground">{d.category || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{d.subcategory || "—"}</TableCell>
                   <TableCell>
-                    <StatusPill tone={d.requiredTier === "vip" ? "info" : "success"}>
+                    <StatusPill tone={d.requiredTier === "vip" ? "warning" : "success"}>
                       {d.requiredTier === "vip" ? "VIP" : "免费"}
                     </StatusPill>
                   </TableCell>
