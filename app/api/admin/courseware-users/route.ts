@@ -21,6 +21,8 @@ interface ListRow {
   created_at: number;
   updated_at: number;
   added_by_name: string | null;
+  added_by_group_id: number | null;
+  added_by_group_name: string | null;
   last_login_at: number | null;
   usage_count: number;
 }
@@ -97,10 +99,13 @@ export async function GET(req: NextRequest) {
          cu.id, cu.phone, cu.name, cu.added_by_admin_id,
          cu.note, cu.note2, cu.status, cu.created_at, cu.updated_at,
          a.name AS added_by_name,
+         a.group_id AS added_by_group_id,
+         g.name AS added_by_group_name,
          ${loginSelect},
          ${usageSelect}
        FROM courseware_users cu
        LEFT JOIN admins a ON a.id = cu.added_by_admin_id
+       LEFT JOIN admin_groups g ON g.id = a.group_id
        ${teachingJoin}
        ${where}
        ORDER BY cu.created_at DESC

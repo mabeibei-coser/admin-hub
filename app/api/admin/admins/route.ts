@@ -22,13 +22,28 @@ export async function GET() {
 
   const rows = getDb()
     .prepare(
-      `SELECT id, username, name, note, menus_json, is_super, is_active, created_at, updated_at
-       FROM admins
-       ORDER BY created_at ASC`
+      `SELECT a.id, a.username, a.name, a.note, a.menus_json,
+              a.is_super, a.is_active, a.created_at, a.updated_at,
+              a.group_id, g.name AS group_name
+       FROM admins a
+       LEFT JOIN admin_groups g ON g.id = a.group_id
+       ORDER BY a.created_at ASC`
     )
     .all();
 
   return NextResponse.json({ admins: rows });
+}
+
+/** 校验 group_id：null/undefined = 不分组；数字 = 必须存在 */
+function validateGroupId(raw: unknown): { ok: true; value: number | null } | { ok: false; error: string } {
+  if (raw === null || raw === undefined || raw === "") {
+    return { ok: true, value: null };
+  }
+  const n = typeof raw === "number" ? raw : parseInt(String(raw), 10);
+  if (isNaN(n)) return { ok: false, error: "分组 ID 格式错误" };
+  const row = getDb().prepare("SELECT id FROM admin_groups WHERE id = ?").get(n);
+  if (!row) return { ok: false, error: "分组不存在" };
+  return { ok: true, value: n };
 }
 
 /** POST /api/admin/admins — 新建管理员（超管专用） */
@@ -43,7 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "请求体格式错误" }, { status: 400 });
   }
 
-  const { username, name, password, note, menus } = body;
+  const { username, name, password, note, menus, group_id } = body;
 
   if (!username || typeof username !== "string") {
     return NextResponse.json({ error: "请填写手机号" }, { status: 400 });
@@ -63,14 +78,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "菜单权限格式错误" }, { status: 400 });
   }
 
+  const groupCheck = validateGroupId(group_id);
+  if (!groupCheck.ok) {
+    return NextResponse.json({ error: groupCheck.error }, { status: 400 });
+  }
+
   const passwordHash = await bcrypt.hash(password, 10);
   const now = Date.now();
 
   try {
     const result = getDb()
       .prepare(
-        `INSERT INTO admins (username, name, password_hash, note, menus_json, is_super, is_active, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 0, 1, ?, ?)`
+        `INSERT INTO admins (username, name, password_hash, note, menus_json, is_super, is_active, group_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 0, 1, ?, ?, ?)`
       )
       .run(
         username.trim(),
@@ -78,6 +98,7 @@ export async function POST(req: NextRequest) {
         passwordHash,
         note?.trim() || null,
         JSON.stringify(validatedMenus),
+        groupCheck.value,
         now,
         now
       );

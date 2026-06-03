@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { ASSIGNABLE_MENUS } from "@/lib/menus";
 import { isValidCnMobile } from "@/lib/phone";
 import { withBase } from "@/lib/url";
+
+interface GroupOption {
+  id: number;
+  name: string;
+}
 
 // ---- schema ----
 const baseSchema = z.object({
@@ -26,6 +31,8 @@ const baseSchema = z.object({
   name: z.string().min(1, "姓名不能为空"),
   note: z.string().optional(),
   menus: z.array(z.string()),
+  // 分组 id；"" 表示未分组
+  group_id: z.string().optional(),
 });
 
 const createSchema = baseSchema.extend({
@@ -80,12 +87,21 @@ export function AdminForm(props: AdminFormProps) {
           name: "",
           note: "",
           menus: [],
+          group_id: "",
           password: "",
           confirmPassword: "",
           is_active: true,
           ...(props as EditProps).defaultValues,
         }
-      : { username: "", name: "", note: "", menus: [], password: "", confirmPassword: "" };
+      : {
+          username: "",
+          name: "",
+          note: "",
+          menus: [],
+          group_id: "",
+          password: "",
+          confirmPassword: "",
+        };
 
   const {
     register,
@@ -104,6 +120,35 @@ export function AdminForm(props: AdminFormProps) {
   const selectedMenus: string[] = watch("menus" as any) ?? [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const isActive: boolean = isEdit ? (watch("is_active" as any) ?? true) : true;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const selectedGroupId: string = (watch("group_id" as any) ?? "") as string;
+
+  // 拉分组列表
+  const [groups, setGroups] = useState<GroupOption[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setGroupsLoading(true);
+    fetch(withBase("/api/admin/admin-groups"))
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        setGroups((d.groups ?? []) as GroupOption[]);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setGroups([]);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setGroupsLoading(false);
+      });
+    /* eslint-enable react-hooks/set-state-in-effect */
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function toggleMenu(key: string) {
     const next = selectedMenus.includes(key)
@@ -125,6 +170,8 @@ export function AdminForm(props: AdminFormProps) {
       name: data.name,
       note: data.note || undefined,
       menus: data.menus,
+      // "" → null（未分组），数字字符串 → 数字
+      group_id: data.group_id ? parseInt(String(data.group_id), 10) : null,
     };
     if (!isEdit) {
       payload.username = data.username;
@@ -209,6 +256,34 @@ export function AdminForm(props: AdminFormProps) {
           {...register("note" as never)}
           className="resize-none"
         />
+      </div>
+
+      {/* 分组（单选） */}
+      <div className="space-y-1.5">
+        <Label htmlFor="group_id">分组（选填）</Label>
+        <select
+          id="group_id"
+          value={selectedGroupId}
+          disabled={groupsLoading}
+          onChange={(e) =>
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            setValue("group_id" as any, e.target.value, { shouldValidate: true })
+          }
+          className="h-10 w-full text-sm border border-input rounded-md px-3 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30 cursor-pointer disabled:opacity-50"
+          style={{ fontSize: "16px" }}
+        >
+          <option value="">未分组</option>
+          {groups.map((g) => (
+            <option key={g.id} value={String(g.id)}>
+              {g.name}
+            </option>
+          ))}
+        </select>
+        {!groupsLoading && groups.length === 0 && (
+          <p className="text-[11px] text-muted-foreground">
+            还没有分组。可在管理员列表页点「分组管理」创建。
+          </p>
+        )}
       </div>
 
       {/* 菜单权限 */}

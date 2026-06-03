@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, GraduationCap } from "lucide-react";
+import { X, GraduationCap, FolderTree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,10 +10,15 @@ import { isValidCnMobile } from "@/lib/phone";
 import { withBase } from "@/lib/url";
 import type { CoursewareUserRow } from "@/lib/courseware-users";
 
+/** dialog 接收的 editing 行允许带 added_by_group_name（来自列表 JOIN） */
+export type CoursewareEditingRow = CoursewareUserRow & {
+  added_by_group_name?: string | null;
+};
+
 interface Props {
   open: boolean;
   /** null = 新建；有值 = 编辑 */
-  editing: CoursewareUserRow | null;
+  editing: CoursewareEditingRow | null;
   onClose: () => void;
   /** 保存成功后回调（列表刷新） */
   onSaved: () => void;
@@ -34,6 +39,13 @@ export function CoursewareUserDialog({ open, editing, onClose, onSaved }: Props)
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 新建时显示当前登录管理员的分组（只读，不可改），从 /api/admin/me 拉
+  // 编辑时显示该用户的添加人分组，来自 editing.added_by_group_name
+  const [meGroupName, setMeGroupName] = useState<string | null>(null);
+  const displayGroupName = isEdit
+    ? editing?.added_by_group_name ?? null
+    : meGroupName;
+
   useEffect(() => {
     if (!open) return;
     // 每次打开按 editing 重置表单
@@ -45,7 +57,16 @@ export function CoursewareUserDialog({ open, editing, onClose, onSaved }: Props)
     setNote(editing?.note ?? "");
     setNote2(editing?.note2 ?? "");
     setStatus(editing?.status ?? "active");
+    setMeGroupName(null);
     /* eslint-enable react-hooks/set-state-in-effect */
+
+    // 仅新建模式拉 me（编辑模式显示的是被编辑用户的添加人分组，已通过 editing 传入）
+    if (!editing) {
+      fetch(withBase("/api/admin/me"))
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((d: { group_name: string | null }) => setMeGroupName(d.group_name ?? null))
+        .catch(() => setMeGroupName(null));
+    }
   }, [open, editing]);
 
   if (!open) return null;
@@ -170,6 +191,22 @@ export function CoursewareUserDialog({ open, editing, onClose, onSaved }: Props)
               onChange={(e) => setName(e.target.value)}
               style={{ fontSize: "16px" }}
             />
+          </div>
+
+          {/* 分组（只读，新建时来自当前操作员，编辑时来自添加人） */}
+          <div className="space-y-1.5">
+            <Label>分组</Label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground flex items-center gap-2">
+              <FolderTree className="size-4 text-muted-foreground" />
+              {displayGroupName ? (
+                <span>{displayGroupName}</span>
+              ) : (
+                <span className="text-muted-foreground">未分组</span>
+              )}
+              <span className="ml-auto text-[11px] text-muted-foreground">
+                {isEdit ? "添加人所在分组" : "来自当前操作员，不可修改"}
+              </span>
+            </div>
           </div>
 
           {/* 状态（仅编辑时可改；新建默认启用） */}

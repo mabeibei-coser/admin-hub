@@ -50,7 +50,7 @@ export async function PATCH(
   const isSelf = session.adminId === targetId;
 
   // 防自锁：自己不能改自己的 is_super 和 is_active
-  const { name, password, note, menus } = body;
+  const { name, password, note, menus, group_id } = body;
   let { is_active, is_super } = body;
   if (isSelf) {
     is_super = undefined;
@@ -104,6 +104,24 @@ export async function PATCH(
     vals.push(JSON.stringify(validated));
     // 菜单权限变更也踢出旧 session，让用户重新登录拿到新权限
     willInvalidateSession = true;
+  }
+
+  if (group_id !== undefined) {
+    if (group_id === null || group_id === "") {
+      sets.push("group_id = ?");
+      vals.push(null);
+    } else {
+      const n = typeof group_id === "number" ? group_id : parseInt(String(group_id), 10);
+      if (isNaN(n)) {
+        return NextResponse.json({ error: "分组 ID 格式错误" }, { status: 400 });
+      }
+      const row = db.prepare("SELECT id FROM admin_groups WHERE id = ?").get(n);
+      if (!row) {
+        return NextResponse.json({ error: "分组不存在" }, { status: 400 });
+      }
+      sets.push("group_id = ?");
+      vals.push(n);
+    }
   }
 
   if (password !== undefined) {

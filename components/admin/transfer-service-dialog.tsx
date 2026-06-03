@@ -70,12 +70,17 @@ export function TransferServiceDialog({
     setAdminsError(false);
     setLoadingAdmins(true);
     /* eslint-enable react-hooks/set-state-in-effect */
-    fetch(withBase("/api/admin/admins/picker"))
+    // 协同服务只能从「与主服务老师同分组」的活跃管理员中选
+    // 主服务老师 = 当前操作员（me），所以 same_group_as=me.adminId
+    const url = me
+      ? withBase(`/api/admin/admins/picker?same_group_as=${me.adminId}`)
+      : withBase("/api/admin/admins/picker");
+    fetch(url)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((d: { admins: PickerAdmin[] }) => setAdmins(d.admins))
       .catch(() => setAdminsError(true))
       .finally(() => setLoadingAdmins(false));
-  }, [open]);
+  }, [open, me]);
 
   if (!open || !row || !me) return null;
 

@@ -40,6 +40,8 @@ const STATUS_TONE: Record<CoursewareUserStatus, StatusTone> = {
 
 interface ListRow extends CoursewareUserRow {
   added_by_name: string | null;
+  added_by_group_id: number | null;
+  added_by_group_name: string | null;
   last_login_at: number | null;
   usage_count: number;
 }
@@ -55,6 +57,7 @@ const COLUMNS = [
   "添加时间",
   "手机号",
   "姓名",
+  "分组",
   "备注",
   "其他备注",
   "添加人",
@@ -322,6 +325,15 @@ function ListContent() {
                     <TableCell className="text-foreground max-w-[120px] truncate">
                       {row.name || "—"}
                     </TableCell>
+                    <TableCell className="text-sm">
+                      {row.added_by_group_name ? (
+                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs ring-1 ring-[var(--blue-200)] text-[var(--blue-700)] bg-[var(--blue-50)]">
+                          {row.added_by_group_name}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell
                       className="text-xs text-muted-foreground max-w-[140px] truncate"
                       title={row.note || undefined}
@@ -413,6 +425,7 @@ function ListContent() {
                   </div>
                   <div className="text-xs text-muted-foreground mb-2">
                     最后登录：{formatTs(row.last_login_at)} · 添加人：{row.added_by_name || "—"}
+                    {row.added_by_group_name ? ` · 分组：${row.added_by_group_name}` : ""}
                   </div>
                   {(row.note || row.note2) && (
                     <div className="text-xs text-muted-foreground mb-2 space-y-0.5">

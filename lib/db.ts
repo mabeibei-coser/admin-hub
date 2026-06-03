@@ -81,6 +81,26 @@ export function getDb(): Database.Database {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_admins_username ON admins(username);
   `);
 
+  // 管理员分组：仅用于组织分类，删除分组不影响管理员本身（admin.group_id 自动置空）
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_groups (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      name       TEXT NOT NULL UNIQUE,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_admin_groups_name ON admin_groups(name);
+  `);
+  const adminCols = new Set(
+    (_db.prepare("PRAGMA table_info(admins)").all() as Array<{ name: string }>).map(
+      (c) => c.name,
+    ),
+  );
+  if (!adminCols.has("group_id")) {
+    _db.exec("ALTER TABLE admins ADD COLUMN group_id INTEGER");
+    _db.exec("CREATE INDEX IF NOT EXISTS idx_admins_group ON admins(group_id)");
+  }
+
   // 服务跟踪：把咨询用户从 nav.reports「转入」持续服务跟进流程
   _db.exec(`
     CREATE TABLE IF NOT EXISTS service_tracking (

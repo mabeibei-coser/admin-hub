@@ -17,6 +17,7 @@ interface AdminRow {
   menus_json: string;
   is_super: number;
   is_active: number;
+  group_id: number | null;
 }
 
 interface MeData {
@@ -97,6 +98,7 @@ export default function EditAdminPage() {
           name: admin.name,
           note: admin.note ?? "",
           menus,
+          group_id: admin.group_id != null ? String(admin.group_id) : "",
           is_active: admin.is_active === 1,
           password: "",
           confirmPassword: "",
