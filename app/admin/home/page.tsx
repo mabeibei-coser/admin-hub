@@ -50,6 +50,8 @@ interface MeData {
   showCoursewareUsers: boolean;
   showAsgMembers: boolean;
   showAsgDocuments: boolean;
+  showAtaMembers: boolean;
+  showAtaDocuments: boolean;
   showAdmins: boolean;
 }
 
@@ -256,7 +258,9 @@ export default function AdminHomePage() {
           me?.showCoursewareUsers ||
           me?.showAdmins ||
           me?.showAsgDocuments ||
-          me?.showAsgMembers) && (
+          me?.showAsgMembers ||
+          me?.showAtaDocuments ||
+          me?.showAtaMembers) && (
           <Section title="服务与系统">
             <List>
               {me.showService && (
@@ -289,6 +293,16 @@ export default function AdminHomePage() {
                   iconTextClass="text-muted-foreground"
                 />
               )}
+              {me.showAtaDocuments && (
+                <ListRow
+                  href="/admin/ata-documents"
+                  icon={FolderLock}
+                  title="岗位文档"
+                  description="岗位全景文档库内容管理"
+                  dotClass="bg-muted-foreground/40"
+                  iconTextClass="text-muted-foreground"
+                />
+              )}
               {me.showAdmins && (
                 <>
                   <ListRow
@@ -317,6 +331,16 @@ export default function AdminHomePage() {
                   icon={Crown}
                   title="安防平台用户"
                   description="安全隐患域 VIP 会员与收款"
+                  dotClass="bg-muted-foreground/40"
+                  iconTextClass="text-muted-foreground"
+                />
+              )}
+              {me.showAtaMembers && (
+                <ListRow
+                  href="/admin/ata-members"
+                  icon={Crown}
+                  title="薪资查询用户"
+                  description="薪酬域 VIP 会员与收款"
                   dotClass="bg-muted-foreground/40"
                   iconTextClass="text-muted-foreground"
                 />

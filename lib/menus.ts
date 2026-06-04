@@ -11,7 +11,13 @@
 import { PROJECT_LIST, type ProjectId } from "./projects";
 
 /** 非项目类菜单 key。新增独立菜单在这里追加。 */
-export type ExtraMenuKey = "service" | "courseware-users" | "asg-members" | "asg-documents";
+export type ExtraMenuKey =
+  | "service"
+  | "courseware-users"
+  | "asg-members"
+  | "asg-documents"
+  | "ata-members"
+  | "ata-documents";
 
 /** menus_json 里能存的所有 key 类型。"admins" 由 is_super 派生，不存这里。 */
 export type StoredMenuKey = "all" | ProjectId | ExtraMenuKey;
@@ -47,6 +53,16 @@ export const EXTRA_MENUS: ReadonlyArray<{
     key: "asg-documents",
     label: "文档资料",
     description: "安防文档库内容管理",
+  },
+  {
+    key: "ata-members",
+    label: "薪资查询用户",
+    description: "薪酬域 VIP 会员与收款",
+  },
+  {
+    key: "ata-documents",
+    label: "岗位文档",
+    description: "岗位全景文档库内容管理",
   },
 ];
 
@@ -91,6 +107,8 @@ export function deriveVisibleMenus(s: {
   showCoursewareUsers: boolean;
   showAsgMembers: boolean;
   showAsgDocuments: boolean;
+  showAtaMembers: boolean;
+  showAtaDocuments: boolean;
   showAdmins: boolean;
 } {
   return {
@@ -102,6 +120,8 @@ export function deriveVisibleMenus(s: {
     showCoursewareUsers: canViewMenu(s, "courseware-users"),
     showAsgMembers: canViewMenu(s, "asg-members"),
     showAsgDocuments: canViewMenu(s, "asg-documents"),
+    showAtaMembers: canViewMenu(s, "ata-members"),
+    showAtaDocuments: canViewMenu(s, "ata-documents"),
     showAdmins: !!s.isSuper,
   };
 }

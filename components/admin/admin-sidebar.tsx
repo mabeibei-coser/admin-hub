@@ -41,6 +41,8 @@ interface MeData {
   showCoursewareUsers: boolean;
   showAsgMembers: boolean;
   showAsgDocuments: boolean;
+  showAtaMembers: boolean;
+  showAtaDocuments: boolean;
   showAdmins: boolean;
 }
 
@@ -201,7 +203,7 @@ export function AdminSidebar() {
         </nav>
 
         {/* === 服务管理 section === */}
-        {(!me || me.showService || me.showCoursewareUsers || me.showAsgDocuments) && (
+        {(!me || me.showService || me.showCoursewareUsers || me.showAsgDocuments || me.showAtaDocuments) && (
           <>
             <SectionHeader label="服务管理" />
             <nav className="px-3 flex flex-col gap-0.5">
@@ -229,12 +231,20 @@ export function AdminSidebar() {
                   href="/admin/asg-documents"
                 />
               )}
+              {(!me || me.showAtaDocuments) && (
+                <SidebarNavItem
+                  label="岗位文档"
+                  icon={FolderLock}
+                  active={pathname.startsWith("/admin/ata-documents")}
+                  href="/admin/ata-documents"
+                />
+              )}
             </nav>
           </>
         )}
 
         {/* === 系统管理 section === */}
-        {(!me || me.showAdmins || me.showAsgMembers) && (
+        {(!me || me.showAdmins || me.showAsgMembers || me.showAtaMembers) && (
           <>
             <SectionHeader label="系统管理" />
             <nav className="px-3 flex flex-col gap-0.5">
@@ -260,6 +270,14 @@ export function AdminSidebar() {
                   icon={Crown}
                   active={pathname.startsWith("/admin/asg-members")}
                   href="/admin/asg-members"
+                />
+              )}
+              {(!me || me.showAtaMembers) && (
+                <SidebarNavItem
+                  label="薪资查询用户"
+                  icon={Crown}
+                  active={pathname.startsWith("/admin/ata-members")}
+                  href="/admin/ata-members"
                 />
               )}
             </nav>
@@ -388,10 +406,14 @@ export function AdminMobileBar() {
   const showCoursewareUsers = !me || me.showCoursewareUsers;
   const showAsgMembers = !me || me.showAsgMembers;
   const showAsgDocuments = !me || me.showAsgDocuments;
+  const showAtaMembers = !me || me.showAtaMembers;
+  const showAtaDocuments = !me || me.showAtaDocuments;
   const inServiceTracking = pathname.startsWith("/admin/service-tracking");
   const inCoursewareUsers = pathname.startsWith("/admin/courseware-users");
   const inAsgMembers = pathname.startsWith("/admin/asg-members");
   const inAsgDocuments = pathname.startsWith("/admin/asg-documents");
+  const inAtaMembers = pathname.startsWith("/admin/ata-members");
+  const inAtaDocuments = pathname.startsWith("/admin/ata-documents");
 
   return (
     <>
@@ -447,11 +469,25 @@ export function AdminMobileBar() {
               label="文档资料"
             />
           )}
+          {showAtaDocuments && (
+            <MobilePill
+              href="/admin/ata-documents"
+              active={inAtaDocuments}
+              label="岗位文档"
+            />
+          )}
           {showAsgMembers && (
             <MobilePill
               href="/admin/asg-members"
               active={inAsgMembers}
               label="安防平台用户"
+            />
+          )}
+          {showAtaMembers && (
+            <MobilePill
+              href="/admin/ata-members"
+              active={inAtaMembers}
+              label="薪资查询用户"
             />
           )}
         </div>

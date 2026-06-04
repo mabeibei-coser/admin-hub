@@ -16,6 +16,8 @@ export async function GET() {
     showCoursewareUsers,
     showAsgMembers,
     showAsgDocuments,
+    showAtaMembers,
+    showAtaDocuments,
     showAdmins,
   } = deriveVisibleMenus(session);
 
@@ -53,6 +55,8 @@ export async function GET() {
     showCoursewareUsers,
     showAsgMembers,
     showAsgDocuments,
+    showAtaMembers,
+    showAtaDocuments,
     showAdmins,
   });
 }

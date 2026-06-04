@@ -28,9 +28,12 @@ const INTERVIEW_DB_PATH = process.env.INTERVIEW_DB_PATH ?? path.join(DATA_DIR, "
 const TEACHING_DB_PATH = process.env.TEACHING_DB_PATH ?? path.join(DATA_DIR, "smart-teaching.db");
 
 // asg100 (安全隐患域会员中心) 数据库路径（ATTACH DATABASE 只读模式）。
-// 会员管理只读查 memberships / orders / membership_ledger。
-// 部署时通过 ASG_DB_PATH env 指向实际 asg100 数据文件。
 const ASG_DB_PATH = process.env.ASG_DB_PATH ?? path.join(DATA_DIR, "asg100.db");
+
+// ata100 (薪酬域会员中心) 数据库路径（ATTACH DATABASE 只读模式）。
+// 会员管理只读查 memberships / orders / membership_ledger / users。
+// 部署时通过 ATA_DB_PATH env 指向实际 ata100 数据文件。
+const ATA_DB_PATH = process.env.ATA_DB_PATH ?? path.join(DATA_DIR, "ata100.db");
 
 let _db: Database.Database | null = null;
 
@@ -260,6 +263,10 @@ export function getAdminDb(): Database.Database {
     const safePath = ASG_DB_PATH.replaceAll("'", "''");
     db.exec(`ATTACH DATABASE '${safePath}' AS asg`);
   }
+  if (!attached.some((d) => d.name === "ata")) {
+    const safePath = ATA_DB_PATH.replaceAll("'", "''");
+    db.exec(`ATTACH DATABASE '${safePath}' AS ata`);
+  }
   return db;
 }
 
@@ -269,6 +276,19 @@ export function isAsgDbReady(): boolean {
     const db = getAdminDb();
     const tables = db
       .prepare("SELECT name FROM asg.sqlite_master WHERE type='table' AND name='memberships'")
+      .all() as Array<{ name: string }>;
+    return tables.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** admin 端检查 ata 库是否就绪（有 memberships 表）。返回 false 时会员管理降级为空。 */
+export function isAtaDbReady(): boolean {
+  try {
+    const db = getAdminDb();
+    const tables = db
+      .prepare("SELECT name FROM ata.sqlite_master WHERE type='table' AND name='memberships'")
       .all() as Array<{ name: string }>;
     return tables.length > 0;
   } catch {
