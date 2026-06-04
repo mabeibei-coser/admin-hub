@@ -42,7 +42,6 @@ interface MeData {
   showAsgMembers: boolean;
   showAsgDocuments: boolean;
   showAtaMembers: boolean;
-  showAtaDocuments: boolean;
   showAdmins: boolean;
 }
 
@@ -203,7 +202,7 @@ export function AdminSidebar() {
         </nav>
 
         {/* === 服务管理 section === */}
-        {(!me || me.showService || me.showCoursewareUsers || me.showAsgDocuments || me.showAtaDocuments) && (
+        {(!me || me.showService || me.showCoursewareUsers || me.showAsgDocuments) && (
           <>
             <SectionHeader label="服务管理" />
             <nav className="px-3 flex flex-col gap-0.5">
@@ -229,14 +228,6 @@ export function AdminSidebar() {
                   icon={FolderLock}
                   active={pathname.startsWith("/admin/asg-documents")}
                   href="/admin/asg-documents"
-                />
-              )}
-              {(!me || me.showAtaDocuments) && (
-                <SidebarNavItem
-                  label="岗位文档"
-                  icon={FolderLock}
-                  active={pathname.startsWith("/admin/ata-documents")}
-                  href="/admin/ata-documents"
                 />
               )}
             </nav>
@@ -407,13 +398,11 @@ export function AdminMobileBar() {
   const showAsgMembers = !me || me.showAsgMembers;
   const showAsgDocuments = !me || me.showAsgDocuments;
   const showAtaMembers = !me || me.showAtaMembers;
-  const showAtaDocuments = !me || me.showAtaDocuments;
   const inServiceTracking = pathname.startsWith("/admin/service-tracking");
   const inCoursewareUsers = pathname.startsWith("/admin/courseware-users");
   const inAsgMembers = pathname.startsWith("/admin/asg-members");
   const inAsgDocuments = pathname.startsWith("/admin/asg-documents");
   const inAtaMembers = pathname.startsWith("/admin/ata-members");
-  const inAtaDocuments = pathname.startsWith("/admin/ata-documents");
 
   return (
     <>
@@ -467,13 +456,6 @@ export function AdminMobileBar() {
               href="/admin/asg-documents"
               active={inAsgDocuments}
               label="文档资料"
-            />
-          )}
-          {showAtaDocuments && (
-            <MobilePill
-              href="/admin/ata-documents"
-              active={inAtaDocuments}
-              label="岗位文档"
             />
           )}
           {showAsgMembers && (

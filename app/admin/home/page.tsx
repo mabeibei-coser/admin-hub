@@ -51,7 +51,6 @@ interface MeData {
   showAsgMembers: boolean;
   showAsgDocuments: boolean;
   showAtaMembers: boolean;
-  showAtaDocuments: boolean;
   showAdmins: boolean;
 }
 
@@ -259,7 +258,6 @@ export default function AdminHomePage() {
           me?.showAdmins ||
           me?.showAsgDocuments ||
           me?.showAsgMembers ||
-          me?.showAtaDocuments ||
           me?.showAtaMembers) && (
           <Section title="服务与系统">
             <List>
@@ -288,17 +286,7 @@ export default function AdminHomePage() {
                   href="/admin/asg-documents"
                   icon={FolderLock}
                   title="文档资料"
-                  description="安防文档库内容管理"
-                  dotClass="bg-muted-foreground/40"
-                  iconTextClass="text-muted-foreground"
-                />
-              )}
-              {me.showAtaDocuments && (
-                <ListRow
-                  href="/admin/ata-documents"
-                  icon={FolderLock}
-                  title="岗位文档"
-                  description="岗位全景文档库内容管理"
+                  description="文档库内容管理（含安防 / 薪酬域）"
                   dotClass="bg-muted-foreground/40"
                   iconTextClass="text-muted-foreground"
                 />
