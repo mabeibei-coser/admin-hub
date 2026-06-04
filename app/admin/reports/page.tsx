@@ -113,6 +113,8 @@ interface ReportRow {
   teaching_subtype?: string | null;
   /** teaching 项目专属：附件（课件图片）字节大小 */
   attachment_size?: number | null;
+  /** nav 项目专属：出生年月（"YYYY-MM"，来自 form_data_json.birthDate）；老数据为 null */
+  birth_date?: string | null;
 }
 
 interface Stats {
@@ -144,11 +146,29 @@ interface ApiResponse {
   stats: Stats;
 }
 
+// 2026-06 改版：身份从「应届 / 35↓ / 35↑」改为「应届 / 一般社会求职者」+ 出生年月独立字段。
+// 老数据可能仍写 young_unemployed / general_unemployed，保留两个老 key 以正确展示历史档案。
 const IDENTITY_LABELS: Record<string, string> = {
   recent_grad: "应届毕业生",
-  young_unemployed: "35岁以下求职者",
-  general_unemployed: "35岁以上求职者",
+  general_job_seeker: "一般社会求职者",
+  young_unemployed: "35岁以下求职者（旧）",
+  general_unemployed: "35岁以上求职者（旧）",
 };
+
+/** "YYYY-MM" → 周岁（按月精度，过了生日月才算一岁）。无效输入返回 null。 */
+function calcAge(birthDate: string | null | undefined): number | null {
+  if (!birthDate) return null;
+  const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(birthDate);
+  if (!m) return null;
+  const by = Number(m[1]);
+  const bm = Number(m[2]);
+  const now = new Date();
+  const ny = now.getFullYear();
+  const nm = now.getMonth() + 1;
+  let age = ny - by;
+  if (nm < bm) age -= 1;
+  return age >= 0 && age < 200 ? age : null;
+}
 
 // nav 的 form_data_json 学历是 code，admin 显示要映射成中文
 const EDUCATION_LABELS: Record<string, string> = {
@@ -505,8 +525,8 @@ function AdminReportsContent() {
       return ["时间", "姓名", "手机号", "服务项目", "面试岗位", "岗位职级", "面试语言", "企业性质", "操作"];
     if (project === "teaching")
       return ["时间", "用户名", "服务项目", "服务子项", "主题内容", "类型", "附件大小", "操作"];
-    // 职业导航：HR 关心节奏 + 用户身份 + 服务转化状态
-    return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "转服务状态", "操作"];
+    // 职业导航：HR 关心节奏 + 用户身份 + 年龄 + 服务转化状态
+    return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "年龄", "转服务状态", "操作"];
   }, [project]);
 
   // 当前 project 的中文显示（标题用）
@@ -670,8 +690,10 @@ function AdminReportsContent() {
                 >
                   <option value="">全部</option>
                   <option value="recent_grad">应届毕业生</option>
-                  <option value="young_unemployed">35岁以下求职者</option>
-                  <option value="general_unemployed">35岁以上求职者</option>
+                  <option value="general_job_seeker">一般社会求职者</option>
+                  {/* 老数据兼容：2026-06 改版前的两个 35 岁分档 */}
+                  <option value="young_unemployed">35岁以下求职者（旧）</option>
+                  <option value="general_unemployed">35岁以上求职者（旧）</option>
                 </select>
               </div>
               <div>
@@ -1671,10 +1693,11 @@ function ReportRowItem({
     );
   }
 
-  // tab=nav：HR 关心节奏 + 用户身份 + 服务转化状态
-  // 列：时间 / 姓名 / 手机号 / 服务项目 / 意向岗位 / 用户身份 / 转服务状态 / 操作
+  // tab=nav：HR 关心节奏 + 用户身份 + 年龄 + 服务转化状态
+  // 列：时间 / 姓名 / 手机号 / 服务项目 / 意向岗位 / 用户身份 / 年龄 / 转服务状态 / 操作
   const navMeta = PROJECTS.nav;
   const transferred = row.tracking_id != null;
+  const age = calcAge(row.birth_date);
   return (
     <TableRow className="text-sm hover:bg-[var(--blue-50)]/40 transition-colors duration-150">
       <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
@@ -1700,6 +1723,13 @@ function ReportRowItem({
         {row.user_identity
           ? IDENTITY_LABELS[row.user_identity] ?? row.user_identity
           : "—"}
+      </TableCell>
+      {/* 年龄：由 form_data_json.birthDate 实时计算；老数据无 birthDate 显示 — */}
+      <TableCell
+        className="tabular-nums text-foreground text-center"
+        title={row.birth_date ?? undefined}
+      >
+        {age != null ? `${age}岁` : "—"}
       </TableCell>
       {/* 转服务状态：纯色点（绿=已转入 灰=未转入） */}
       <TableCell className="text-center">

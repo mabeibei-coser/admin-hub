@@ -10,7 +10,18 @@
 
 // ========== 表单输入类型 ==========
 
-export type UserIdentity = "recent_grad" | "young_unemployed" | "general_unemployed";
+/**
+ * 用户身份枚举（包含新、老两套）。
+ * 2026-06 起表单只能填 recent_grad / general_job_seeker；老数据仍含两个 35 岁分档。
+ * admin-hub 既要展示历史档案也要展示新档案，所以保留全部 4 个 key。
+ */
+export type UserIdentity =
+  | "recent_grad"
+  | "general_job_seeker"
+  | "young_unemployed"
+  | "general_unemployed";
+
+export type ActiveUserIdentity = "recent_grad" | "general_job_seeker";
 
 export interface JobFormData {
   identity: UserIdentity;
@@ -18,6 +29,8 @@ export interface JobFormData {
   name?: string;
   /** 从简历正文启发式抽取的中国大陆手机号（admin 后台展示用） */
   phone?: string;
+  /** 出生年月，格式 "YYYY-MM"（来自 <input type="month">）；admin 后台据此算年龄。 */
+  birthDate?: string;
   targetPosition: string;
   education: string;
   workYears: string;

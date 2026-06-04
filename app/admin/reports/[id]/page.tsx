@@ -86,11 +86,27 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+// 2026-06 改版：身份改为「应届 / 一般社会求职者」+ 出生年月独立字段。
+// 老数据仍可能写 young_unemployed / general_unemployed，保留两个老 key 用于档案展示。
 const IDENTITY_LABELS: Record<string, string> = {
   recent_grad: "应届毕业生",
-  young_unemployed: "35岁以下求职者",
-  general_unemployed: "35岁以上求职者",
+  general_job_seeker: "一般社会求职者",
+  young_unemployed: "35岁以下求职者（旧）",
+  general_unemployed: "35岁以上求职者（旧）",
 };
+
+/** "YYYY-MM" → 周岁字符串，无 birthDate 或格式不对返回 null。 */
+function ageFromBirthDate(birthDate: string | null | undefined): number | null {
+  if (!birthDate) return null;
+  const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(birthDate);
+  if (!m) return null;
+  const by = Number(m[1]);
+  const bm = Number(m[2]);
+  const now = new Date();
+  let age = now.getFullYear() - by;
+  if (now.getMonth() + 1 < bm) age -= 1;
+  return age >= 0 && age < 200 ? age : null;
+}
 
 const EDUCATION_LABELS: Record<string, string> = {
   junior_high: "初中及以下",
@@ -698,6 +714,15 @@ export default async function ReportDetailPage({
                     {IDENTITY_LABELS[row.user_identity as string] ??
                       (row.user_identity as string | null) ??
                       "—"}
+                  </DataRow>
+                  {/* 出生年月 + 年龄（2026-06 加入）：老档案 birthDate 为空显示 — */}
+                  <DataRow label="出生年月">
+                    {(() => {
+                      const bd = navFormData?.birthDate;
+                      const age = ageFromBirthDate(bd);
+                      if (!bd) return "—";
+                      return age != null ? `${bd}（${age}岁）` : bd;
+                    })()}
                   </DataRow>
                 </>
               ) : (

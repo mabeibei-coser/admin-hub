@@ -91,6 +91,8 @@ interface ReportRow {
   teaching_subtype?: string | null;
   /** teaching 项目专属：附件（课件图片）字节大小；互动类为 NULL */
   attachment_size?: number | null;
+  /** nav 项目专属：出生年月（"YYYY-MM"，来自 form_data_json.birthDate）；老数据为 null */
+  birth_date?: string | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -248,7 +250,8 @@ export async function GET(req: NextRequest) {
              target_company, target_city_tier,
              has_resume, resume_filename, NULL AS user_identity, NULL AS uuid,
              duration_ms, sections_status, ip,
-             NULL AS tracking_id
+             NULL AS tracking_id,
+             NULL AS birth_date
       FROM main.reports ${where}
     `;
     // nav 库的 target_education 列在 finalize 时写 NULL，真实学历在 form_data_json 里。
@@ -265,7 +268,8 @@ export async function GET(req: NextRequest) {
              NULL AS target_company, NULL AS target_city_tier,
              n.has_resume, n.resume_filename, n.user_identity, n.uuid,
              n.duration_ms, n.sections_status, n.ip,
-             st.id AS tracking_id
+             st.id AS tracking_id,
+             json_extract(n.form_data_json, '$.birthDate') AS birth_date
       FROM nav.reports n
       LEFT JOIN main.service_tracking st
         ON st.source_project = 'nav' AND st.source_report_id = n.id
