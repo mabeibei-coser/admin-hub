@@ -92,6 +92,24 @@ function DocumentDialog({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 安全解析 JSON 响应：空响应 / HTML 错误页时不抛 "Unexpected end of JSON input"，
+  // 而是把 HTTP 状态码露出来。fallback 是给用户的默认提示语。
+  const safeReadJson = async (res: Response, fallback: string): Promise<{ data: Record<string, unknown>; error: string | null }> => {
+    const text = await res.text();
+    let data: Record<string, unknown> = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // 非 JSON 响应：保持空对象，下方根据 res.ok 决定是否报错
+      }
+    }
+    if (res.ok) return { data, error: null };
+    const serverMsg = typeof data.error === "string" ? data.error : "";
+    const httpHint = `HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ""}`;
+    return { data, error: serverMsg || `${fallback}（${httpHint}）` };
+  };
+
   const submit = async () => {
     if (!title.trim()) {
       setError("请填写标题");
@@ -110,8 +128,8 @@ function DocumentDialog({
           credentials: "include",
           body: fd,
         });
-        const upData = (await upRes.json()) as { attachment?: unknown; error?: string };
-        if (!upRes.ok) throw new Error(upData.error || "附件上传失败");
+        const { data: upData, error: upErr } = await safeReadJson(upRes, "附件上传失败");
+        if (upErr) throw new Error(upErr);
         attachmentField = upData.attachment;
       }
 
@@ -136,8 +154,8 @@ function DocumentDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(data.error || (isEdit ? "更新失败" : "创建失败"));
+      const { error: saveErr } = await safeReadJson(res, isEdit ? "更新失败" : "创建失败");
+      if (saveErr) throw new Error(saveErr);
       onDone();
     } catch (e) {
       setError(e instanceof Error ? e.message : "提交失败");
