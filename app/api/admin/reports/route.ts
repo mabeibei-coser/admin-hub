@@ -234,11 +234,13 @@ export async function GET(req: NextRequest) {
     }
 
     // navSelect 用 LEFT JOIN service_tracking，nav.reports 起别名 n. —— WHERE 列名要 prefix
+    // 同时 LEFT JOIN hidden_reports，过滤掉超管标记隐藏的记录（admin 端"删除"）
     const conditionsNav = [
       ...conditions.map((c) =>
         c.replace(/^(created_at|target_position|has_resume)\b/, "n.$1")
       ),
       ...navOnlyConditions,
+      "hid.source_report_id IS NULL",
     ];
     const whereNav = conditionsNav.length > 0 ? `WHERE ${conditionsNav.join(" AND ")}` : "";
 
@@ -273,14 +275,18 @@ export async function GET(req: NextRequest) {
       FROM nav.reports n
       LEFT JOIN main.service_tracking st
         ON st.source_project = 'nav' AND st.source_report_id = n.id
+      LEFT JOIN main.hidden_reports hid
+        ON hid.source_project = 'nav' AND hid.source_report_id = n.id
       ${whereNav}
     `;
 
-    // nav count 也要 LEFT JOIN service_tracking，否则 transferStatus filter 用不了
+    // nav count 也要 LEFT JOIN service_tracking + hidden_reports，跟 listQuery 口径一致
     const navCountFrom = `
       FROM nav.reports n
       LEFT JOIN main.service_tracking st
         ON st.source_project = 'nav' AND st.source_report_id = n.id
+      LEFT JOIN main.hidden_reports hid
+        ON hid.source_project = 'nav' AND hid.source_report_id = n.id
     `;
 
     // startup 用 LEFT JOIN service_tracking，startup.reports 起别名 s.
@@ -294,6 +300,7 @@ export async function GET(req: NextRequest) {
           c.replace(/^(created_at|has_resume)\b/, "s.$1")
         ),
       ...startupOnlyConditions,
+      "hid.source_report_id IS NULL",
     ];
     const whereStartup = startupConditionsCombined.length > 0
       ? `WHERE ${startupConditionsCombined.join(" AND ")}`
@@ -315,12 +322,16 @@ export async function GET(req: NextRequest) {
       FROM startup.reports s
       LEFT JOIN main.service_tracking st
         ON st.source_project = 'startup' AND st.source_report_id = s.id
+      LEFT JOIN main.hidden_reports hid
+        ON hid.source_project = 'startup' AND hid.source_report_id = s.id
       ${whereStartup}
     `;
     const startupCountFrom = `
       FROM startup.reports s
       LEFT JOIN main.service_tracking st
         ON st.source_project = 'startup' AND st.source_report_id = s.id
+      LEFT JOIN main.hidden_reports hid
+        ON hid.source_project = 'startup' AND hid.source_report_id = s.id
     `;
     // startup base params 重建（不复用通用 params，因为 position 走 startupOnlyParams）
     // 顺序与 conditions 一致：from / to / hasResume（hasResume 是字面量无 param）

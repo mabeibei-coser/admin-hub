@@ -13,6 +13,7 @@ import { ServiceTrackingEditor } from "@/components/admin/service-tracking-edito
 import { ServiceRecordsList } from "@/components/admin/service-records-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { Breadcrumb } from "@/components/admin/breadcrumb";
+import { DeleteTrackingButton } from "@/components/admin/delete-tracking-button";
 
 interface DetailRow {
   id: number;
@@ -140,6 +141,11 @@ export default async function ServiceTrackingDetailPage({
               </span>
             }
             accentColor="blue"
+            actions={
+              session.isSuper ? (
+                <DeleteTrackingButton trackingId={row.id} userName={row.user_name} />
+              ) : undefined
+            }
           />
         </div>
 

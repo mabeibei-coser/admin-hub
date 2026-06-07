@@ -26,6 +26,7 @@ interface MemberRow {
   totalPaidCents: number;
   orderCount: number;
   paidOrderCount: number;
+  usageCount: number;
   updatedAt: number;
   createdAt: number | null;
 }
@@ -46,7 +47,7 @@ interface ListResponse {
   stats?: Stats;
 }
 
-const COLUMNS = ["手机号", "会员状态", "VIP 到期", "累计付款", "成功订单", "注册日期", "更新时间", "操作"] as const;
+const COLUMNS = ["注册日期", "手机号", "会员状态", "VIP 到期", "使用次数", "成功订单", "累计付款", "更新时间", "操作"] as const;
 
 function fmtDate(ms: number | null | undefined) {
   if (!ms) return "—";
@@ -209,6 +210,7 @@ function AsgMembersInner() {
             ) : (
               rows.map((r) => (
                 <TableRow key={r.phone}>
+                  <TableCell className="tabular-nums text-muted-foreground">{fmtDate(r.createdAt)}</TableCell>
                   <TableCell className="font-mono tabular-nums">{r.phone}</TableCell>
                   <TableCell>
                     <StatusPill tone={r.isVip ? "success" : "neutral"}>
@@ -216,9 +218,9 @@ function AsgMembersInner() {
                     </StatusPill>
                   </TableCell>
                   <TableCell className="tabular-nums">{r.isVip ? fmtDate(r.vipExpireAt) : "—"}</TableCell>
-                  <TableCell className="tabular-nums font-medium">{yuan(r.totalPaidCents)}</TableCell>
+                  <TableCell className="tabular-nums">{r.usageCount}</TableCell>
                   <TableCell className="tabular-nums">{r.paidOrderCount}</TableCell>
-                  <TableCell className="tabular-nums text-muted-foreground">{fmtDate(r.createdAt)}</TableCell>
+                  <TableCell className="tabular-nums font-medium">{yuan(r.totalPaidCents)}</TableCell>
                   <TableCell className="tabular-nums text-muted-foreground">{fmtDateTime(r.updatedAt)}</TableCell>
                   <TableCell>
                     <Button

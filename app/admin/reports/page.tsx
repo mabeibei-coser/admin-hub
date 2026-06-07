@@ -20,6 +20,7 @@ import {
   CalendarDays,
   ImageOff,
   Presentation,
+  Trash2,
 } from "lucide-react";
 import {
   COMPANY_TYPE_LABELS,
@@ -42,6 +43,7 @@ import {
   TransferServiceDialog,
   type TransferTargetRow,
 } from "@/components/admin/transfer-service-dialog";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { PageHeader } from "@/components/admin/page-header";
 import { DataCard } from "@/components/admin/data-card";
 import { Alert } from "@/components/admin/alert";
@@ -53,6 +55,7 @@ interface MeData {
   adminId: number;
   name: string;
   showService: boolean;
+  isSuper: boolean;
 }
 
 /**
@@ -357,6 +360,9 @@ function AdminReportsContent() {
 
   // 转服务弹窗：dialog state 上提到顶层（plan §8 决策）
   const [transferRow, setTransferRow] = useState<TransferTargetRow | null>(null);
+  // 删除（admin 端隐藏）弹窗：仅超管可见。承载 nav / startup 行的删除目标
+  const [hideRow, setHideRow] = useState<{ id: number; project: "nav" | "startup"; name: string | null } | null>(null);
+  const [hideBusy, setHideBusy] = useState(false);
   const [me, setMe] = useState<MeData | null>(null);
   useEffect(() => {
     fetch(withBase("/api/admin/me"))
@@ -364,7 +370,12 @@ function AdminReportsContent() {
       .then(
         (d: MeData | null) =>
           d &&
-          setMe({ adminId: d.adminId, name: d.name, showService: d.showService })
+          setMe({
+            adminId: d.adminId,
+            name: d.name,
+            showService: d.showService,
+            isSuper: !!d.isSuper,
+          })
       )
       .catch(() => {});
   }, []);
@@ -381,6 +392,12 @@ function AdminReportsContent() {
           : row.target_position,
       source_project: row.project,
     });
+  }, []);
+
+  // 删除（admin 端隐藏）：弹窗 → POST /api/admin/reports/hide → 重新拉列表
+  const handleHide = useCallback((row: ReportRow) => {
+    if (row.project !== "nav" && row.project !== "startup") return;
+    setHideRow({ id: row.id, project: row.project, name: row.user_name });
   }, []);
 
   // 切 project 时重置分页 + 清空 tab 专属筛选（保留通用的 from/to/position）
@@ -546,6 +563,45 @@ function AdminReportsContent() {
           fetch_();
         }}
       />
+      {hideRow && (
+        <ConfirmDialog
+          icon={Trash2}
+          tone="danger"
+          title="删除记录"
+          confirmLabel="确认删除"
+          busy={hideBusy}
+          onCancel={() => setHideRow(null)}
+          onConfirm={async () => {
+            setHideBusy(true);
+            try {
+              const res = await fetch(withBase("/api/admin/reports/hide"), {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ project: hideRow.project, reportId: hideRow.id }),
+              });
+              if (!res.ok) {
+                const d = (await res.json().catch(() => ({}))) as { error?: string };
+                throw new Error(d.error || "删除失败");
+              }
+              setHideRow(null);
+              fetch_();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "删除失败");
+              setHideRow(null);
+            } finally {
+              setHideBusy(false);
+            }
+          }}
+        >
+          <p>
+            将从管理后台列表里移除「{hideRow.name || "（未填姓名）"}」这条记录。
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            注意：用户端的原始报告数据仍保留在业务库里，C 端用户照常能看到。如需彻底删除，请联系开发处理。
+          </p>
+        </ConfirmDialog>
+      )}
       <div className="relative max-w-7xl mx-auto space-y-5">
         {/* 标题 — 统一 PageHeader（圆形 icon avatar + 顶部装饰条） */}
         <PageHeader
@@ -1138,8 +1194,10 @@ function AdminReportsContent() {
                     row={row}
                     project={project}
                     onTransfer={handleTransfer}
+                    onHide={handleHide}
                     navReady={data?.navReady ?? true}
                     startupReady={data?.startupReady ?? true}
+                    isSuper={!!me?.isSuper}
                   />
                 ))
               )}
@@ -1397,14 +1455,18 @@ function ReportRowItem({
   row,
   project,
   onTransfer,
+  onHide,
   navReady,
   startupReady,
+  isSuper,
 }: {
   row: ReportRow;
   project: ProjectFilter;
   onTransfer: (row: ReportRow) => void;
+  onHide: (row: ReportRow) => void;
   navReady: boolean;
   startupReady: boolean;
+  isSuper: boolean;
 }) {
   const durationCell = row.duration_ms
     ? `${Math.round(row.duration_ms / 1000)}s`
@@ -1451,7 +1513,7 @@ function ReportRowItem({
           />
         </TableCell>
         <TableCell>
-          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+          <RowActions row={row} onTransfer={onTransfer} onHide={onHide} navReady={navReady} startupReady={startupReady} isSuper={isSuper} />
         </TableCell>
       </TableRow>
     );
@@ -1491,7 +1553,7 @@ function ReportRowItem({
           {formatBytes(row.attachment_size)}
         </TableCell>
         <TableCell>
-          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+          <RowActions row={row} onTransfer={onTransfer} onHide={onHide} navReady={navReady} startupReady={startupReady} isSuper={isSuper} />
         </TableCell>
       </TableRow>
     );
@@ -1521,7 +1583,7 @@ function ReportRowItem({
           {row.target_company || "—"}
         </TableCell>
         <TableCell>
-          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+          <RowActions row={row} onTransfer={onTransfer} onHide={onHide} navReady={navReady} startupReady={startupReady} isSuper={isSuper} />
         </TableCell>
       </TableRow>
     );
@@ -1563,7 +1625,7 @@ function ReportRowItem({
           {row.target_city_tier || "—"}
         </TableCell>
         <TableCell>
-          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+          <RowActions row={row} onTransfer={onTransfer} onHide={onHide} navReady={navReady} startupReady={startupReady} isSuper={isSuper} />
         </TableCell>
       </TableRow>
     );
@@ -1605,7 +1667,7 @@ function ReportRowItem({
           </div>
         </TableCell>
         <TableCell>
-          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+          <RowActions row={row} onTransfer={onTransfer} onHide={onHide} navReady={navReady} startupReady={startupReady} isSuper={isSuper} />
         </TableCell>
       </TableRow>
     );
@@ -1650,7 +1712,7 @@ function ReportRowItem({
             : "—"}
         </TableCell>
         <TableCell>
-          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+          <RowActions row={row} onTransfer={onTransfer} onHide={onHide} navReady={navReady} startupReady={startupReady} isSuper={isSuper} />
         </TableCell>
       </TableRow>
     );
@@ -1687,7 +1749,7 @@ function ReportRowItem({
         </TableCell>
         <TableCell className="text-muted-foreground">{modeLabel}</TableCell>
         <TableCell>
-          <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+          <RowActions row={row} onTransfer={onTransfer} onHide={onHide} navReady={navReady} startupReady={startupReady} isSuper={isSuper} />
         </TableCell>
       </TableRow>
     );
@@ -1739,7 +1801,7 @@ function ReportRowItem({
         />
       </TableCell>
       <TableCell>
-        <RowActions row={row} onTransfer={onTransfer} navReady={navReady} startupReady={startupReady} />
+        <RowActions row={row} onTransfer={onTransfer} onHide={onHide} navReady={navReady} startupReady={startupReady} isSuper={isSuper} />
       </TableCell>
     </TableRow>
   );
@@ -1795,13 +1857,17 @@ const ACTION_BTN_DISABLED =
 function RowActions({
   row,
   onTransfer,
+  onHide,
   navReady,
   startupReady,
+  isSuper,
 }: {
   row: ReportRow;
   onTransfer: (row: ReportRow) => void;
+  onHide: (row: ReportRow) => void;
   navReady: boolean;
   startupReady: boolean;
+  isSuper: boolean;
 }) {
   // nav / startup 行均支持「转服务」按钮（v1 决策）
   const supportsTransfer = row.project === "nav" || row.project === "startup";
@@ -1811,6 +1877,8 @@ function RowActions({
   const transferred = row.tracking_id != null;
   // hazard 报告内嵌在档案页中，列表无需独立的"报告"按钮入口
   const showReportButton = row.project !== "hazard";
+  // 删除按钮：仅 nav / startup tab + 超管可见
+  const showDelete = (row.project === "nav" || row.project === "startup") && isSuper;
   return (
     <div className="flex items-center justify-center gap-2">
       {showReportButton && (
@@ -1850,6 +1918,17 @@ function RowActions({
             转服务
           </button>
         )
+      )}
+      {showDelete && (
+        <button
+          type="button"
+          onClick={() => onHide(row)}
+          title="删除这条记录（仅在管理后台隐藏，业务库数据保留）"
+          className={`${ACTION_BTN_BASE} ring-rose-200 text-rose-600 bg-card hover:bg-rose-50 hover:ring-rose-300 focus-visible:ring-rose-400`}
+          aria-label="删除记录"
+        >
+          <Trash2 className="size-3" />
+        </button>
       )}
     </div>
   );

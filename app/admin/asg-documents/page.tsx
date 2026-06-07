@@ -40,6 +40,7 @@ interface DocRow {
   attachmentName: string | null;
   pinned: boolean;
   createdAt: number;
+  uploadedByName: string | null;
   viewCount: number;
 }
 
@@ -68,7 +69,7 @@ function fmtDate(ms: number) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-const COLUMNS = ["标题", "分类", "子分类", "档位", "查看人数", "上传时间", "操作"] as const;
+const COLUMNS = ["标题", "分类", "子分类", "档位", "查看人数", "上传人", "上传时间", "操作"] as const;
 
 // ════════════ 新建 / 编辑 弹窗 ════════════
 function DocumentDialog({
@@ -513,6 +514,7 @@ function AsgDocumentsInner() {
                     </StatusPill>
                   </TableCell>
                   <TableCell className="tabular-nums text-muted-foreground">{d.viewCount}</TableCell>
+                  <TableCell className="text-muted-foreground">{d.uploadedByName || "—"}</TableCell>
                   <TableCell className="tabular-nums text-muted-foreground">{fmtDate(d.createdAt)}</TableCell>
                   <TableCell>
                     <div className="inline-flex items-center gap-1">

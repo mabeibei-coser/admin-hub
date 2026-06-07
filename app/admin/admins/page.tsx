@@ -54,6 +54,13 @@ function menusDisplay(menusJson: string, isSuper: number): string {
   }
 }
 
+function formatTs(ms: number | null | undefined) {
+  if (!ms) return "—";
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
+}
+
 // 筛选下拉用：包含「全部 / 未分组 / 各分组」三种值
 // "" 表示「全部」，"none" 表示「未分组」，数字字符串表示对应分组 id
 type GroupFilterValue = "" | "none" | string;
@@ -203,6 +210,7 @@ export default function AdminsPage() {
                 <TableHead className="w-28">分组</TableHead>
                 <TableHead>备注</TableHead>
                 <TableHead className="w-48">菜单权限</TableHead>
+                <TableHead className="w-28">创建时间</TableHead>
                 <TableHead className="w-20 text-center">状态</TableHead>
                 <TableHead className="w-28 text-right">操作</TableHead>
               </TableRow>
@@ -210,7 +218,7 @@ export default function AdminsPage() {
             <TableBody>
               {Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={`skel-${i}`}>
-                  {Array.from({ length: 7 }).map((__, j) => (
+                  {Array.from({ length: 8 }).map((__, j) => (
                     <TableCell key={j} className="py-4">
                       <div className="h-4 bg-muted rounded animate-pulse" />
                     </TableCell>
@@ -248,6 +256,7 @@ export default function AdminsPage() {
                 <TableHead className="w-28">分组</TableHead>
                 <TableHead>备注</TableHead>
                 <TableHead className="w-48">菜单权限</TableHead>
+                <TableHead className="w-28">创建时间</TableHead>
                 <TableHead className="w-20 text-center">状态</TableHead>
                 <TableHead className="w-28 text-right">操作</TableHead>
               </TableRow>
@@ -256,7 +265,7 @@ export default function AdminsPage() {
               {filteredAdmins.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className="text-center py-10 text-sm text-muted-foreground"
                   >
                     没有匹配的管理员
@@ -290,6 +299,9 @@ export default function AdminsPage() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {menusDisplay(admin.menus_json, admin.is_super)}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">
+                      {formatTs(admin.created_at)}
                     </TableCell>
                     <TableCell className="text-center">
                       <StatusPill tone={admin.is_active ? "success" : "neutral"}>

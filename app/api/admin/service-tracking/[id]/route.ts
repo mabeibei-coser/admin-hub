@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMenu } from "@/lib/admin-session";
+import { requireMenu, requireSuper } from "@/lib/admin-session";
 import { getDb } from "@/lib/db";
 import {
   accessFilter,
@@ -253,6 +253,40 @@ export async function PATCH(
 
   if (result.changes === 0) {
     return NextResponse.json({ error: "记录不存在或无权修改" }, { status: 403 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+/**
+ * DELETE /api/admin/service-tracking/[id]
+ * 整条删除服务跟踪 + 级联删 service_records（admin-hub 自己的表，硬删）。
+ * 只允许超管。事务原子。
+ */
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await requireSuper();
+  if (!session) {
+    return NextResponse.json({ error: "无权限（仅超管可操作）" }, { status: 403 });
+  }
+
+  const { id: idStr } = await params;
+  const id = Number(idStr);
+  if (!Number.isInteger(id) || id <= 0) {
+    return NextResponse.json({ error: "id 无效" }, { status: 400 });
+  }
+
+  const db = getDb();
+  const result = db.transaction(() => {
+    // 先删子表 records，再删主表，避免悬挂引用
+    db.prepare("DELETE FROM service_records WHERE tracking_id = ?").run(id);
+    return db.prepare("DELETE FROM service_tracking WHERE id = ?").run(id);
+  })();
+
+  if (result.changes === 0) {
+    return NextResponse.json({ error: "记录不存在" }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true });

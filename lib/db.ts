@@ -196,6 +196,21 @@ export function getDb(): Database.Database {
     `);
   }
 
+  // 报告隐藏名单：admin 在跨库（nav / startup）报告列表里把某条记录"删除"。
+  // 实际不动 nav.* / startup.* 业务库（守住「admin-hub 跨库只读」铁律），
+  // 只在 admin-hub 这边记一笔，列表查询时 LEFT JOIN 过滤掉。
+  // 主键 (source_project, source_report_id) 天然幂等，删两次是同一条记录。
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS hidden_reports (
+      source_project     TEXT    NOT NULL CHECK (source_project IN ('nav','startup')),
+      source_report_id   INTEGER NOT NULL,
+      hidden_by_admin_id INTEGER NOT NULL,
+      hidden_at          INTEGER NOT NULL,
+      PRIMARY KEY (source_project, source_report_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_hidden_reports_project ON hidden_reports(source_project, source_report_id);
+  `);
+
   // 课件用户白名单：admin 加入的手机号才能登录智能课件(A700)。
   // 「最后登录时间/使用次数」不存本表，列表查询时跨 ATTACH 只读 teaching 库算出。
   _db.exec(`

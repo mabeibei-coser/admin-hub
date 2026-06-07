@@ -49,7 +49,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "请填写文档标题" }, { status: 400 });
   }
 
-  const { ok, status, data } = await docLibFetch("/api/admin/documents", { method: "POST", body });
+  // 注入上传人姓名 — 取当前 admin session 的 name；编辑时不传，由 doc-library 保留原值
+  const payload = { ...body, uploadedByName: session.name ?? null };
+  const { ok, status, data } = await docLibFetch("/api/admin/documents", { method: "POST", body: payload });
   if (!ok) {
     return NextResponse.json({ error: (data as { error?: string })?.error || "创建失败" }, { status: status || 502 });
   }

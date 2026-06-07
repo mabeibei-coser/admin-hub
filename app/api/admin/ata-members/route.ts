@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMenu } from "@/lib/admin-session";
-import { getAdminDb, isAtaDbReady } from "@/lib/db";
+import { getAdminDb, isAtaDbReady, isSalaryDbReady } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -14,6 +14,7 @@ interface MemberRow {
   created_at: number | null;
   order_count: number;
   paid_order_count: number;
+  usage_count: number;
 }
 
 /** 本周一 00:00 的时间戳（本地时区，周一为周首日）。 */
@@ -79,6 +80,12 @@ export async function GET(req: NextRequest) {
 
   const offset = (page - 1) * pageSize;
 
+  // 使用次数 = 该手机号在 salary 域（薪资查询）生成的报告数。
+  // salary 库可能未 ready（dev 没起过 A500 / 生产首次部署前 ATTACH 空文件）
+  // → 表不存在，prepare 直接报错。所以入口判断后再 inline SQL。
+  const usageExpr = isSalaryDbReady()
+    ? "(SELECT COUNT(*) FROM salary.reports r WHERE r.user_phone = m.phone)"
+    : "0";
   const rows = db
     .prepare(
       `SELECT
@@ -88,7 +95,8 @@ export async function GET(req: NextRequest) {
          m.updated_at,
          u.created_at AS created_at,
          (SELECT COUNT(*) FROM ata.orders o WHERE o.payer_phone = m.phone) AS order_count,
-         (SELECT COUNT(*) FROM ata.orders o WHERE o.payer_phone = m.phone AND o.status = 'paid') AS paid_order_count
+         (SELECT COUNT(*) FROM ata.orders o WHERE o.payer_phone = m.phone AND o.status = 'paid') AS paid_order_count,
+         ${usageExpr} AS usage_count
        FROM ata.memberships m
        LEFT JOIN ata.users u ON u.phone = m.phone
        ${where}
@@ -122,6 +130,7 @@ export async function GET(req: NextRequest) {
       totalPaidCents: r.total_paid_cents,
       orderCount: r.order_count,
       paidOrderCount: r.paid_order_count,
+      usageCount: r.usage_count,
       updatedAt: r.updated_at,
       createdAt: r.created_at,
     })),

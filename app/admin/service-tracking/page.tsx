@@ -17,6 +17,7 @@ import {
   CalendarPlus,
   Activity,
   AlertCircle,
+  Trash2,
 } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { DataCard } from "@/components/admin/data-card";
@@ -32,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import {
   SERVICE_CATEGORIES,
   SERVICE_STATUSES,
@@ -165,6 +167,25 @@ function ListContent() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // 删除整条跟踪：仅超管。state 承载弹窗目标 + 提交中标志
+  const [isSuper, setIsSuper] = useState(false);
+  const [deleteRow, setDeleteRow] = useState<ListRow | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  // 拉一次 me 判断是否超管（决定是否渲染删除按钮）
+  useEffect(() => {
+    let cancelled = false;
+    fetch(withBase("/api/admin/me"), { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { isSuper?: boolean } | null) => {
+        if (cancelled) return;
+        setIsSuper(!!d?.isSuper);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fetch_ = useCallback(async () => {
     setLoading(true);
@@ -479,6 +500,17 @@ function ListContent() {
                           <Pencil className="size-3" />
                           服务编辑
                         </Link>
+                        {isSuper && (
+                          <button
+                            type="button"
+                            onClick={() => setDeleteRow(row)}
+                            title="删除整条服务跟踪（含全部跟进记录）"
+                            aria-label="删除"
+                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-rose-200 text-rose-600 bg-card hover:bg-rose-50 hover:ring-rose-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"
+                          >
+                            <Trash2 className="size-3" />
+                          </button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -549,6 +581,44 @@ function ListContent() {
           )}
         </div>
       </div>
+      {deleteRow && (
+        <ConfirmDialog
+          icon={Trash2}
+          tone="danger"
+          title="删除服务跟踪"
+          confirmLabel="确认删除"
+          busy={deleteBusy}
+          onCancel={() => setDeleteRow(null)}
+          onConfirm={async () => {
+            setDeleteBusy(true);
+            try {
+              const res = await fetch(
+                withBase(`/api/admin/service-tracking/${deleteRow.id}`),
+                { method: "DELETE", credentials: "include" }
+              );
+              if (!res.ok) {
+                const d = (await res.json().catch(() => ({}))) as { error?: string };
+                throw new Error(d.error || "删除失败");
+              }
+              setDeleteRow(null);
+              fetch_();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "删除失败");
+              setDeleteRow(null);
+            } finally {
+              setDeleteBusy(false);
+            }
+          }}
+        >
+          <p>
+            将删除「{deleteRow.user_name || "（未填姓名）"}」的整条服务跟踪，
+            包括所有跟进记录与附件元信息。
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            此操作不可撤销。源报告本身（来自 {SERVICE_PROJECT_LABELS[deleteRow.source_project]}）不会被删除。
+          </p>
+        </ConfirmDialog>
+      )}
     </div>
   );
 }
