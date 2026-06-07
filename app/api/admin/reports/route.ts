@@ -128,6 +128,12 @@ export async function GET(req: NextRequest) {
     const project = clampProject(parseProject(searchParams.get("project")), session);
 
     const db = getAdminDb();
+    // career-report 的 reports 表 2026-06 才加 user_name/user_phone 列（从简历提取）。
+    // 生产若 career-report 还没重启跑迁移，老 schema 没这两列，动态守门避免 SELECT 报 no such column。
+    const reportCols = db.prepare("PRAGMA main.table_info(reports)").all() as Array<{ name: string }>;
+    const reportHasUserCols = reportCols.some((c) => c.name === "user_name");
+    const reportUserNameExpr = reportHasUserCols ? "user_name" : "NULL";
+    const reportUserPhoneExpr = reportHasUserCols ? "user_phone" : "NULL";
     const navReady = isNavDbReady();
     const startupReady = isStartupDbReady();
     const tailorReady = isTailorDbReady();
@@ -248,7 +254,7 @@ export async function GET(req: NextRequest) {
     const reportSelect = `
       SELECT id, created_at, 'report' AS project,
              target_position, target_education,
-             NULL AS work_years, NULL AS user_name, NULL AS user_phone,
+             NULL AS work_years, ${reportUserNameExpr} AS user_name, ${reportUserPhoneExpr} AS user_phone,
              target_company, target_city_tier,
              has_resume, resume_filename, NULL AS user_identity, NULL AS uuid,
              duration_ms, sections_status, ip,
