@@ -274,7 +274,8 @@ export default async function ReportDetailPage({
   // ─── Parse data by project ────────────────────────────────────────────────
   let reportData: NavReportData | null = null;
   let interviewQ1Q2: InterviewQ1Q2 | null = null;
-  let interviewQuestions: { Q1?: string; Q2?: string } | null = null;
+  let interviewQ3Q4: { Q3?: string; Q4?: string } | null = null;
+  let interviewQuestions: { Q1?: string; Q2?: string; Q3?: string; Q4?: string } | null = null;
   let navFormData: NavJobFormData | null = null;
   let navQuizAnswers: NavQuizAnswer[] | null = null;
   const navQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
@@ -286,9 +287,20 @@ export default async function ReportDetailPage({
   // startup 专属解析
   let startupReportData: StartupReportData | null = null;
   let startupInterview: StartupInterviewQ1Q6 | null = null;
+  // 访谈题目（治本持久化；老档案为 null → 用 startupQDimension 维度名兜底）
+  let startupInterviewQuestions: StartupInterviewQ1Q6 | null = null;
   let startupFormData: StartupJobFormData | null = null;
   let startupQuizAnswers: StartupQuizAnswer[] | null = null;
   const startupQuizBankMap = new Map<string, { text: string; options: { label: string; text: string }[] }>();
+  // Q1-Q6 → 六维固定名（题目未持久化的老档案兜底；顺序对应 startup question/route 的 prompt）
+  const startupQDimension: Record<string, string> = {
+    Q1: "需求与定位",
+    Q2: "产品与商业模式",
+    Q3: "市场与竞争力",
+    Q4: "团队能力",
+    Q5: "项目发展现状",
+    Q6: "发展规划与风险",
+  };
   // salary 专属解析
   let salaryReportData: SalaryReportData | null = null;
   // hazard 专属解析（report_json 是 hazards 数组）
@@ -305,12 +317,17 @@ export default async function ReportDetailPage({
   if (project === "nav") {
     try { reportData = JSON.parse(row.report_json as string) as NavReportData; } catch { /* empty */ }
     try { interviewQ1Q2 = JSON.parse(row.interview_q1q2_json as string) as InterviewQ1Q2; } catch { /* empty */ }
+    // Q3/Q4 固定题库占位题答案（career-nav 后续版本持久化；老档案该列为 null/缺列 → 不显示）
+    try {
+      const q34Str = row.interview_q3q4_json as string | null | undefined;
+      if (q34Str) interviewQ3Q4 = JSON.parse(q34Str) as { Q3?: string; Q4?: string };
+    } catch { /* empty */ }
     try { navFormData = JSON.parse(row.form_data_json as string) as NavJobFormData; } catch { /* empty */ }
     try { navQuizAnswers = JSON.parse(row.quiz_answers_json as string) as NavQuizAnswer[]; } catch { /* empty */ }
-    // 访谈 Q1/Q2 题干（career-nav v0.10.13+ 持久化；老档案为 null）
+    // 访谈题干（career-nav v0.10.13+ 持久化 Q1/Q2，后续版本扩展含 Q3/Q4；老档案为 null）
     try {
       const iqStr = row.interview_questions_json as string | null;
-      if (iqStr) interviewQuestions = JSON.parse(iqStr) as { Q1?: string; Q2?: string };
+      if (iqStr) interviewQuestions = JSON.parse(iqStr) as { Q1?: string; Q2?: string; Q3?: string; Q4?: string };
     } catch { /* empty */ }
     // 量表题 lookup map：合并 quiz-bank.json 固定题（SJT-01/02）+ db 里持久化的动态题（SJT-03~08）
     const navDbPath = process.env.NAV_DB_PATH;
@@ -334,6 +351,10 @@ export default async function ReportDetailPage({
   } else if (project === "startup") {
     try { startupReportData = JSON.parse(row.report_json as string) as StartupReportData; } catch { /* empty */ }
     try { startupInterview = JSON.parse(row.interview_q1q2_json as string) as StartupInterviewQ1Q6; } catch { /* empty */ }
+    try {
+      const sqStr = row.interview_questions_json as string | null;
+      if (sqStr) startupInterviewQuestions = JSON.parse(sqStr) as StartupInterviewQ1Q6;
+    } catch { /* 题目未持久化（老档案）→ 维度名兜底 */ }
     try { startupFormData = JSON.parse(row.form_data_json as string) as StartupJobFormData; } catch { /* empty */ }
     try { startupQuizAnswers = JSON.parse(row.quiz_answers_json as string) as StartupQuizAnswer[]; } catch { /* empty */ }
     // startup 的 quiz-bank.json 在 startup-diagnostic 项目的 data/ 同级目录
@@ -878,16 +899,18 @@ export default async function ReportDetailPage({
           </Section>
         )}
 
-        {/* ── 访谈内容（nav 侧）— Q1/Q2 完整展开 ────────────────────── */}
+        {/* ── 访谈内容（nav 侧）— Q1/Q2 动态题 + Q3/Q4 固定题库 完整展开 ──── */}
         {project === "nav" &&
-          interviewQ1Q2 &&
-          (interviewQ1Q2.Q1 || interviewQ1Q2.Q2) && (
-            <Section title="访谈内容（Q1 / Q2）">
+          (interviewQ1Q2?.Q1 ||
+            interviewQ1Q2?.Q2 ||
+            interviewQ3Q4?.Q3 ||
+            interviewQ3Q4?.Q4) && (
+            <Section title="访谈内容（Q1 – Q4）">
               <div className="space-y-3">
                 <Alert tone="warning">
                   以下内容为用户访谈原始回答，含个人陈述、PII 敏感信息。请勿截图传播或对外汇报。
                 </Alert>
-                {interviewQ1Q2.Q1 && (
+                {interviewQ1Q2?.Q1 && (
                   <div>
                     <div className="text-xs font-medium text-muted-foreground mb-1.5">
                       Q1 动态访谈（AI 生成题）
@@ -903,7 +926,7 @@ export default async function ReportDetailPage({
                     </pre>
                   </div>
                 )}
-                {interviewQ1Q2.Q2 && (
+                {interviewQ1Q2?.Q2 && (
                   <div>
                     <div className="text-xs font-medium text-muted-foreground mb-1.5">
                       Q2 动态访谈（AI 生成题）
@@ -916,6 +939,38 @@ export default async function ReportDetailPage({
                     )}
                     <pre className="text-sm text-foreground bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
                       {interviewQ1Q2.Q2}
+                    </pre>
+                  </div>
+                )}
+                {interviewQ3Q4?.Q3 && (
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                      Q3 固定题库（随机抽题 · 不计入报告）
+                    </div>
+                    {interviewQuestions?.Q3 && (
+                      <div className="text-sm text-[var(--navy-800)] bg-[var(--blue-50)] border border-[var(--blue-200)]/60 rounded-lg px-3 py-2 mb-1.5 leading-relaxed">
+                        <span className="text-[var(--blue-700)] font-medium mr-1">题：</span>
+                        {interviewQuestions.Q3}
+                      </div>
+                    )}
+                    <pre className="text-sm text-foreground bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
+                      {interviewQ3Q4.Q3}
+                    </pre>
+                  </div>
+                )}
+                {interviewQ3Q4?.Q4 && (
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                      Q4 固定题库（随机抽题 · 不计入报告）
+                    </div>
+                    {interviewQuestions?.Q4 && (
+                      <div className="text-sm text-[var(--navy-800)] bg-[var(--blue-50)] border border-[var(--blue-200)]/60 rounded-lg px-3 py-2 mb-1.5 leading-relaxed">
+                        <span className="text-[var(--blue-700)] font-medium mr-1">题：</span>
+                        {interviewQuestions.Q4}
+                      </div>
+                    )}
+                    <pre className="text-sm text-foreground bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
+                      {interviewQ3Q4.Q4}
                     </pre>
                   </div>
                 )}
@@ -935,10 +990,13 @@ export default async function ReportDetailPage({
                 {(["Q1", "Q2", "Q3", "Q4", "Q5", "Q6"] as const).map((qKey) => {
                   const answer = startupInterview?.[qKey];
                   if (!answer) return null;
+                  // 有真实题目（治本后的新档案）显示真题；老档案降级到固定维度名
+                  const realQuestion = startupInterviewQuestions?.[qKey];
+                  const qLabel = realQuestion ?? `${qKey} · ${startupQDimension[qKey]}`;
                   return (
                     <div key={qKey}>
                       <div className="text-xs font-medium text-muted-foreground mb-1.5">
-                        {qKey} 创业访谈
+                        {qLabel}
                       </div>
                       <pre className="text-sm text-foreground bg-[var(--surface-tinted)] border border-[var(--report-divider)] rounded-lg p-3 whitespace-pre-wrap leading-relaxed font-sans">
                         {answer}
