@@ -93,6 +93,8 @@ interface ReportRow {
   attachment_size?: number | null;
   /** nav 项目专属：出生年月（"YYYY-MM"，来自 form_data_json.birthDate）；老数据为 null */
   birth_date?: string | null;
+  /** nav 项目专属：就业指数（0-100，5 的倍数，来自 report_json.employmentIndex）；老数据为 null */
+  employment_index?: number | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -259,7 +261,8 @@ export async function GET(req: NextRequest) {
              has_resume, resume_filename, NULL AS user_identity, NULL AS uuid,
              duration_ms, sections_status, ip,
              NULL AS tracking_id,
-             NULL AS birth_date
+             NULL AS birth_date,
+             NULL AS employment_index
       FROM main.reports ${where}
     `;
     // nav 库的 target_education 列在 finalize 时写 NULL，真实学历在 form_data_json 里。
@@ -277,7 +280,8 @@ export async function GET(req: NextRequest) {
              n.has_resume, n.resume_filename, n.user_identity, n.uuid,
              n.duration_ms, n.sections_status, n.ip,
              st.id AS tracking_id,
-             json_extract(n.form_data_json, '$.birthDate') AS birth_date
+             json_extract(n.form_data_json, '$.birthDate') AS birth_date,
+             json_extract(n.report_json, '$.employmentIndex') AS employment_index
       FROM nav.reports n
       LEFT JOIN main.service_tracking st
         ON st.source_project = 'nav' AND st.source_report_id = n.id

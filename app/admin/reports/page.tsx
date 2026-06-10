@@ -118,6 +118,8 @@ interface ReportRow {
   attachment_size?: number | null;
   /** nav 项目专属：出生年月（"YYYY-MM"，来自 form_data_json.birthDate）；老数据为 null */
   birth_date?: string | null;
+  /** nav 项目专属：就业指数（0-100，AI 生成）；老数据 / 未来 LLM 异常时为 null，显示 — */
+  employment_index?: number | null;
 }
 
 interface Stats {
@@ -216,6 +218,45 @@ function formatBytes(bytes: number | null | undefined): string {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
   if (bytes >= 1024) return `${Math.round(bytes / 1024)}KB`;
   return `${bytes}B`;
+}
+
+/**
+ * 就业指数徽标：AI 评估的就业帮扶难度（0-100）。
+ * - 75-90 绿（易就业，帮扶难度低）
+ * - 55-70 蓝（中等）
+ * - 30-50 琥珀（偏难）
+ * - 10-25 玫瑰（极难帮扶，重点关注）
+ * - null   灰 — （老数据 / LLM 异常未生成）
+ */
+function EmploymentIndexBadge({ value }: { value: number | null | undefined }) {
+  if (value == null || !Number.isFinite(value)) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  const v = Math.round(value);
+  const cls =
+    v >= 75
+      ? "bg-[var(--semantic-positive)]/12 text-[var(--semantic-positive)] ring-[var(--semantic-positive)]/30"
+      : v >= 55
+        ? "bg-[var(--blue-50)] text-[var(--blue-700)] ring-[var(--blue-200)]"
+        : v >= 30
+          ? "bg-[var(--amber-50)] text-[var(--amber-700)] ring-[var(--amber-200)]"
+          : "bg-[var(--rose-50)] text-[var(--rose-700)] ring-[var(--rose-200)]";
+  const tip =
+    v >= 75
+      ? "易就业（背景好/能力强/期望合理）"
+      : v >= 55
+        ? "中等就业难度"
+        : v >= 30
+          ? "偏难，建议重点关注"
+          : "极难帮扶，需重点跟进";
+  return (
+    <span
+      title={tip}
+      className={`inline-flex items-center justify-center min-w-[42px] px-2 py-0.5 rounded-md text-[12px] font-semibold ring-1 ${cls}`}
+    >
+      {v}
+    </span>
+  );
 }
 
 function ProjectBadge({ project }: { project: ProjectId }) {
@@ -542,8 +583,8 @@ function AdminReportsContent() {
       return ["时间", "姓名", "手机号", "服务项目", "面试岗位", "岗位职级", "面试语言", "企业性质", "操作"];
     if (project === "teaching")
       return ["时间", "用户名", "服务项目", "服务子项", "主题内容", "类型", "附件大小", "操作"];
-    // 职业导航：HR 关心节奏 + 用户身份 + 年龄 + 服务转化状态
-    return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "年龄", "转服务状态", "操作"];
+    // 职业导航：HR 关心节奏 + 用户身份 + 年龄 + 就业指数（AI 评估帮扶难度）+ 服务转化状态
+    return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "年龄", "就业指数", "转服务状态", "操作"];
   }, [project]);
 
   // 当前 project 的中文显示（标题用）
@@ -1792,6 +1833,10 @@ function ReportRowItem({
         title={row.birth_date ?? undefined}
       >
         {age != null ? `${age}岁` : "—"}
+      </TableCell>
+      {/* 就业指数：AI 评估就业帮扶难度（0-100，5 倍数）；越高越好就业，C 端用户看不到此值 */}
+      <TableCell className="tabular-nums text-center">
+        <EmploymentIndexBadge value={row.employment_index} />
       </TableCell>
       {/* 转服务状态：纯色点（绿=已转入 灰=未转入） */}
       <TableCell className="text-center">
