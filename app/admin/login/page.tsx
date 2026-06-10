@@ -258,26 +258,16 @@ export default function AdminLoginPage() {
       </div>
 
       {/* 底部 copyright — 版本号由 next.config.ts 编译时注入 (NEXT_PUBLIC_APP_VERSION) */}
-      <footer className="absolute bottom-5 left-0 right-0 flex flex-col items-center gap-1 text-[11px] text-white/35 z-10">
-        <div className="flex items-center gap-3">
-          <span>© {new Date().getFullYear()} 谨世 ATA · admin-hub</span>
-          {process.env.NEXT_PUBLIC_APP_VERSION && (
-            <>
-              <span className="hidden sm:inline text-white/20">·</span>
-              <span className="hidden sm:inline tabular-nums">
-                v{process.env.NEXT_PUBLIC_APP_VERSION}
-              </span>
-            </>
-          )}
-        </div>
-        <a
-          href="https://beian.miit.gov.cn/"
-          target="_blank"
-          rel="noreferrer"
-          className="text-white/30 hover:text-white/50 transition-colors"
-        >
-          沪ICP备2023040758号-1
-        </a>
+      <footer className="absolute bottom-5 left-0 right-0 flex items-center justify-center gap-3 text-[11px] text-white/35 z-10">
+        <span>© {new Date().getFullYear()} 谨世 ATA · admin-hub</span>
+        {process.env.NEXT_PUBLIC_APP_VERSION && (
+          <>
+            <span className="hidden sm:inline text-white/20">·</span>
+            <span className="hidden sm:inline tabular-nums">
+              v{process.env.NEXT_PUBLIC_APP_VERSION}
+            </span>
+          </>
+        )}
       </footer>
     </div>
   );

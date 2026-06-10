@@ -231,24 +231,6 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_cu_created ON courseware_users(created_at DESC);
   `);
 
-  // 全局系统设置（key-value）。当前用于「服务使用协议 / 隐私政策」全局文案。
-  // 与 ata.legal_documents 的区别：那张表绑定 ATA100 业务，这张表全局通用。
-  _db.exec(`
-    CREATE TABLE IF NOT EXISTS system_settings (
-      key         TEXT PRIMARY KEY,
-      title       TEXT NOT NULL,
-      content     TEXT NOT NULL DEFAULT '',
-      updated_at  INTEGER NOT NULL
-    );
-  `);
-  const seedNow = Date.now();
-  _db.prepare(
-    "INSERT OR IGNORE INTO system_settings(key, title, content, updated_at) VALUES (?, ?, ?, ?)"
-  ).run("service_agreement", "服务使用协议", "", seedNow);
-  _db.prepare(
-    "INSERT OR IGNORE INTO system_settings(key, title, content, updated_at) VALUES (?, ?, ?, ?)"
-  ).run("privacy_policy", "隐私政策", "", seedNow);
-
   return _db;
 }
 
@@ -299,25 +281,6 @@ export function getAdminDb(): Database.Database {
   if (!attached.some((d) => d.name === "ata")) {
     const safePath = ATA_DB_PATH.replaceAll("'", "''");
     db.exec(`ATTACH DATABASE '${safePath}' AS ata`);
-    // 协议管理表（admin-hub 写入、ATA100 前台只读）：
-    // 此表是「ATA100 业务库只读」铁律的明确例外，仅限协议这种由后台维护、业务侧消费的配置数据。
-    // 业务表（users / orders / memberships / ledger）仍严格只读。
-    // 如果 ATA100 先启动已建表，IF NOT EXISTS 跳过；如果 admin-hub 先启动，这里兜底建表。
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS ata.legal_documents (
-        type        TEXT PRIMARY KEY,
-        title       TEXT NOT NULL,
-        content     TEXT NOT NULL DEFAULT '',
-        updated_at  INTEGER NOT NULL
-      );
-    `);
-    const now = Date.now();
-    db.prepare(
-      "INSERT OR IGNORE INTO ata.legal_documents(type, title, content, updated_at) VALUES (?, ?, ?, ?)"
-    ).run("terms", "服务使用协议", "", now);
-    db.prepare(
-      "INSERT OR IGNORE INTO ata.legal_documents(type, title, content, updated_at) VALUES (?, ?, ?, ?)"
-    ).run("privacy", "隐私政策", "", now);
   }
   return db;
 }

@@ -103,7 +103,6 @@ export function deriveVisibleMenus(s: {
   showAsgDocuments: boolean;
   showAtaMembers: boolean;
   showAdmins: boolean;
-  showSystemSettings: boolean;
 } {
   return {
     showAll: canViewMenu(s, "all"),
@@ -116,6 +115,5 @@ export function deriveVisibleMenus(s: {
     showAsgDocuments: canViewMenu(s, "asg-documents"),
     showAtaMembers: canViewMenu(s, "ata-members"),
     showAdmins: !!s.isSuper,
-    showSystemSettings: !!s.isSuper,
   };
 }

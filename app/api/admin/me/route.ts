@@ -18,7 +18,6 @@ export async function GET() {
     showAsgDocuments,
     showAtaMembers,
     showAdmins,
-    showSystemSettings,
   } = deriveVisibleMenus(session);
 
   // 查当前登录 admin 的分组（用于客户端展示，如「添加课件用户」弹窗）
@@ -57,6 +56,5 @@ export async function GET() {
     showAsgDocuments,
     showAtaMembers,
     showAdmins,
-    showSystemSettings,
   });
 }

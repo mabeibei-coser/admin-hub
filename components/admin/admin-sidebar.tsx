@@ -19,12 +19,10 @@ import {
   Crown,
   FolderLock,
   ClipboardList,
-  FileText,
   Sun,
   Moon,
   Laptop,
   Home,
-  Settings,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PROJECTS, type ProjectId } from "@/lib/projects";
@@ -45,7 +43,6 @@ interface MeData {
   showAsgDocuments: boolean;
   showAtaMembers: boolean;
   showAdmins: boolean;
-  showSystemSettings: boolean;
 }
 
 /** 图标映射：project id → icon component */
@@ -238,7 +235,7 @@ export function AdminSidebar() {
         )}
 
         {/* === 系统管理 section === */}
-        {(!me || me.showAdmins || me.showAsgMembers || me.showAtaMembers || me.showSystemSettings || (me?.visibleProjects?.includes("nav") ?? true)) && (
+        {(!me || me.showAdmins || me.showAsgMembers || me.showAtaMembers) && (
           <>
             <SectionHeader label="系统管理" />
             <nav className="px-3 flex flex-col gap-0.5">
@@ -266,44 +263,12 @@ export function AdminSidebar() {
                   href="/admin/asg-members"
                 />
               )}
-              {(!me || me.showAsgMembers) && (
-                <SidebarNavItem
-                  label="ASG 协议管理"
-                  icon={FileText}
-                  active={pathname.startsWith("/admin/asg-agreements")}
-                  href="/admin/asg-agreements"
-                />
-              )}
               {(!me || me.showAtaMembers) && (
                 <SidebarNavItem
                   label="薪资查询用户"
                   icon={Crown}
                   active={pathname.startsWith("/admin/ata-members")}
                   href="/admin/ata-members"
-                />
-              )}
-              {(!me || me.showAtaMembers) && (
-                <SidebarNavItem
-                  label="ATA 协议管理"
-                  icon={FileText}
-                  active={pathname.startsWith("/admin/ata-agreements")}
-                  href="/admin/ata-agreements"
-                />
-              )}
-              {(!me || me.visibleProjects.includes("nav")) && (
-                <SidebarNavItem
-                  label="职业导航协议管理"
-                  icon={FileText}
-                  active={pathname.startsWith("/admin/nav-agreements")}
-                  href="/admin/nav-agreements"
-                />
-              )}
-              {(!me || me.showSystemSettings) && (
-                <SidebarNavItem
-                  label="系统设置"
-                  icon={Settings}
-                  active={pathname.startsWith("/admin/system-settings")}
-                  href="/admin/system-settings"
                 />
               )}
             </nav>
@@ -433,7 +398,6 @@ export function AdminMobileBar() {
   const showAsgMembers = !me || me.showAsgMembers;
   const showAsgDocuments = !me || me.showAsgDocuments;
   const showAtaMembers = !me || me.showAtaMembers;
-  const showSystemSettings = !me || me.showSystemSettings;
   const inServiceTracking = pathname.startsWith("/admin/service-tracking");
   const inCoursewareUsers = pathname.startsWith("/admin/courseware-users");
   const inAsgMembers = pathname.startsWith("/admin/asg-members");
@@ -501,39 +465,11 @@ export function AdminMobileBar() {
               label="安防平台用户"
             />
           )}
-          {showAsgMembers && (
-            <MobilePill
-              href="/admin/asg-agreements"
-              active={pathname.startsWith("/admin/asg-agreements")}
-              label="ASG 协议管理"
-            />
-          )}
           {showAtaMembers && (
             <MobilePill
               href="/admin/ata-members"
               active={inAtaMembers}
               label="薪资查询用户"
-            />
-          )}
-          {showAtaMembers && (
-            <MobilePill
-              href="/admin/ata-agreements"
-              active={pathname.startsWith("/admin/ata-agreements")}
-              label="ATA 协议管理"
-            />
-          )}
-          {visibleProjects.includes("nav") && (
-            <MobilePill
-              href="/admin/nav-agreements"
-              active={pathname.startsWith("/admin/nav-agreements")}
-              label="职业导航协议管理"
-            />
-          )}
-          {showSystemSettings && (
-            <MobilePill
-              href="/admin/system-settings"
-              active={pathname.startsWith("/admin/system-settings")}
-              label="系统设置"
             />
           )}
         </div>

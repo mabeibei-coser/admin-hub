@@ -87,10 +87,6 @@ C\:*
 /data/temp/*
 !/data/temp/.gitkeep
 
-# 系统设置页面上传的图片（运行时生成，不入库；服务器本地持久化）
-/public/uploads/system-settings/*
-!/public/uploads/system-settings/.gitkeep
-
 # playwright
 playwright-report/
 test-results/
