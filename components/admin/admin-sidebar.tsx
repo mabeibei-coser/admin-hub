@@ -238,7 +238,7 @@ export function AdminSidebar() {
         )}
 
         {/* === 系统管理 section === */}
-        {(!me || me.showAdmins || me.showAsgMembers || me.showAtaMembers || me.showSystemSettings) && (
+        {(!me || me.showAdmins || me.showAsgMembers || me.showAtaMembers || me.showSystemSettings || (me?.visibleProjects?.includes("nav") ?? true)) && (
           <>
             <SectionHeader label="系统管理" />
             <nav className="px-3 flex flex-col gap-0.5">
@@ -266,6 +266,14 @@ export function AdminSidebar() {
                   href="/admin/asg-members"
                 />
               )}
+              {(!me || me.showAsgMembers) && (
+                <SidebarNavItem
+                  label="ASG 协议管理"
+                  icon={FileText}
+                  active={pathname.startsWith("/admin/asg-agreements")}
+                  href="/admin/asg-agreements"
+                />
+              )}
               {(!me || me.showAtaMembers) && (
                 <SidebarNavItem
                   label="薪资查询用户"
@@ -280,6 +288,14 @@ export function AdminSidebar() {
                   icon={FileText}
                   active={pathname.startsWith("/admin/ata-agreements")}
                   href="/admin/ata-agreements"
+                />
+              )}
+              {(!me || me.visibleProjects.includes("nav")) && (
+                <SidebarNavItem
+                  label="职业导航协议管理"
+                  icon={FileText}
+                  active={pathname.startsWith("/admin/nav-agreements")}
+                  href="/admin/nav-agreements"
                 />
               )}
               {(!me || me.showSystemSettings) && (
@@ -485,6 +501,13 @@ export function AdminMobileBar() {
               label="安防平台用户"
             />
           )}
+          {showAsgMembers && (
+            <MobilePill
+              href="/admin/asg-agreements"
+              active={pathname.startsWith("/admin/asg-agreements")}
+              label="ASG 协议管理"
+            />
+          )}
           {showAtaMembers && (
             <MobilePill
               href="/admin/ata-members"
@@ -497,6 +520,13 @@ export function AdminMobileBar() {
               href="/admin/ata-agreements"
               active={pathname.startsWith("/admin/ata-agreements")}
               label="ATA 协议管理"
+            />
+          )}
+          {visibleProjects.includes("nav") && (
+            <MobilePill
+              href="/admin/nav-agreements"
+              active={pathname.startsWith("/admin/nav-agreements")}
+              label="职业导航协议管理"
             />
           )}
           {showSystemSettings && (
