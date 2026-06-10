@@ -24,6 +24,7 @@ import {
   Moon,
   Laptop,
   Home,
+  Settings,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PROJECTS, type ProjectId } from "@/lib/projects";
@@ -44,6 +45,7 @@ interface MeData {
   showAsgDocuments: boolean;
   showAtaMembers: boolean;
   showAdmins: boolean;
+  showSystemSettings: boolean;
 }
 
 /** 图标映射：project id → icon component */
@@ -236,7 +238,7 @@ export function AdminSidebar() {
         )}
 
         {/* === 系统管理 section === */}
-        {(!me || me.showAdmins || me.showAsgMembers || me.showAtaMembers) && (
+        {(!me || me.showAdmins || me.showAsgMembers || me.showAtaMembers || me.showSystemSettings) && (
           <>
             <SectionHeader label="系统管理" />
             <nav className="px-3 flex flex-col gap-0.5">
@@ -278,6 +280,14 @@ export function AdminSidebar() {
                   icon={FileText}
                   active={pathname.startsWith("/admin/ata-agreements")}
                   href="/admin/ata-agreements"
+                />
+              )}
+              {(!me || me.showSystemSettings) && (
+                <SidebarNavItem
+                  label="系统设置"
+                  icon={Settings}
+                  active={pathname.startsWith("/admin/system-settings")}
+                  href="/admin/system-settings"
                 />
               )}
             </nav>
@@ -407,6 +417,7 @@ export function AdminMobileBar() {
   const showAsgMembers = !me || me.showAsgMembers;
   const showAsgDocuments = !me || me.showAsgDocuments;
   const showAtaMembers = !me || me.showAtaMembers;
+  const showSystemSettings = !me || me.showSystemSettings;
   const inServiceTracking = pathname.startsWith("/admin/service-tracking");
   const inCoursewareUsers = pathname.startsWith("/admin/courseware-users");
   const inAsgMembers = pathname.startsWith("/admin/asg-members");
@@ -486,6 +497,13 @@ export function AdminMobileBar() {
               href="/admin/ata-agreements"
               active={pathname.startsWith("/admin/ata-agreements")}
               label="ATA 协议管理"
+            />
+          )}
+          {showSystemSettings && (
+            <MobilePill
+              href="/admin/system-settings"
+              active={pathname.startsWith("/admin/system-settings")}
+              label="系统设置"
             />
           )}
         </div>

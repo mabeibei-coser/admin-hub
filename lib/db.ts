@@ -231,6 +231,24 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_cu_created ON courseware_users(created_at DESC);
   `);
 
+  // 全局系统设置（key-value）。当前用于「服务使用协议 / 隐私政策」全局文案。
+  // 与 ata.legal_documents 的区别：那张表绑定 ATA100 业务，这张表全局通用。
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS system_settings (
+      key         TEXT PRIMARY KEY,
+      title       TEXT NOT NULL,
+      content     TEXT NOT NULL DEFAULT '',
+      updated_at  INTEGER NOT NULL
+    );
+  `);
+  const seedNow = Date.now();
+  _db.prepare(
+    "INSERT OR IGNORE INTO system_settings(key, title, content, updated_at) VALUES (?, ?, ?, ?)"
+  ).run("service_agreement", "服务使用协议", "", seedNow);
+  _db.prepare(
+    "INSERT OR IGNORE INTO system_settings(key, title, content, updated_at) VALUES (?, ?, ?, ?)"
+  ).run("privacy_policy", "隐私政策", "", seedNow);
+
   return _db;
 }
 
