@@ -46,14 +46,22 @@ export async function docLibFetch(
   }
 }
 
-/** 转发 multipart 上传到 doc-library。透传前端的 FormData。 */
-export async function docLibUpload(form: FormData): Promise<{ ok: boolean; status: number; data: unknown }> {
+/** 流式转发 multipart 上传到 doc-library。不要在 admin-hub 中间解析大文件，避免 10MB+ PPT 先死在 req.formData()。 */
+export async function docLibUpload(req: Request): Promise<{ ok: boolean; status: number; data: unknown }> {
   try {
+    if (!req.body) {
+      return { ok: false, status: 400, data: { error: "上传请求体为空" } };
+    }
+    const headers = new Headers({ "x-admin-secret": DOC_LIB_SECRET });
+    const contentType = req.headers.get("content-type");
+    if (contentType) headers.set("content-type", contentType);
+
     const res = await fetch(`${DOC_LIB_BASE_URL}/api/admin/upload`, {
       method: "POST",
-      headers: { "x-admin-secret": DOC_LIB_SECRET },
-      body: form,
-    });
+      headers,
+      body: req.body,
+      duplex: "half",
+    } as RequestInit & { duplex: "half" });
     const data = await res.json().catch(() => ({}));
     return { ok: res.ok, status: res.status, data };
   } catch (err) {
