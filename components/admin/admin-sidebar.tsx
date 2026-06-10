@@ -19,6 +19,7 @@ import {
   Crown,
   FolderLock,
   ClipboardList,
+  FileText,
   Sun,
   Moon,
   Laptop,
@@ -271,6 +272,14 @@ export function AdminSidebar() {
                   href="/admin/ata-members"
                 />
               )}
+              {(!me || me.showAtaMembers) && (
+                <SidebarNavItem
+                  label="ATA 协议管理"
+                  icon={FileText}
+                  active={pathname.startsWith("/admin/ata-agreements")}
+                  href="/admin/ata-agreements"
+                />
+              )}
             </nav>
           </>
         )}
@@ -470,6 +479,13 @@ export function AdminMobileBar() {
               href="/admin/ata-members"
               active={inAtaMembers}
               label="薪资查询用户"
+            />
+          )}
+          {showAtaMembers && (
+            <MobilePill
+              href="/admin/ata-agreements"
+              active={pathname.startsWith("/admin/ata-agreements")}
+              label="ATA 协议管理"
             />
           )}
         </div>
