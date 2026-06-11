@@ -118,6 +118,9 @@ interface ReportRow {
   attachment_size?: number | null;
   /** nav 项目专属：出生年月（"YYYY-MM"，来自 form_data_json.birthDate）；老数据为 null */
   birth_date?: string | null;
+  /** nav 项目专属：就业指数（0-100，AI 综合评估的就业帮扶难度，分数越高越易就业）；
+   *  接入此字段之前生成的老报告为 null，列表显示 —。仅 admin 后台展示，C 端报告不渲染。 */
+  employment_index?: number | null;
 }
 
 interface Stats {
@@ -542,8 +545,8 @@ function AdminReportsContent() {
       return ["时间", "姓名", "手机号", "服务项目", "面试岗位", "岗位职级", "面试语言", "企业性质", "操作"];
     if (project === "teaching")
       return ["时间", "用户名", "服务项目", "服务子项", "主题内容", "类型", "附件大小", "操作"];
-    // 职业导航：HR 关心节奏 + 用户身份 + 年龄 + 服务转化状态
-    return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "年龄", "转服务状态", "操作"];
+    // 职业导航：HR 关心节奏 + 用户身份 + 年龄 + 就业指数（AI 评估，仅后台可见）+ 服务转化状态
+    return ["时间", "姓名", "手机号", "服务项目", "意向岗位", "用户身份", "年龄", "就业指数", "转服务状态", "操作"];
   }, [project]);
 
   // 当前 project 的中文显示（标题用）
@@ -1792,6 +1795,26 @@ function ReportRowItem({
         title={row.birth_date ?? undefined}
       >
         {age != null ? `${age}岁` : "—"}
+      </TableCell>
+      {/* 就业指数：AI 综合背景/能力/经验/期望合理性评估的帮扶难度。
+          绿 ≥75 易 / 黄 30-70 一般 / 红 ≤25 极难；老数据无此字段显示 — */}
+      <TableCell className="text-center">
+        {row.employment_index != null ? (
+          <span
+            title={`就业指数 ${row.employment_index}（AI 评估的就业帮扶难度，分数越高越易就业；老数据可能无此值）`}
+            className={`inline-flex items-center justify-center min-w-[36px] px-1.5 py-0.5 rounded-md text-xs font-semibold tabular-nums ring-1 ${
+              row.employment_index >= 75
+                ? "text-[var(--semantic-positive)] bg-[var(--semantic-positive)]/12 ring-[var(--semantic-positive)]/30"
+                : row.employment_index <= 25
+                  ? "text-rose-700 bg-rose-50 ring-rose-200"
+                  : "text-[var(--amber-700)] bg-[var(--amber-50)] ring-[var(--amber-200)]/60"
+            }`}
+          >
+            {row.employment_index}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
       </TableCell>
       {/* 转服务状态：纯色点（绿=已转入 灰=未转入） */}
       <TableCell className="text-center">
