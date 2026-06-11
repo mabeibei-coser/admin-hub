@@ -43,19 +43,19 @@ export function MarketSection({ data, index, total }: Props) {
   return (
     <SectionWrapper id="market" title="市场定位分析" index={index} total={total}>
       <div className="grid md:grid-cols-12 gap-4">
-        {/* 左侧：较高薪资人群特点（原本在下方，挪上来） */}
+        {/* 左侧：本岗位 8 个谈薪筹码（Top 20%）*/}
         <div className="md:col-span-5 rounded-lg border border-[var(--report-border)] bg-[oklch(0.985_0.006_240)] p-4 flex flex-col">
           <div className="flex items-center gap-1.5 mb-2 text-[var(--cyan-700)]">
             <Users className="size-4" />
-            <span className="text-[12px] font-semibold">较高薪资人群特点</span>
+            <span className="text-[12px] font-semibold">本岗位8个谈薪筹码(Top 20%)</span>
           </div>
           {data.highEarnerTraits ? (
-            <p className="text-[13px] leading-relaxed flex-1 text-[var(--report-ink-soft)]">
+            <p className="text-[13px] leading-relaxed flex-1 text-[var(--report-ink-soft)] whitespace-pre-line">
               {data.highEarnerTraits}
             </p>
           ) : (
             <p className="text-[12px] leading-relaxed flex-1 text-[var(--report-ink-muted)]">
-              暂无该岗位的高薪人群画像数据
+              暂无该岗位的谈薪筹码数据
             </p>
           )}
         </div>
