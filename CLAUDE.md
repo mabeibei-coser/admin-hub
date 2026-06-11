@@ -49,12 +49,16 @@ shadcn 的 `components/ui/` 也各一份。
 
 ## 关键约束（不要破坏）
 
-1. **跨库写白名单** —— admin-hub 默认对所有 ATTACH 进来的项目库（`nav.*` / `startup.*` / `tailor.*` / `salary.*` / `hazard.*` / `interview.*` / `teaching.*` / `asg.*`）**只读**。跨库写事务可能触发 `SQLITE_BUSY_SNAPSHOT`，影响目标项目。**唯一已授权的写操作**（2026-06-01）：
-   - `UPDATE asg.memberships SET vip_expire_at, updated_at WHERE phone = ?`（超管手动调整 VIP 到期）
-   - `INSERT INTO asg.membership_ledger (..., type='admin_adjust', ...)`（同事务追加审计流水）
-   - 入口：`PATCH /api/admin/asg-members/[phone]` + `requireSuper()` 闸门
-   - 风险缓解：`db.transaction()` 原子 + `busy_timeout=5000ms`；asg100 自己只读自己的库，写竞争窗口很小
-   - 其余 asg.* 表（users / orders / sms_codes / membership_ledger 的非 admin_adjust 流水）仍**严格只读**
+1. **跨库写白名单** —— admin-hub 默认对所有 ATTACH 进来的项目库（`nav.*` / `startup.*` / `tailor.*` / `salary.*` / `hazard.*` / `interview.*` / `teaching.*` / `asg.*` / `ata.*`）**只读**。跨库写事务可能触发 `SQLITE_BUSY_SNAPSHOT`，影响目标项目。**已授权的写操作仅以下两处，其余一律严格只读**：
+   - **(A) 调整 asg VIP 到期**（2026-06-01）：
+     - `UPDATE asg.memberships SET vip_expire_at, updated_at WHERE phone = ?`（超管手动调整 VIP 到期）
+     - `INSERT INTO asg.membership_ledger (..., type='admin_adjust', ...)`（同事务追加审计流水）
+     - 入口：`PATCH /api/admin/asg-members/[phone]` + `requireSuper()` 闸门
+   - **(B) 写 ata 法律文档**（2026-06-11）：
+     - `INSERT/UPDATE ata.site_settings`（key=`legal_terms`/`legal_privacy` 的服务协议/隐私政策正文 upsert；含防御性 `CREATE TABLE IF NOT EXISTS ata.site_settings`，与 ata100/lib/db.js 同一份 DDL）
+     - 入口：`PUT /api/admin/site-settings` +「系统设置」页 + `requireSuper()` 闸门
+     - 联动：薪酬登录页勾选项 + ata100 公开接口 `GET /api/legal/:type` 只读它
+   - 风险缓解（两处共用）：`db.transaction()` 原子 + `busy_timeout=5000ms`；目标项目只读自己的库，写竞争窗口很小（site_settings 写极罕见、ata100 自身从不写它，竞争≈0）
 2. **不要把 admin 表 init 加回 career-report 的 db.ts** —— 那是 silent schema drift 的源头
 3. **不要把 `data/` 目录放在坚果云/OneDrive 等同步目录** —— sync agent 会破坏 sqlite WAL
 4. **iron-session 密钥与 career-report 共用** —— 但不要在 admin-hub 改这个值；任何 cookie 行为变化要同步两个项目

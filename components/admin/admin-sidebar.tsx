@@ -23,6 +23,7 @@ import {
   Moon,
   Laptop,
   Home,
+  Settings,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PROJECTS, type ProjectId } from "@/lib/projects";
@@ -253,6 +254,14 @@ export function AdminSidebar() {
                   icon={ClipboardList}
                   active={pathname.startsWith("/admin/hazard-checklist")}
                   href="/admin/hazard-checklist"
+                />
+              )}
+              {(!me || me.showAdmins) && (
+                <SidebarNavItem
+                  label="系统设置"
+                  icon={Settings}
+                  active={pathname.startsWith("/admin/site-settings")}
+                  href="/admin/site-settings"
                 />
               )}
               {(!me || me.showAsgMembers) && (

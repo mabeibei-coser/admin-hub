@@ -49,7 +49,10 @@ shadcn 的 `components/ui/` 也各一份。
 
 ## 关键约束（不要破坏）
 
-1. **不要在 admin-hub 里写 `nav.*` 表** —— 跨库写事务会触发 `SQLITE_BUSY_SNAPSHOT`，影响 career-nav- 项目
+1. **跨库写白名单** —— admin-hub 默认对所有 ATTACH 进来的项目库（`nav.*` / `startup.*` / `tailor.*` / `salary.*` / `hazard.*` / `interview.*` / `teaching.*` / `asg.*` / `ata.*`）**只读**。跨库写事务可能触发 `SQLITE_BUSY_SNAPSHOT`，影响目标项目。**已授权的写操作仅以下两处，其余一律严格只读**：
+   - **(A) 调整 asg VIP 到期**（2026-06-01）：`UPDATE asg.memberships` + `INSERT asg.membership_ledger(type='admin_adjust')`；入口 `PATCH /api/admin/asg-members/[phone]` + `requireSuper()`
+   - **(B) 写 ata 法律文档**（2026-06-11）：`INSERT/UPDATE ata.site_settings`（`legal_terms`/`legal_privacy` 正文 upsert + 防御性建表）；入口 `PUT /api/admin/site-settings` +「系统设置」页 + `requireSuper()`；联动薪酬登录页 + ata100 `GET /api/legal/:type` 只读
+   - 风险缓解：`db.transaction()` + `busy_timeout=5000ms`；目标项目只读自己的库，写竞争窗口极小
 2. **不要把 admin 表 init 加回 career-report 的 db.ts** —— 那是 silent schema drift 的源头
 3. **不要把 `data/` 目录放在坚果云/OneDrive 等同步目录** —— sync agent 会破坏 sqlite WAL
 4. **iron-session 密钥与 career-report 共用** —— 但不要在 admin-hub 改这个值；任何 cookie 行为变化要同步两个项目
