@@ -18,17 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "文档库未配置" }, { status: 500 });
   }
 
-  let form: FormData;
-  try {
-    form = await req.formData();
-  } catch (err) {
-    return NextResponse.json(
-      { error: `解析上传数据失败：${err instanceof Error ? err.message : "未知错误"}` },
-      { status: 400 }
-    );
-  }
-
-  const { ok, status, data } = await docLibUpload(form);
+  const { ok, status, data } = await docLibUpload(req);
   if (!ok) {
     return NextResponse.json(
       { error: (data as { error?: string })?.error || "上传失败" },
