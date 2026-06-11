@@ -25,6 +25,12 @@ const nextConfig: NextConfig = {
     // (历史曾出现 login footer v0.1.19 实际包已 v0.1.24 的不一致)
     NEXT_PUBLIC_APP_VERSION: pkg.version,
   },
+  experimental: {
+    // Next.js 16 默认 proxy/middleware 层 body 限制 10MB,含图 PPT 上传会被截断
+    // 报 "Request body exceeded 10MB" + "Failed to parse body as FormData"。
+    // 提到 50MB(与 doc-library multer fileSize 上限对齐;再大走专门通道)。
+    proxyClientMaxBodySize: "50mb",
+  },
 };
 
 export default nextConfig;
