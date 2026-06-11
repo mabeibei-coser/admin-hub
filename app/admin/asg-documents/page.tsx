@@ -13,6 +13,7 @@ import {
   Pencil,
   RotateCcw,
   X,
+  ImagePlus,
 } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { Alert } from "@/components/admin/alert";
@@ -95,6 +96,7 @@ function DocumentDialog({
   const [uploadingDescImage, setUploadingDescImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  const descImageInputRef = useRef<HTMLInputElement | null>(null);
 
   // 安全解析 JSON 响应：空响应 / HTML 错误页时不抛 "Unexpected end of JSON input"，
   // 而是把 HTTP 状态码露出来。fallback 是给用户的默认提示语。
@@ -146,6 +148,22 @@ function DocumentDialog({
       const suffix = after && !after.startsWith("\n") ? "\n" : "";
       return `${before}${prefix}${markdown}${suffix}${after}`;
     });
+  };
+
+  const handlePickDescriptionImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = e.target.files?.[0];
+    e.target.value = ""; // 允许连续选同一文件
+    if (!picked) return;
+    setError(null);
+    setUploadingDescImage(true);
+    try {
+      const url = await uploadDescriptionImage(picked);
+      insertDescriptionMarkdown(`![说明图片](${url})`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "简介图片上传失败");
+    } finally {
+      setUploadingDescImage(false);
+    }
   };
 
   const handleDescriptionPaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -303,68 +321,71 @@ function DocumentDialog({
             </div>
           </div>
 
-          {/* 档位 */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-foreground">档位</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setTier("free")}
-                className={`flex-1 h-10 rounded-md text-sm border transition-all ${
-                  tier === "free"
-                    ? "ring-2 ring-[var(--semantic-positive)] bg-[oklch(0.96_0.04_155)] text-[var(--semantic-positive)] border-transparent"
-                    : "border-input bg-background text-foreground hover:bg-muted"
-                }`}
+          {/* 档位 + 置顶 */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">档位</label>
+              <select
+                value={tier}
+                onChange={(e) => setTier(e.target.value as "free" | "vip")}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
               >
-                免费
-              </button>
+                <option value="free">免费</option>
+                <option value="vip">VIP 专享</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">置顶</label>
               <button
                 type="button"
-                onClick={() => setTier("vip")}
-                className={`flex-1 h-10 rounded-md text-sm border transition-all ${
-                  tier === "vip"
+                onClick={() => setPinned((v) => !v)}
+                className={`inline-flex w-full items-center justify-center gap-2 h-10 rounded-md px-4 text-sm border transition-all ${
+                  pinned
                     ? "ring-2 ring-[var(--amber-500)] bg-[oklch(0.97_0.06_70)] text-[var(--amber-700)] border-transparent"
                     : "border-input bg-background text-foreground hover:bg-muted"
                 }`}
               >
-                VIP 专享
+                <Pin className="size-4" />
+                {pinned ? "已置顶" : "设为置顶"}
               </button>
             </div>
           </div>
 
-          {/* 置顶 */}
+          {/* 简介（视觉对齐系统设置：上工具栏 + 下编辑区。数据仍存 markdown，应用端零改动） */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-foreground">置顶</label>
-            <button
-              type="button"
-              onClick={() => setPinned((v) => !v)}
-              className={`inline-flex items-center gap-2 h-10 rounded-md px-4 text-sm border transition-all ${
-                pinned
-                  ? "ring-2 ring-[var(--amber-500)] bg-[oklch(0.97_0.06_70)] text-[var(--amber-700)] border-transparent"
-                  : "border-input bg-background text-foreground hover:bg-muted"
-              }`}
-            >
-              <Pin className="size-4" />
-              {pinned ? "已置顶 · 排在列表最前" : "设为置顶"}
-            </button>
-            <p className="mt-1.5 text-xs text-muted-foreground">置顶后该资料会显示在文档库最前面</p>
-          </div>
-
-          {/* 说明 */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-foreground">说明</label>
-            <textarea
-              ref={descriptionRef}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              onPaste={handleDescriptionPaste}
-              rows={3}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
-              placeholder="文档简介，可直接粘贴图片"
-              disabled={uploadingDescImage}
-            />
+            <label className="mb-1.5 block text-sm font-medium text-foreground">简介</label>
+            <div className="rounded-md border border-input bg-background overflow-hidden focus-within:ring-2 focus-within:ring-ring">
+              <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+                <button
+                  type="button"
+                  disabled={uploadingDescImage}
+                  onClick={() => descImageInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-50 cursor-pointer transition-colors"
+                >
+                  <ImagePlus className="size-3.5" /> 插入图片
+                </button>
+                <span className="text-[11px] text-muted-foreground">也可直接粘贴图片</span>
+                <input
+                  ref={descImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handlePickDescriptionImage}
+                />
+              </div>
+              <textarea
+                ref={descriptionRef}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onPaste={handleDescriptionPaste}
+                rows={6}
+                className="w-full bg-transparent border-0 px-3 py-2 text-sm outline-none resize-none"
+                placeholder="文档简介，可直接粘贴或上传图片"
+                disabled={uploadingDescImage}
+              />
+            </div>
             {uploadingDescImage && (
-              <p className="mt-1.5 text-xs text-muted-foreground">说明图片上传中…</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">简介图片上传中…</p>
             )}
           </div>
 
