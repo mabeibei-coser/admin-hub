@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import {
   Inbox,
   RefreshCw,
@@ -63,6 +63,8 @@ const SUBCATEGORY_OPTIONS = [
   { value: "岗位全景", label: "岗位全景" },
 ] as const;
 
+const ATTACHMENT_ACCEPT = ".pdf,.doc,.docx,.rtf,.xls,.xlsx,.csv,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.zip,.rar";
+
 function fmtDate(ms: number) {
   const d = new Date(ms);
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -90,7 +92,9 @@ function DocumentDialog({
   const [pinned, setPinned] = useState<boolean>(editing?.pinned ?? false);
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingDescImage, setUploadingDescImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
 
   // 安全解析 JSON 响应：空响应 / HTML 错误页时不抛 "Unexpected end of JSON input"，
   // 而是把 HTTP 状态码露出来。fallback 是给用户的默认提示语。
@@ -108,6 +112,63 @@ function DocumentDialog({
     const serverMsg = typeof data.error === "string" ? data.error : "";
     const httpHint = `HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ""}`;
     return { data, error: serverMsg || `${fallback}（${httpHint}）` };
+  };
+
+  // 说明区贴图：复用 /api/admin/asg-documents/upload + preview 字段拿存储 URL，
+  // 插入 markdown ![说明图片](url) 到光标位置。应用端 doc-library 的
+  // DescriptionContent 已经按这个协议解析。
+  const uploadDescriptionImage = async (image: File): Promise<string> => {
+    const fd = new FormData();
+    fd.append("preview", image);
+    const upRes = await fetch(withBase("/api/admin/asg-documents/upload"), {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+    const { data, error: upErr } = await safeReadJson(upRes, "说明图片上传失败");
+    if (upErr) throw new Error(upErr);
+    const preview = Array.isArray(data.preview) ? data.preview[0] : null;
+    const url = preview && typeof preview === "object" && "url" in preview ? preview.url : null;
+    if (typeof url !== "string") throw new Error("说明图片上传失败：文档库未返回图片地址");
+    return url;
+  };
+
+  const insertDescriptionMarkdown = (markdown: string) => {
+    const input = descriptionRef.current;
+    const start = input?.selectionStart ?? description.length;
+    const end = input?.selectionEnd ?? description.length;
+    setDescription((current) => {
+      const safeStart = Math.min(start, current.length);
+      const safeEnd = Math.min(end, current.length);
+      const before = current.slice(0, safeStart);
+      const after = current.slice(safeEnd);
+      const prefix = before && !before.endsWith("\n") ? "\n" : "";
+      const suffix = after && !after.startsWith("\n") ? "\n" : "";
+      return `${before}${prefix}${markdown}${suffix}${after}`;
+    });
+  };
+
+  const handleDescriptionPaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const imageFiles = Array.from(e.clipboardData.items)
+      .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter((item): item is File => !!item);
+    if (!imageFiles.length) return;
+
+    e.preventDefault();
+    setError(null);
+    setUploadingDescImage(true);
+    try {
+      const urls: string[] = [];
+      for (const image of imageFiles) {
+        urls.push(await uploadDescriptionImage(image));
+      }
+      insertDescriptionMarkdown(urls.map((url) => `![说明图片](${url})`).join("\n"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "说明图片上传失败");
+    } finally {
+      setUploadingDescImage(false);
+    }
   };
 
   const submit = async () => {
@@ -293,12 +354,18 @@ function DocumentDialog({
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">说明</label>
             <textarea
+              ref={descriptionRef}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              onPaste={handleDescriptionPaste}
               rows={3}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
-              placeholder="文档简介"
+              placeholder="文档简介，可直接粘贴图片"
+              disabled={uploadingDescImage}
             />
+            {uploadingDescImage && (
+              <p className="mt-1.5 text-xs text-muted-foreground">说明图片上传中…</p>
+            )}
           </div>
 
           {/* 附件 */}
@@ -318,6 +385,7 @@ function DocumentDialog({
               </span>
               <input
                 type="file"
+                accept={ATTACHMENT_ACCEPT}
                 className="hidden"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               />
@@ -331,7 +399,7 @@ function DocumentDialog({
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             取消
           </Button>
-          <Button onClick={submit} disabled={submitting}>
+          <Button onClick={submit} disabled={submitting || uploadingDescImage}>
             {submitting ? "提交中…" : isEdit ? "保存" : "确定新建"}
           </Button>
         </div>
