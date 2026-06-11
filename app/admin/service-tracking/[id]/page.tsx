@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { LifeBuoy } from "lucide-react";
-import { getDb } from "@/lib/db";
+import { getAdminDb, isNavDbReady } from "@/lib/db";
 import { requireMenu } from "@/lib/admin-session";
 import {
   accessFilter,
@@ -10,7 +10,11 @@ import {
   type ServiceRecordAttachment,
 } from "@/lib/service-tracking";
 import { ServiceTrackingEditor } from "@/components/admin/service-tracking-editor";
-import { ServiceRecordsList } from "@/components/admin/service-records-list";
+import {
+  ServiceRecordsList,
+  type ServiceRecordItem,
+  type NavRecordItem,
+} from "@/components/admin/service-records-list";
 import { PageHeader } from "@/components/admin/page-header";
 import { Breadcrumb } from "@/components/admin/breadcrumb";
 import { DeleteTrackingButton } from "@/components/admin/delete-tracking-button";
@@ -50,6 +54,15 @@ interface RecordRow {
   updated_at: number;
 }
 
+interface NavReportRow {
+  id: number;
+  created_at: number;
+  target_position: string | null;
+  user_name: string | null;
+  user_phone: string | null;
+  employment_index: number | null;
+}
+
 function parseAttachments(s: string | null): ServiceRecordAttachment[] {
   if (!s) return [];
   try {
@@ -75,7 +88,7 @@ export default async function ServiceTrackingDetailPage({
   const id = Number(idStr);
   if (!Number.isInteger(id) || id <= 0) notFound();
 
-  const db = getDb();
+  const db = getAdminDb();
   const filter = accessFilter(session);
 
   const conditions: string[] = ["st.id = ?"];
@@ -111,6 +124,55 @@ export default async function ServiceTrackingDetailPage({
        ORDER BY sr.service_at DESC`
     )
     .all(id) as RecordRow[];
+
+  // 归集：相同 user_phone + user_name 的职业导航报告，按时间穿插进服务记录列表
+  // 跨库只读 nav.reports；TRIM 双侧空白；任一为空则不归集（避免 NULL+NULL 误匹配）
+  let navRecords: NavReportRow[] = [];
+  if (
+    isNavDbReady() &&
+    row.user_phone &&
+    row.user_phone.trim() &&
+    row.user_name &&
+    row.user_name.trim()
+  ) {
+    navRecords = db
+      .prepare(
+        `SELECT n.id,
+                n.created_at,
+                n.target_position,
+                json_extract(n.form_data_json, '$.name')  AS user_name,
+                json_extract(n.form_data_json, '$.phone') AS user_phone,
+                json_extract(n.report_json,    '$.employmentIndex') AS employment_index
+         FROM nav.reports n
+         WHERE TRIM(json_extract(n.form_data_json, '$.phone')) = TRIM(?)
+           AND TRIM(json_extract(n.form_data_json, '$.name'))  = TRIM(?)
+         ORDER BY n.created_at DESC`
+      )
+      .all(row.user_phone, row.user_name) as NavReportRow[];
+  }
+
+  const serviceItems: ServiceRecordItem[] = records.map((r) => ({
+    kind: "service",
+    id: r.id,
+    service_at: r.service_at,
+    content: r.content,
+    note: r.note,
+    recorder_admin_id: r.recorder_admin_id,
+    recorder_name: r.recorder_name,
+    attachments: parseAttachments(r.attachments_json),
+  }));
+  const navItems: NavRecordItem[] = navRecords.map((n) => ({
+    kind: "nav",
+    id: n.id,
+    service_at: n.created_at,
+    user_name: n.user_name,
+    target_position: n.target_position,
+    employment_index:
+      typeof n.employment_index === "number" ? n.employment_index : null,
+  }));
+  const mergedItems = [...serviceItems, ...navItems].sort(
+    (a, b) => b.service_at - a.service_at,
+  );
 
   return (
     <div className="p-6 bg-background print:bg-white print:p-0">
@@ -168,15 +230,8 @@ export default async function ServiceTrackingDetailPage({
         <ServiceRecordsList
           trackingId={row.id}
           adminId={session.adminId!}
-          initial={records.map((r) => ({
-            id: r.id,
-            service_at: r.service_at,
-            content: r.content,
-            note: r.note,
-            recorder_admin_id: r.recorder_admin_id,
-            recorder_name: r.recorder_name,
-            attachments: parseAttachments(r.attachments_json),
-          }))}
+          initial={mergedItems}
+          serviceCount={serviceItems.length}
         />
       </div>
     </div>
