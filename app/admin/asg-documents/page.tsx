@@ -88,14 +88,13 @@ function DocumentDialog({
   const [title, setTitle] = useState(editing?.title ?? "");
   const [category, setCategory] = useState(editing?.category ?? "");
   const [subcategory, setSubcategory] = useState(editing?.subcategory ?? "");
-  const [description, setDescription] = useState(editing?.description ?? "");
   const [tier, setTier] = useState<"free" | "vip">(editing?.requiredTier ?? "free");
   const [pinned, setPinned] = useState<boolean>(editing?.pinned ?? false);
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingDescImage, setUploadingDescImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  const descriptionRef = useRef<HTMLDivElement | null>(null);
   const descImageInputRef = useRef<HTMLInputElement | null>(null);
 
   // 安全解析 JSON 响应：空响应 / HTML 错误页时不抛 "Unexpected end of JSON input"，
@@ -135,30 +134,95 @@ function DocumentDialog({
     return url;
   };
 
-  const insertDescriptionMarkdown = (markdown: string) => {
-    const input = descriptionRef.current;
-    const start = input?.selectionStart ?? description.length;
-    const end = input?.selectionEnd ?? description.length;
-    setDescription((current) => {
-      const safeStart = Math.min(start, current.length);
-      const safeEnd = Math.min(end, current.length);
-      const before = current.slice(0, safeStart);
-      const after = current.slice(safeEnd);
-      const prefix = before && !before.endsWith("\n") ? "\n" : "";
-      const suffix = after && !after.startsWith("\n") ? "\n" : "";
-      return `${before}${prefix}${markdown}${suffix}${after}`;
-    });
+  const resolveDescImageSrc = (url: string) =>
+    url.startsWith("/api/preview/")
+      ? withBase(`/api/admin/asg-documents/preview/${url.replace("/api/preview/", "")}`)
+      : url;
+
+  const editorToMarkdown = (): string => {
+    const el = descriptionRef.current;
+    if (!el) return "";
+    const walk = (node: Node): string => {
+      if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
+      if (node.nodeName === "BR") return "\n";
+      if (node.nodeName === "IMG") {
+        const img = node as HTMLImageElement;
+        return `![${img.alt || "说明图片"}](${img.dataset.url ?? ""})`;
+      }
+      let text = "";
+      if (node.nodeName === "DIV" || node.nodeName === "P") text = "\n";
+      node.childNodes.forEach((c) => { text += walk(c); });
+      return text;
+    };
+    let result = "";
+    el.childNodes.forEach((c) => { result += walk(c); });
+    return result.replace(/^\n+/, "").replace(/\n+$/, "");
   };
+
+  const insertEditorImage = (url: string) => {
+    const el = descriptionRef.current;
+    if (!el) return;
+    el.focus();
+    const img = document.createElement("img");
+    img.src = resolveDescImageSrc(url);
+    img.alt = "说明图片";
+    img.dataset.url = url;
+    img.className = "max-w-full rounded my-1";
+    img.style.maxHeight = "200px";
+    const br = document.createElement("br");
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && el.contains(sel.anchorNode)) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(br);
+      range.insertNode(img);
+      range.setStartAfter(br);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
+      el.appendChild(img);
+      el.appendChild(br);
+    }
+  };
+
+  useEffect(() => {
+    const el = descriptionRef.current;
+    if (!el) return;
+    const md = editing?.description ?? "";
+    if (!md) return;
+    const parts = md.split(/(!\[[^\]]*\]\([^)]+\))/);
+    el.innerHTML = "";
+    for (const part of parts) {
+      const m = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+      if (m) {
+        const img = document.createElement("img");
+        img.src = resolveDescImageSrc(m[2]);
+        img.alt = m[1] || "说明图片";
+        img.dataset.url = m[2];
+        img.className = "max-w-full rounded my-1";
+        img.style.maxHeight = "200px";
+        el.appendChild(img);
+      } else {
+        const lines = part.split("\n");
+        lines.forEach((line, i) => {
+          if (line) el.appendChild(document.createTextNode(line));
+          if (i < lines.length - 1) el.appendChild(document.createElement("br"));
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handlePickDescriptionImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = e.target.files?.[0];
-    e.target.value = ""; // 允许连续选同一文件
+    e.target.value = "";
     if (!picked) return;
     setError(null);
     setUploadingDescImage(true);
     try {
       const url = await uploadDescriptionImage(picked);
-      insertDescriptionMarkdown(`![说明图片](${url})`);
+      insertEditorImage(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "简介图片上传失败");
     } finally {
@@ -166,22 +230,20 @@ function DocumentDialog({
     }
   };
 
-  const handleDescriptionPaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  const handleDescriptionPaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
     const imageFiles = Array.from(e.clipboardData.items)
       .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
       .map((item) => item.getAsFile())
       .filter((item): item is File => !!item);
     if (!imageFiles.length) return;
-
     e.preventDefault();
     setError(null);
     setUploadingDescImage(true);
     try {
-      const urls: string[] = [];
       for (const image of imageFiles) {
-        urls.push(await uploadDescriptionImage(image));
+        const url = await uploadDescriptionImage(image);
+        insertEditorImage(url);
       }
-      insertDescriptionMarkdown(urls.map((url) => `![说明图片](${url})`).join("\n"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "说明图片上传失败");
     } finally {
@@ -217,7 +279,7 @@ function DocumentDialog({
         title: title.trim(),
         category: category || null,
         subcategory: subcategory || null,
-        description: description.trim() || null,
+        description: editorToMarkdown().trim() || null,
         requiredTier: tier,
         pinned,
       };
@@ -373,39 +435,13 @@ function DocumentDialog({
                   onChange={handlePickDescriptionImage}
                 />
               </div>
-              <textarea
+              <div
                 ref={descriptionRef}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                contentEditable={!uploadingDescImage}
                 onPaste={handleDescriptionPaste}
-                rows={6}
-                className="w-full bg-transparent border-0 px-3 py-2 text-sm outline-none resize-none"
-                placeholder="文档简介，可直接粘贴或上传图片"
-                disabled={uploadingDescImage}
+                className="w-full min-h-[9rem] bg-transparent border-0 px-3 py-2 text-sm outline-none [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-muted-foreground"
+                data-placeholder="文档简介，可直接粘贴或上传图片"
               />
-              {/* 图片实时预览 */}
-              {(() => {
-                const imgs = [...description.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g)];
-                if (!imgs.length) return null;
-                return (
-                  <div className="border-t border-border px-3 py-2 flex flex-wrap gap-2 bg-muted/30">
-                    {imgs.map((m, i) => {
-                      const url = m[2];
-                      const src = url.startsWith("/api/preview/")
-                        ? withBase(`/api/admin/asg-documents/preview/${url.replace("/api/preview/", "")}`)
-                        : url;
-                      return (
-                        <img
-                          key={i}
-                          src={src}
-                          alt={m[1] || "简介图片"}
-                          className="max-h-40 rounded border border-border object-contain"
-                        />
-                      );
-                    })}
-                  </div>
-                );
-              })()}
             </div>
             {uploadingDescImage && (
               <p className="mt-1.5 text-xs text-muted-foreground">简介图片上传中…</p>
