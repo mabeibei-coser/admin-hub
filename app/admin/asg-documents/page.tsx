@@ -383,6 +383,29 @@ function DocumentDialog({
                 placeholder="文档简介，可直接粘贴或上传图片"
                 disabled={uploadingDescImage}
               />
+              {/* 图片实时预览 */}
+              {(() => {
+                const imgs = [...description.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g)];
+                if (!imgs.length) return null;
+                return (
+                  <div className="border-t border-border px-3 py-2 flex flex-wrap gap-2 bg-muted/30">
+                    {imgs.map((m, i) => {
+                      const url = m[2];
+                      const src = url.startsWith("/api/preview/")
+                        ? withBase(`/api/admin/asg-documents/preview/${url.replace("/api/preview/", "")}`)
+                        : url;
+                      return (
+                        <img
+                          key={i}
+                          src={src}
+                          alt={m[1] || "简介图片"}
+                          className="max-h-40 rounded border border-border object-contain"
+                        />
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
             {uploadingDescImage && (
               <p className="mt-1.5 text-xs text-muted-foreground">简介图片上传中…</p>
