@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:credential": "node --test --experimental-strip-types tests/credential-hub/*.test.mts",
     "smoke": "node scripts/smoke-admin.mjs",
     "sync-contracts": "node scripts/sync-contracts.mjs",
     "sync-salary": "node scripts/sync-contracts.mjs salary"
