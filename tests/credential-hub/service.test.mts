@@ -11,6 +11,7 @@ import {
   authenticateProjectToken,
   bindCredential,
   createCandidate,
+  generateProjectToken,
   listCredentials,
   markVersionTestResult,
   registerProjectToken,
@@ -234,8 +235,17 @@ test("测试状态与审计同事务，审计失败时不留下通过状态", ()
 
 test("项目 token 按项目和 scope 隔离，撤销立即生效且数据库无明文", () => {
   const f = fixture();
-  const token = "a100-project-token-with-32-bytes-min";
+  const token = generateProjectToken();
   try {
+    assert.match(token, /^cph_[A-Za-z0-9_-]{43}$/);
+    assert.throws(
+      () => registerProjectToken(f.db, {
+        projectId: "A100",
+        token: "weak-token-weak-token-weak-token",
+        scopes: ["credentials:resolve"],
+      }),
+      /格式无效/,
+    );
     const tokenId = registerProjectToken(f.db, {
       projectId: "A100",
       token,

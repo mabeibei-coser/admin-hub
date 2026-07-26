@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type Database from "better-sqlite3";
 
 import {
@@ -80,6 +80,21 @@ export interface CredentialAdminView {
   }>;
 }
 
+export interface ProjectTokenIdentity {
+  tokenId: number;
+  projectId: string;
+  scopes: ProjectTokenScope[];
+}
+
+export interface ProjectCredentialEventInput {
+  projectId: string;
+  bindingId: number;
+  credentialVersion: number;
+  status: "success" | "error";
+  latencyMs: number;
+  errorCategory: string | null;
+}
+
 interface VersionRow {
   id: number;
   credential_id: number;
@@ -155,8 +170,14 @@ function encryptedFromRow(row: VersionRow): EncryptedSecret {
 }
 
 export function hashProjectToken(token: string): string {
-  if (token.length < 24) throw new Error("项目 token 长度不足");
+  if (!/^cph_[A-Za-z0-9_-]{43}$/.test(token)) {
+    throw new Error("项目 token 格式无效");
+  }
   return createHash("sha256").update(token, "utf8").digest("hex");
+}
+
+export function generateProjectToken(): string {
+  return `cph_${randomBytes(32).toString("base64url")}`;
 }
 
 export function createCandidate(
@@ -502,24 +523,43 @@ export function authenticateProjectToken(
   projectId: string,
   requiredScope: ProjectTokenScope,
 ): boolean {
+  const identity = authenticateProjectTokenIdentity(db, token, requiredScope);
+  return identity?.projectId === projectId;
+}
+
+export function authenticateProjectTokenIdentity(
+  db: Database.Database,
+  token: string,
+  requiredScope: ProjectTokenScope,
+): ProjectTokenIdentity | null {
   let tokenHash: string;
   try {
     tokenHash = hashProjectToken(token);
   } catch {
-    return false;
+    return null;
   }
   const row = db
     .prepare(
-      `SELECT project_id, scopes_json FROM project_tokens
+      `SELECT id, project_id, scopes_json FROM project_tokens
        WHERE token_hash = ? AND revoked_at IS NULL`,
     )
-    .get(tokenHash) as { project_id: string; scopes_json: string } | undefined;
-  if (!row || row.project_id !== projectId) return false;
+    .get(tokenHash) as
+    | { id: number; project_id: string; scopes_json: string }
+    | undefined;
+  if (!row) return null;
   try {
     const scopes = JSON.parse(row.scopes_json) as unknown;
-    return Array.isArray(scopes) && scopes.includes(requiredScope);
+    if (!Array.isArray(scopes) || !scopes.includes(requiredScope)) return null;
+    return {
+      tokenId: row.id,
+      projectId: row.project_id,
+      scopes: scopes.filter(
+        (scope): scope is ProjectTokenScope =>
+          scope === "credentials:resolve" || scope === "credentials:events",
+      ),
+    };
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -735,6 +775,93 @@ export function listCredentialAdminViews(
         activatedAt: version.activated_at,
       })),
   }));
+}
+
+export function recordProjectCredentialEvent(
+  db: Database.Database,
+  input: ProjectCredentialEventInput,
+  now = Date.now(),
+): number {
+  return db.transaction(() => {
+    const binding = db
+      .prepare(
+        `SELECT b.id
+         FROM credential_bindings b
+         JOIN credential_versions v ON v.credential_id = b.credential_id
+         WHERE b.id = ? AND b.project_id = ? AND v.version = ?`,
+      )
+      .get(input.bindingId, input.projectId, input.credentialVersion);
+    if (!binding) throw new Error("事件绑定或凭证版本不属于该项目");
+
+    const result = db
+      .prepare(
+        `INSERT INTO credential_project_events
+           (project_id, binding_id, credential_version, status,
+            latency_ms, error_category, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        input.projectId,
+        input.bindingId,
+        input.credentialVersion,
+        input.status,
+        input.latencyMs,
+        input.errorCategory,
+        now,
+      );
+    const eventId = Number(result.lastInsertRowid);
+    writeAudit(db, {
+      actorType: "project",
+      actorId: input.projectId,
+      action: "credential_use_reported",
+      targetType: "credential_project_event",
+      targetId: eventId,
+      metadata: {
+        bindingId: input.bindingId,
+        credentialVersion: input.credentialVersion,
+        status: input.status,
+        latencyMs: input.latencyMs,
+        errorCategory: input.errorCategory,
+      },
+      now,
+    });
+    return eventId;
+  })();
+}
+
+export function listRecentProjectCredentialEvents(
+  db: Database.Database,
+  limit = 20,
+): Array<{
+  id: number;
+  projectId: string;
+  bindingId: number;
+  credentialVersion: number;
+  status: "success" | "error";
+  latencyMs: number;
+  errorCategory: string | null;
+  createdAt: number;
+}> {
+  const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
+  return db
+    .prepare(
+      `SELECT id, project_id AS projectId, binding_id AS bindingId,
+              credential_version AS credentialVersion, status,
+              latency_ms AS latencyMs, error_category AS errorCategory,
+              created_at AS createdAt
+       FROM credential_project_events
+       ORDER BY created_at DESC, id DESC LIMIT ?`,
+    )
+    .all(safeLimit) as Array<{
+    id: number;
+    projectId: string;
+    bindingId: number;
+    credentialVersion: number;
+    status: "success" | "error";
+    latencyMs: number;
+    errorCategory: string | null;
+    createdAt: number;
+  }>;
 }
 
 export function listCredentials(db: Database.Database): Array<Record<string, unknown>> {

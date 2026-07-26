@@ -62,6 +62,16 @@ interface CredentialView {
 interface CredentialData {
   pilot: PilotInfo;
   credentials: CredentialView[];
+  events: Array<{
+    id: number;
+    projectId: string;
+    bindingId: number;
+    credentialVersion: number;
+    status: "success" | "error";
+    latencyMs: number;
+    errorCategory: string | null;
+    createdAt: number;
+  }>;
 }
 
 type ConfirmState =
@@ -409,6 +419,38 @@ export function CredentialCenter() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      <section className="surface-panel overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+          <Link2 className="size-4 text-[var(--blue-700)]" />
+          <h2 className="font-semibold text-[var(--navy-900)]">A100 最近使用状态</h2>
+        </div>
+        {!data || data.events.length === 0 ? (
+          <div className="py-10 text-center text-sm text-muted-foreground">
+            A100 接入后，这里会显示最近使用的凭证版本和结果。
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {data.events.map((event) => (
+              <div key={event.id} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                <span className="font-medium">{event.projectId}</span>
+                <span className="tabular-nums text-muted-foreground">v{event.credentialVersion}</span>
+                <StatusPill tone={event.status === "success" ? "success" : "danger"}>
+                  {event.status === "success" ? "调用成功" : "调用失败"}
+                </StatusPill>
+                <span className="tabular-nums text-xs text-muted-foreground">
+                  {event.latencyMs} ms · {formatTime(event.createdAt)}
+                </span>
+                {event.errorCategory && (
+                  <span className="text-xs text-[var(--semantic-danger)]">
+                    {event.errorCategory}
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </section>
