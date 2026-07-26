@@ -6,6 +6,7 @@
  *   BASE_URL=http://localhost:3001 \
  *   ADMIN_USERNAME=<手机号> \
  *   ADMIN_PASSWORD=<明文密码> \
+ *   ADMIN_SESSION_PASSWORD=<会话密钥> \
  *   node scripts/smoke-admin.mjs
  *
  * 通过条件（任一不满足即 exit 1）：
@@ -16,12 +17,20 @@
  *   5. GET /api/admin/service-tracking 返回 array
  */
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:3001";
+import { unsealData } from "iron-session";
+
+const BASE_URL = (process.env.BASE_URL || "http://localhost:3001").replace(
+  /\/+$/,
+  "",
+);
 const USERNAME = process.env.ADMIN_USERNAME;
 const PASSWORD = process.env.ADMIN_PASSWORD;
+const SESSION_PASSWORD = process.env.ADMIN_SESSION_PASSWORD;
 
-if (!USERNAME || !PASSWORD) {
-  console.error("❌ 缺 env: ADMIN_USERNAME / ADMIN_PASSWORD");
+if (!USERNAME || !PASSWORD || !SESSION_PASSWORD) {
+  console.error(
+    "❌ 缺 env: ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_SESSION_PASSWORD",
+  );
   process.exit(1);
 }
 
@@ -33,27 +42,73 @@ function record(name, ok, detail = "") {
   console.log(`${icon} ${name}${detail ? "  —  " + detail : ""}`);
 }
 
+function getSetCookies(response) {
+  if (typeof response.headers.getSetCookie === "function") {
+    return response.headers.getSetCookie();
+  }
+  const combined = response.headers.get("set-cookie");
+  return combined ? [combined] : [];
+}
+
+function getCookiePair(response, name) {
+  for (const header of getSetCookies(response)) {
+    const match = header.match(new RegExp(`(?:^|,\\s*)(${name}=[^;]+)`));
+    if (match) return match[1];
+  }
+  return "";
+}
+
+function api(pathname) {
+  return `${BASE_URL}${pathname.endsWith("/") ? pathname : `${pathname}/`}`;
+}
+
 async function main() {
-  // 1. login
-  const loginRes = await fetch(`${BASE_URL}/api/admin/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: USERNAME, password: PASSWORD }),
+  // 1. 获取图形验证码。答案只在内存中解密，不输出验证码或 cookie。
+  const captchaRes = await fetch(api("/api/admin/captcha"), {
+    redirect: "manual",
   });
-  const setCookie = loginRes.headers.get("set-cookie") ?? "";
-  const cookie = setCookie.split(";")[0]; // 取第一个 cookie name=value
+  const captchaCookie = getCookiePair(captchaRes, "admin_captcha");
+  const captchaSeal = captchaCookie.slice("admin_captcha=".length);
+  const captchaSession = captchaSeal
+    ? await unsealData(decodeURIComponent(captchaSeal), {
+        password: SESSION_PASSWORD,
+        ttl: 300,
+      })
+    : {};
+  const captcha = captchaSession?.text;
+  record(
+    "GET /api/admin/captcha",
+    captchaRes.status === 200 && typeof captcha === "string",
+    `status=${captchaRes.status}`,
+  );
+  if (!captchaCookie || typeof captcha !== "string") {
+    console.error("验证码会话建立失败，停止后续测试");
+    process.exit(1);
+  }
+
+  // 2. login
+  const loginRes = await fetch(api("/api/admin/login"), {
+    method: "POST",
+    redirect: "manual",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: captchaCookie,
+    },
+    body: JSON.stringify({ username: USERNAME, password: PASSWORD, captcha }),
+  });
+  const cookie = getCookiePair(loginRes, "career_admin_session");
   record(
     "POST /api/admin/login",
     loginRes.status === 200 && cookie.length > 0,
-    `status=${loginRes.status}, cookie=${cookie.slice(0, 30)}...`
+    `status=${loginRes.status}, session=${cookie ? "set" : "missing"}`,
   );
   if (!cookie) {
     console.error("登录失败，停止后续测试");
     process.exit(1);
   }
 
-  // 2. me
-  const meRes = await fetch(`${BASE_URL}/api/admin/me`, {
+  // 3. me
+  const meRes = await fetch(api("/api/admin/me"), {
     headers: { Cookie: cookie },
   });
   const meJson = meRes.ok ? await meRes.json() : null;
@@ -63,9 +118,9 @@ async function main() {
     `status=${meRes.status}, adminId=${meJson?.session?.adminId}`
   );
 
-  // 3. reports?project=report
+  // 4. reports?project=report
   const reportListRes = await fetch(
-    `${BASE_URL}/api/admin/reports?project=report&limit=5`,
+    `${api("/api/admin/reports")}?project=report&limit=5`,
     { headers: { Cookie: cookie } }
   );
   const reportListJson = reportListRes.ok ? await reportListRes.json() : null;
@@ -75,9 +130,9 @@ async function main() {
     `status=${reportListRes.status}, rows=${reportListJson?.rows?.length}`
   );
 
-  // 4. reports?project=nav
+  // 5. reports?project=nav
   const navListRes = await fetch(
-    `${BASE_URL}/api/admin/reports?project=nav&limit=5`,
+    `${api("/api/admin/reports")}?project=nav&limit=5`,
     { headers: { Cookie: cookie } }
   );
   const navListJson = navListRes.ok ? await navListRes.json() : null;
@@ -88,8 +143,8 @@ async function main() {
     `status=${navListRes.status}, rows=${navListJson?.rows?.length}`
   );
 
-  // 5. service-tracking
-  const stRes = await fetch(`${BASE_URL}/api/admin/service-tracking?limit=5`, {
+  // 6. service-tracking
+  const stRes = await fetch(`${api("/api/admin/service-tracking")}?limit=5`, {
     headers: { Cookie: cookie },
   });
   const stJson = stRes.ok ? await stRes.json() : null;
