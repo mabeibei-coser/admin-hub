@@ -19,7 +19,7 @@
 
 import { unsealData } from "iron-session";
 
-const BASE_URL = (process.env.BASE_URL || "http://localhost:3001").replace(
+const BASE_URL = (process.env.BASE_URL || "http://localhost:3001/b100").replace(
   /\/+$/,
   "",
 );

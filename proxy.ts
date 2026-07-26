@@ -16,6 +16,16 @@ function basePathAwareRedirect(req: NextRequest, pathname: string) {
   return url;
 }
 
+function noStoreJson(body: Record<string, string>, status: number) {
+  const response = NextResponse.json(body, { status });
+  response.headers.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, max-age=0",
+  );
+  response.headers.set("Pragma", "no-cache");
+  return response;
+}
+
 export async function proxy(req: NextRequest) {
   // trailingSlash:true 让 pathname 总是带尾斜杠（页面），但 API 路径不带。
   // normalize 成不带尾斜杠形式做精确匹配，避免漏判。
@@ -36,7 +46,7 @@ export async function proxy(req: NextRequest) {
 
     if (!sessionPwd || sessionPwd.length < 32) {
       if (normalized.startsWith("/api/")) {
-        return NextResponse.json({ error: "服务端配置错误" }, { status: 500 });
+        return noStoreJson({ error: "服务端配置错误" }, 500);
       }
       return NextResponse.redirect(basePathAwareRedirect(req, "/admin/login"));
     }
@@ -50,7 +60,7 @@ export async function proxy(req: NextRequest) {
     // 软闸（soft gate）：proxy 做快速身份校验，route handler 是权威源（见 lib/admin-session.ts requireAdmin/requireSuper）
     if (!session.adminId) {
       if (normalized.startsWith("/api/")) {
-        return NextResponse.json({ error: "未登录" }, { status: 401 });
+        return noStoreJson({ error: "未登录" }, 401);
       }
       return NextResponse.redirect(basePathAwareRedirect(req, "/admin/login"));
     }
@@ -73,14 +83,7 @@ export async function proxy(req: NextRequest) {
       normalized.startsWith("/api/admin/credentials");
     if ((isAdminsPath || isHazardChecklistPath || isCredentialsPath) && !session.isSuper) {
       if (normalized.startsWith("/api/")) {
-        const denied = NextResponse.json({ error: "无权限" }, { status: 403 });
-        if (isCredentialsPath) {
-          denied.headers.set(
-            "Cache-Control",
-            "no-store, no-cache, must-revalidate, max-age=0"
-          );
-        }
-        return denied;
+        return noStoreJson({ error: "无权限" }, 403);
       }
       return NextResponse.redirect(basePathAwareRedirect(req, "/admin/reports"));
     }
