@@ -166,6 +166,43 @@ export async function requireSuper(): Promise<AdminSession | null> {
 }
 
 /**
+ * 凭证中心专用的 fail-closed 超管鉴权。
+ *
+ * 普通后台沿用 requireSuper 的既有可用性语义；凭证中心属于高敏模块，
+ * 因此管理员库不可读、账号停用、会话失效或超管身份已撤销时一律拒绝。
+ */
+export async function requireCredentialSuper(): Promise<AdminSession | null> {
+  const s = await getAdminSession();
+  if (!s.adminId || !s.loggedInAt) return null;
+  try {
+    const row = getDb()
+      .prepare(
+        `SELECT is_active, is_super, session_invalid_after
+         FROM admins WHERE id = ?`,
+      )
+      .get(s.adminId) as
+      | {
+          is_active: number;
+          is_super: number;
+          session_invalid_after: number | null;
+        }
+      | undefined;
+    const invalid =
+      !row ||
+      row.is_active !== 1 ||
+      row.is_super !== 1 ||
+      (row.session_invalid_after != null && s.loggedInAt < row.session_invalid_after);
+    if (invalid) {
+      await s.destroy();
+      return null;
+    }
+    return s;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * 要求对指定菜单有权限（超管自动通过）。
  * 路由顶端用法：
  *   const session = await requireMenu("report");

@@ -20,9 +20,19 @@ export function parseMasterKey(raw: string | undefined): Buffer {
   const value = raw?.trim();
   if (!value) throw new Error("CREDENTIAL_MASTER_KEY 未配置");
 
-  const key = /^[a-f\d]{64}$/i.test(value)
-    ? Buffer.from(value, "hex")
-    : Buffer.from(value, "base64");
+  let key: Buffer;
+  if (/^[a-f\d]{64}$/i.test(value)) {
+    key = Buffer.from(value, "hex");
+  } else {
+    const canonicalBase64 = /^[A-Za-z0-9+/]+={0,2}$/.test(value) && value.length % 4 === 0;
+    if (!canonicalBase64) {
+      throw new Error("CREDENTIAL_MASTER_KEY 必须是 32 字节的 base64 或 64 位 hex");
+    }
+    key = Buffer.from(value, "base64");
+    if (key.toString("base64") !== value) {
+      throw new Error("CREDENTIAL_MASTER_KEY 必须是 32 字节的 base64 或 64 位 hex");
+    }
+  }
   if (key.length !== 32) {
     throw new Error("CREDENTIAL_MASTER_KEY 必须是 32 字节的 base64 或 64 位 hex");
   }

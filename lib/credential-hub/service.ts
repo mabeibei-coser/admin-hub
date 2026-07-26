@@ -41,6 +41,45 @@ export interface ResolvedCredential {
   resolvedAt: number;
 }
 
+export interface CredentialVersionForValidation {
+  credentialId: number;
+  versionId: number;
+  version: number;
+  logicalKey: string;
+  provider: string;
+  capability: string;
+  status: "candidate" | "retired";
+  endpoint: string;
+  model: string;
+  protocol: string;
+  apiKey: string;
+}
+
+export interface CredentialAdminView {
+  id: number;
+  logicalKey: string;
+  provider: string;
+  capability: string;
+  bindings: Array<{
+    id: number;
+    projectId: string;
+    capability: string;
+    role: CredentialRole;
+  }>;
+  versions: Array<{
+    id: number;
+    version: number;
+    status: "candidate" | "active" | "retired" | "revoked";
+    testStatus: "untested" | "passed" | "failed";
+    testErrorCategory: string | null;
+    endpoint: string;
+    model: string;
+    protocol: string;
+    testedAt: number | null;
+    activatedAt: number | null;
+  }>;
+}
+
 interface VersionRow {
   id: number;
   credential_id: number;
@@ -53,8 +92,29 @@ interface VersionRow {
   test_status: "untested" | "passed" | "failed";
 }
 
-function credentialAad(credentialId: number, version: number): string {
-  return `credential:${credentialId}:${version}`;
+interface CredentialAadInput {
+  credentialId: number;
+  version: number;
+  logicalKey: string;
+  provider: string;
+  capability: string;
+  endpoint: string;
+  model: string;
+  protocol: string;
+}
+
+function credentialAad(input: CredentialAadInput): string {
+  return JSON.stringify([
+    "credential-hub:v1",
+    input.credentialId,
+    input.version,
+    input.logicalKey,
+    input.provider,
+    input.capability,
+    input.endpoint,
+    input.model,
+    input.protocol,
+  ]);
 }
 
 function writeAudit(
@@ -113,15 +173,31 @@ export function createCandidate(
   }
 
   return db.transaction(() => {
-    db.prepare(
-      `INSERT INTO credentials
-         (logical_key, provider, capability, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(logical_key) DO UPDATE SET
-         provider = excluded.provider,
-         capability = excluded.capability,
-         updated_at = excluded.updated_at`,
-    ).run(input.logicalKey, input.provider, input.capability, now, now);
+    const existing = db
+      .prepare(
+        "SELECT id, provider, capability FROM credentials WHERE logical_key = ?",
+      )
+      .get(input.logicalKey) as
+      | { id: number; provider: string; capability: string }
+      | undefined;
+    if (
+      existing &&
+      (existing.provider !== input.provider || existing.capability !== input.capability)
+    ) {
+      throw new Error("候选版本不能修改逻辑凭证的供应商或能力");
+    }
+    if (existing) {
+      db.prepare("UPDATE credentials SET updated_at = ? WHERE id = ?").run(
+        now,
+        existing.id,
+      );
+    } else {
+      db.prepare(
+        `INSERT INTO credentials
+           (logical_key, provider, capability, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?)`,
+      ).run(input.logicalKey, input.provider, input.capability, now, now);
+    }
 
     const credential = db
       .prepare("SELECT id FROM credentials WHERE logical_key = ?")
@@ -134,7 +210,16 @@ export function createCandidate(
     const encrypted = encryptSecret(
       input.secret,
       masterKey,
-      credentialAad(credential.id, next.version),
+      credentialAad({
+        credentialId: credential.id,
+        version: next.version,
+        logicalKey: input.logicalKey,
+        provider: input.provider,
+        capability: input.capability,
+        endpoint: input.endpoint,
+        model: input.model,
+        protocol: input.protocol,
+      }),
     );
     const inserted = db
       .prepare(
@@ -188,23 +273,25 @@ export function markVersionTestResult(
   actorAdminId?: number,
   now = Date.now(),
 ): void {
-  const result = db
-    .prepare(
-      `UPDATE credential_versions
-       SET test_status = ?, test_error_category = ?, tested_at = ?
-       WHERE id = ? AND status IN ('candidate','retired')`,
-    )
-    .run(passed ? "passed" : "failed", passed ? null : errorCategory, now, versionId);
-  if (result.changes !== 1) throw new Error("凭证版本不存在或不可测试");
-  writeAudit(db, {
-    actorType: actorAdminId ? "admin" : "system",
-    actorId: actorAdminId,
-    action: passed ? "candidate_test_passed" : "candidate_test_failed",
-    targetType: "credential_version",
-    targetId: versionId,
-    metadata: passed ? {} : { errorCategory: errorCategory ?? "unknown" },
-    now,
-  });
+  db.transaction(() => {
+    const result = db
+      .prepare(
+        `UPDATE credential_versions
+         SET test_status = ?, test_error_category = ?, tested_at = ?
+         WHERE id = ? AND status IN ('candidate','retired')`,
+      )
+      .run(passed ? "passed" : "failed", passed ? null : errorCategory, now, versionId);
+    if (result.changes !== 1) throw new Error("凭证版本不存在或不可测试");
+    writeAudit(db, {
+      actorType: actorAdminId ? "admin" : "system",
+      actorId: actorAdminId,
+      action: passed ? "candidate_test_passed" : "candidate_test_failed",
+      targetType: "credential_version",
+      targetId: versionId,
+      metadata: passed ? {} : { errorCategory: errorCategory ?? "unknown" },
+      now,
+    });
+  })();
 }
 
 export function activateVersion(
@@ -261,16 +348,35 @@ export function rollbackCredential(
   actorAdminId?: number,
   now = Date.now(),
 ): number {
-  const previous = db
-    .prepare(
-      `SELECT id FROM credential_versions
-       WHERE credential_id = ? AND status = 'retired' AND test_status = 'passed'
-       ORDER BY retired_at DESC, version DESC LIMIT 1`,
-    )
-    .get(credentialId) as { id: number } | undefined;
-  if (!previous) throw new Error("没有可回滚的旧版本");
-  activateVersion(db, credentialId, previous.id, actorAdminId, now);
-  return previous.id;
+  return db.transaction(() => {
+    const current = db
+      .prepare(
+        "SELECT id FROM credential_versions WHERE credential_id = ? AND status = 'active'",
+      )
+      .get(credentialId) as { id: number } | undefined;
+    const previous = db
+      .prepare(
+        `SELECT id FROM credential_versions
+         WHERE credential_id = ? AND status = 'retired' AND test_status = 'passed'
+         ORDER BY retired_at DESC, version DESC LIMIT 1`,
+      )
+      .get(credentialId) as { id: number } | undefined;
+    if (!previous) throw new Error("没有可回滚的旧版本");
+    activateVersion(db, credentialId, previous.id, actorAdminId, now);
+    writeAudit(db, {
+      actorType: actorAdminId ? "admin" : "system",
+      actorId: actorAdminId,
+      action: "credential_rollback",
+      targetType: "credential",
+      targetId: credentialId,
+      metadata: {
+        fromVersionId: current?.id ?? null,
+        toVersionId: previous.id,
+      },
+      now,
+    });
+    return previous.id;
+  })();
 }
 
 export function bindCredential(
@@ -283,38 +389,53 @@ export function bindCredential(
   },
   now = Date.now(),
 ): number {
-  const conflicting = db
-    .prepare(
-      `SELECT id FROM credential_bindings
-       WHERE project_id = ? AND capability = ? AND role != ? AND credential_id = ?`,
-    )
-    .get(input.projectId, input.capability, input.role, input.credentialId);
-  if (conflicting) {
-    throw new Error("同一凭证不能同时充当真实主备");
-  }
+  return db.transaction(() => {
+    const conflicting = db
+      .prepare(
+        `SELECT id FROM credential_bindings
+         WHERE project_id = ? AND capability = ? AND role != ? AND credential_id = ?`,
+      )
+      .get(input.projectId, input.capability, input.role, input.credentialId);
+    if (conflicting) {
+      throw new Error("同一凭证不能同时充当真实主备");
+    }
 
-  db.prepare(
-    `INSERT INTO credential_bindings
-       (project_id, capability, role, credential_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?)
-     ON CONFLICT(project_id, capability, role) DO UPDATE SET
-       credential_id = excluded.credential_id,
-       updated_at = excluded.updated_at`,
-  ).run(
-    input.projectId,
-    input.capability,
-    input.role,
-    input.credentialId,
-    now,
-    now,
-  );
-  const row = db
-    .prepare(
-      `SELECT id FROM credential_bindings
-       WHERE project_id = ? AND capability = ? AND role = ?`,
-    )
-    .get(input.projectId, input.capability, input.role) as { id: number };
-  return row.id;
+    db.prepare(
+      `INSERT INTO credential_bindings
+         (project_id, capability, role, credential_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(project_id, capability, role) DO UPDATE SET
+         credential_id = excluded.credential_id,
+         updated_at = excluded.updated_at`,
+    ).run(
+      input.projectId,
+      input.capability,
+      input.role,
+      input.credentialId,
+      now,
+      now,
+    );
+    const row = db
+      .prepare(
+        `SELECT id FROM credential_bindings
+         WHERE project_id = ? AND capability = ? AND role = ?`,
+      )
+      .get(input.projectId, input.capability, input.role) as { id: number };
+    writeAudit(db, {
+      actorType: "system",
+      action: "binding_upserted",
+      targetType: "credential_binding",
+      targetId: row.id,
+      metadata: {
+        projectId: input.projectId,
+        capability: input.capability,
+        role: input.role,
+        credentialId: input.credentialId,
+      },
+      now,
+    });
+    return row.id;
+  })();
 }
 
 export function registerProjectToken(
@@ -326,19 +447,31 @@ export function registerProjectToken(
   },
   now = Date.now(),
 ): number {
-  const result = db
-    .prepare(
-      `INSERT INTO project_tokens
-         (project_id, token_hash, scopes_json, created_at)
-       VALUES (?, ?, ?, ?)`,
-    )
-    .run(
-      input.projectId,
-      hashProjectToken(input.token),
-      JSON.stringify([...new Set(input.scopes)].sort()),
+  return db.transaction(() => {
+    const scopes = [...new Set(input.scopes)].sort();
+    const result = db
+      .prepare(
+        `INSERT INTO project_tokens
+           (project_id, token_hash, scopes_json, created_at)
+         VALUES (?, ?, ?, ?)`,
+      )
+      .run(
+        input.projectId,
+        hashProjectToken(input.token),
+        JSON.stringify(scopes),
+        now,
+      );
+    const tokenId = Number(result.lastInsertRowid);
+    writeAudit(db, {
+      actorType: "system",
+      action: "project_token_registered",
+      targetType: "project_token",
+      targetId: tokenId,
+      metadata: { projectId: input.projectId, scopeCount: scopes.length },
       now,
-    );
-  return Number(result.lastInsertRowid);
+    });
+    return tokenId;
+  })();
 }
 
 export function revokeProjectToken(
@@ -346,10 +479,21 @@ export function revokeProjectToken(
   tokenId: number,
   now = Date.now(),
 ): void {
-  const result = db
-    .prepare("UPDATE project_tokens SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL")
-    .run(now, tokenId);
-  if (result.changes !== 1) throw new Error("项目 token 不存在或已撤销");
+  db.transaction(() => {
+    const token = db
+      .prepare("SELECT project_id FROM project_tokens WHERE id = ? AND revoked_at IS NULL")
+      .get(tokenId) as { project_id: string } | undefined;
+    if (!token) throw new Error("项目 token 不存在或已撤销");
+    db.prepare("UPDATE project_tokens SET revoked_at = ? WHERE id = ?").run(now, tokenId);
+    writeAudit(db, {
+      actorType: "system",
+      action: "project_token_revoked",
+      targetType: "project_token",
+      targetId: tokenId,
+      metadata: { projectId: token.project_id },
+      now,
+    });
+  })();
 }
 
 export function authenticateProjectToken(
@@ -388,7 +532,8 @@ export function resolveProjectCredentials(
   const rows = db
     .prepare(
       `SELECT b.id AS binding_id, b.capability AS binding_capability, b.role,
-              c.id AS credential_id, c.provider,
+              c.id AS credential_id, c.logical_key, c.provider,
+              c.capability AS credential_capability,
               v.version, v.secret_ciphertext, v.secret_iv, v.secret_auth_tag,
               v.encryption_key_version, v.endpoint, v.model, v.protocol,
               v.id, v.credential_id, v.status, v.test_status
@@ -405,7 +550,9 @@ export function resolveProjectCredentials(
       binding_capability: string;
       role: CredentialRole;
       credential_id: number;
+      logical_key: string;
       provider: string;
+      credential_capability: string;
       endpoint: string;
       model: string;
       protocol: string;
@@ -424,9 +571,169 @@ export function resolveProjectCredentials(
     apiKey: decryptSecret(
       encryptedFromRow(row),
       masterKey,
-      credentialAad(row.credential_id, row.version),
+      credentialAad({
+        credentialId: row.credential_id,
+        version: row.version,
+        logicalKey: row.logical_key,
+        provider: row.provider,
+        capability: row.credential_capability,
+        endpoint: row.endpoint,
+        model: row.model,
+        protocol: row.protocol,
+      }),
     ),
     resolvedAt: now,
+  }));
+}
+
+export function getCredentialVersionForValidation(
+  db: Database.Database,
+  versionId: number,
+  masterKey: Buffer,
+): CredentialVersionForValidation {
+  const row = db
+    .prepare(
+      `SELECT v.id, v.credential_id, v.version, v.status,
+              v.secret_ciphertext, v.secret_iv, v.secret_auth_tag,
+              v.encryption_key_version, v.endpoint, v.model, v.protocol,
+              v.test_status, c.logical_key, c.provider, c.capability
+       FROM credential_versions v
+       JOIN credentials c ON c.id = v.credential_id
+       WHERE v.id = ? AND v.status IN ('candidate','retired')`,
+    )
+    .get(versionId) as
+    | (VersionRow & {
+        logical_key: string;
+        provider: string;
+        capability: string;
+        endpoint: string;
+        model: string;
+        protocol: string;
+      })
+    | undefined;
+  if (!row) throw new Error("凭证版本不存在或不可测试");
+  return {
+    credentialId: row.credential_id,
+    versionId: row.id,
+    version: row.version,
+    logicalKey: row.logical_key,
+    provider: row.provider,
+    capability: row.capability,
+    status: row.status as "candidate" | "retired",
+    endpoint: row.endpoint,
+    model: row.model,
+    protocol: row.protocol,
+    apiKey: decryptSecret(
+      encryptedFromRow(row),
+      masterKey,
+      credentialAad({
+        credentialId: row.credential_id,
+        version: row.version,
+        logicalKey: row.logical_key,
+        provider: row.provider,
+        capability: row.capability,
+        endpoint: row.endpoint,
+        model: row.model,
+        protocol: row.protocol,
+      }),
+    ),
+  };
+}
+
+export function getCredentialIdByLogicalKey(
+  db: Database.Database,
+  logicalKey: string,
+): number | null {
+  const row = db
+    .prepare("SELECT id FROM credentials WHERE logical_key = ?")
+    .get(logicalKey) as { id: number } | undefined;
+  return row?.id ?? null;
+}
+
+export function getCredentialIdForVersion(
+  db: Database.Database,
+  versionId: number,
+): number | null {
+  const row = db
+    .prepare("SELECT credential_id FROM credential_versions WHERE id = ?")
+    .get(versionId) as { credential_id: number } | undefined;
+  return row?.credential_id ?? null;
+}
+
+export function listCredentialAdminViews(
+  db: Database.Database,
+): CredentialAdminView[] {
+  const credentials = db
+    .prepare(
+      `SELECT id, logical_key, provider, capability
+       FROM credentials ORDER BY id`,
+    )
+    .all() as Array<{
+    id: number;
+    logical_key: string;
+    provider: string;
+    capability: string;
+  }>;
+  const bindings = db
+    .prepare(
+      `SELECT id, credential_id, project_id, capability, role
+       FROM credential_bindings ORDER BY id`,
+    )
+    .all() as Array<{
+    id: number;
+    credential_id: number;
+    project_id: string;
+    capability: string;
+    role: CredentialRole;
+  }>;
+  const versions = db
+    .prepare(
+      `SELECT id, credential_id, version, status, test_status,
+              test_error_category, endpoint, model, protocol,
+              tested_at, activated_at
+       FROM credential_versions ORDER BY credential_id, version DESC`,
+    )
+    .all() as Array<{
+    id: number;
+    credential_id: number;
+    version: number;
+    status: "candidate" | "active" | "retired" | "revoked";
+    test_status: "untested" | "passed" | "failed";
+    test_error_category: string | null;
+    endpoint: string;
+    model: string;
+    protocol: string;
+    tested_at: number | null;
+    activated_at: number | null;
+  }>;
+
+  return credentials.map((credential) => ({
+    id: credential.id,
+    logicalKey: credential.logical_key,
+    provider: credential.provider,
+    capability: credential.capability,
+    bindings: bindings
+      .filter((binding) => binding.credential_id === credential.id)
+      .map((binding) => ({
+        id: binding.id,
+        projectId: binding.project_id,
+        capability: binding.capability,
+        role: binding.role,
+      })),
+    versions: versions
+      .filter((version) => version.credential_id === credential.id)
+      .map((version) => ({
+        id: version.id,
+        version: version.version,
+        status: version.status,
+        testStatus: version.test_status,
+        testErrorCategory: version.test_error_category,
+        endpoint: version.endpoint,
+        model: version.model,
+        protocol: version.protocol,
+        testedAt: version.tested_at,
+        activatedAt: version.activated_at,
+      })),
   }));
 }
 

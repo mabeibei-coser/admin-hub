@@ -68,9 +68,19 @@ export async function proxy(req: NextRequest) {
     const isHazardChecklistPath =
       normalized.startsWith("/admin/hazard-checklist") ||
       normalized.startsWith("/api/admin/hazard-prompts");
-    if ((isAdminsPath || isHazardChecklistPath) && !session.isSuper) {
+    const isCredentialsPath =
+      normalized.startsWith("/admin/credentials") ||
+      normalized.startsWith("/api/admin/credentials");
+    if ((isAdminsPath || isHazardChecklistPath || isCredentialsPath) && !session.isSuper) {
       if (normalized.startsWith("/api/")) {
-        return NextResponse.json({ error: "无权限" }, { status: 403 });
+        const denied = NextResponse.json({ error: "无权限" }, { status: 403 });
+        if (isCredentialsPath) {
+          denied.headers.set(
+            "Cache-Control",
+            "no-store, no-cache, must-revalidate, max-age=0"
+          );
+        }
+        return denied;
       }
       return NextResponse.redirect(basePathAwareRedirect(req, "/admin/reports"));
     }

@@ -44,6 +44,10 @@ test("总钥匙只接受 32 字节 base64 或 64 位 hex", () => {
   assert.deepEqual(parseMasterKey(key.toString("base64")), key);
   assert.deepEqual(parseMasterKey(key.toString("hex")), key);
   assert.throws(() => parseMasterKey("too-short"), /必须是 32 字节/);
+  assert.throws(
+    () => parseMasterKey(`${key.toString("base64").slice(0, 10)}!!${key.toString("base64").slice(10)}`),
+    /必须是 32 字节/,
+  );
   assert.throws(() => parseMasterKey(undefined), /未配置/);
 });
 
@@ -77,4 +81,3 @@ test("credentials.db schema 可重复初始化且使用 WAL", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
-

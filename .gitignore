@@ -88,6 +88,7 @@ C\:*
 !/data/temp/.gitkeep
 
 # playwright
+/.playwright-cli/
 playwright-report/
 test-results/
 e2e/fixtures/.tmp-*

@@ -24,6 +24,7 @@ import {
   Laptop,
   Home,
   Settings,
+  KeyRound,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PROJECTS, type ProjectId } from "@/lib/projects";
@@ -262,6 +263,14 @@ export function AdminSidebar() {
                   icon={Settings}
                   active={pathname.startsWith("/admin/site-settings")}
                   href="/admin/site-settings"
+                />
+              )}
+              {(!me || me.showAdmins) && (
+                <SidebarNavItem
+                  label="凭证中心"
+                  icon={KeyRound}
+                  active={pathname.startsWith("/admin/credentials")}
+                  href="/admin/credentials"
                 />
               )}
               {(!me || me.showAsgMembers) && (

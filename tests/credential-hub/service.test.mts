@@ -131,6 +131,107 @@ test("失败候选不可启用，同一凭证不可伪装成真实主备", () =>
   }
 });
 
+test("候选不能污染逻辑凭证元数据，调用配置被篡改后密文不可解", () => {
+  const f = fixture();
+  try {
+    const candidate = createCandidate(f.db, f.key, {
+      ...candidateBase,
+      secret: "tamper-proof-secret",
+    });
+    assert.throws(
+      () => createCandidate(f.db, f.key, {
+        ...candidateBase,
+        provider: "evil-provider",
+        capability: "other",
+        secret: "evil-secret",
+      }),
+      /不能修改逻辑凭证/,
+    );
+    bindCredential(f.db, {
+      projectId: "A100",
+      capability: "resume_text",
+      role: "primary",
+      credentialId: candidate.credentialId,
+    });
+    markVersionTestResult(f.db, candidate.versionId, true, null);
+    activateVersion(f.db, candidate.credentialId, candidate.versionId);
+
+    const versionFields = [
+      ["endpoint", "https://evil.example"],
+      ["model", "evil-model"],
+      ["protocol", "evil-protocol"],
+    ] as const;
+    for (const [field, badValue] of versionFields) {
+      const original = f.db
+        .prepare(`SELECT ${field} AS value FROM credential_versions WHERE id = ?`)
+        .get(candidate.versionId) as { value: string };
+      f.db.prepare(`UPDATE credential_versions SET ${field} = ? WHERE id = ?`).run(
+        badValue,
+        candidate.versionId,
+      );
+      assert.throws(
+        () => resolveProjectCredentials(f.db, "A100", f.key),
+        /凭证解密失败/,
+      );
+      f.db.prepare(`UPDATE credential_versions SET ${field} = ? WHERE id = ?`).run(
+        original.value,
+        candidate.versionId,
+      );
+    }
+
+    for (const [field, badValue] of [
+      ["provider", "evil-provider"],
+      ["capability", "evil-capability"],
+    ] as const) {
+      const original = f.db
+        .prepare(`SELECT ${field} AS value FROM credentials WHERE id = ?`)
+        .get(candidate.credentialId) as { value: string };
+      f.db.prepare(`UPDATE credentials SET ${field} = ? WHERE id = ?`).run(
+        badValue,
+        candidate.credentialId,
+      );
+      assert.throws(
+        () => resolveProjectCredentials(f.db, "A100", f.key),
+        /凭证解密失败/,
+      );
+      f.db.prepare(`UPDATE credentials SET ${field} = ? WHERE id = ?`).run(
+        original.value,
+        candidate.credentialId,
+      );
+    }
+  } finally {
+    f.close();
+  }
+});
+
+test("测试状态与审计同事务，审计失败时不留下通过状态", () => {
+  const f = fixture();
+  try {
+    const candidate = createCandidate(f.db, f.key, {
+      ...candidateBase,
+      secret: "atomic-audit-secret",
+    });
+    f.db.exec(`
+      CREATE TRIGGER reject_candidate_test_audit
+      BEFORE INSERT ON credential_audit_events
+      WHEN NEW.action LIKE 'candidate_test_%'
+      BEGIN
+        SELECT RAISE(ABORT, 'audit blocked');
+      END;
+    `);
+    assert.throws(
+      () => markVersionTestResult(f.db, candidate.versionId, true, null),
+      /audit blocked/,
+    );
+    const row = f.db
+      .prepare("SELECT test_status FROM credential_versions WHERE id = ?")
+      .get(candidate.versionId) as { test_status: string };
+    assert.equal(row.test_status, "untested");
+  } finally {
+    f.close();
+  }
+});
+
 test("项目 token 按项目和 scope 隔离，撤销立即生效且数据库无明文", () => {
   const f = fixture();
   const token = "a100-project-token-with-32-bytes-min";
@@ -186,4 +287,3 @@ test("密文库和审计记录不出现凭证明文", () => {
     f.close();
   }
 });
-
