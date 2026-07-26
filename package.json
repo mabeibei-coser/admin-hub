@@ -1,11 +1,11 @@
 {
   "name": "admin-hub",
-  "version": "0.1.90",
+  "version": "0.1.91",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 127.0.0.1",
     "lint": "eslint",
     "test:credential": "node --test --experimental-strip-types tests/credential-hub/*.test.mts",
     "smoke": "node scripts/smoke-admin.mjs",
