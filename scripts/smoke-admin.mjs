@@ -116,10 +116,11 @@ async function main() {
     headers: { Cookie: cookie },
   });
   const meJson = meRes.ok ? await meRes.json() : null;
+  const adminId = meJson?.adminId ?? meJson?.session?.adminId;
   record(
     "GET /api/admin/me",
-    meRes.ok && meJson?.session?.adminId,
-    `status=${meRes.status}, adminId=${meJson?.session?.adminId}`
+    meRes.ok && Number.isInteger(adminId),
+    `status=${meRes.status}, admin=${Number.isInteger(adminId) ? "present" : "missing"}`,
   );
 
   // 4. reports?project=report
