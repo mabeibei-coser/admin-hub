@@ -3,7 +3,7 @@
  * admin-hub smoke test —— 端到端验证 auth + 跨库读 + 服务跟进。
  *
  * 用法：
- *   BASE_URL=http://localhost:3001 \
+ *   BASE_URL=http://localhost:3001/b100 \
  *   ADMIN_USERNAME=<手机号> \
  *   ADMIN_PASSWORD=<明文密码> \
  *   ADMIN_SESSION_PASSWORD=<会话密钥> \
@@ -27,11 +27,13 @@ const USERNAME = process.env.ADMIN_USERNAME;
 const PASSWORD = process.env.ADMIN_PASSWORD;
 const SESSION_PASSWORD = process.env.ADMIN_SESSION_PASSWORD;
 
-if (!USERNAME || !PASSWORD || !SESSION_PASSWORD) {
+const hasRequiredEnv = Boolean(USERNAME && PASSWORD && SESSION_PASSWORD);
+
+if (!hasRequiredEnv) {
   console.error(
     "❌ 缺 env: ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_SESSION_PASSWORD",
   );
-  process.exit(1);
+  process.exitCode = 1;
 }
 
 const checks = [];
@@ -83,7 +85,8 @@ async function main() {
   );
   if (!captchaCookie || typeof captcha !== "string") {
     console.error("验证码会话建立失败，停止后续测试");
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   // 2. login
@@ -104,7 +107,8 @@ async function main() {
   );
   if (!cookie) {
     console.error("登录失败，停止后续测试");
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   // 3. me
@@ -158,10 +162,15 @@ async function main() {
   const failed = checks.filter((c) => !c.ok);
   console.log("");
   console.log(`总计 ${checks.length} 项，通过 ${checks.length - failed.length}，失败 ${failed.length}`);
-  process.exit(failed.length === 0 ? 0 : 1);
+  process.exitCode = failed.length === 0 ? 0 : 1;
 }
 
-main().catch((err) => {
-  console.error("smoke 脚本异常：", err);
-  process.exit(1);
-});
+if (hasRequiredEnv) {
+  main().catch((err) => {
+    console.error(
+      "smoke 脚本异常：",
+      err instanceof Error ? err.message : "未知错误",
+    );
+    process.exitCode = 1;
+  });
+}

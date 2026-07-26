@@ -13,6 +13,7 @@ import {
 import {
   initializeCredentialSchema,
   openCredentialDb,
+  resolveCredentialDbPath,
 } from "../../lib/credential-hub/db.ts";
 
 test("AES-256-GCM 往返、随机 IV、错误总钥匙和篡改检测", () => {
@@ -80,4 +81,15 @@ test("credentials.db schema 可重复初始化且使用 WAL", () => {
     db.close();
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("生产环境未显式配置 credentials.db 时安全失败", () => {
+  assert.throws(
+    () => resolveCredentialDbPath({ NODE_ENV: "production" }),
+    /未配置 CREDENTIALS_DB_PATH/,
+  );
+  assert.match(
+    resolveCredentialDbPath({ NODE_ENV: "test" }),
+    /credentials\.db$/,
+  );
 });

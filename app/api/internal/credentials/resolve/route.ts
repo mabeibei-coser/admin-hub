@@ -11,7 +11,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const db = getCredentialDb();
+  let db: ReturnType<typeof getCredentialDb>;
+  try {
+    db = getCredentialDb();
+  } catch {
+    return credentialJson({ error: "凭证中心存储未就绪" }, 503);
+  }
   const token = readBearerToken(req.headers.get("authorization"));
   const identity = token
     ? authenticateProjectTokenIdentity(db, token, "credentials:resolve")

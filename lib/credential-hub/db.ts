@@ -4,6 +4,19 @@ import path from "node:path";
 
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), "data", "credentials.db");
 
+export function resolveCredentialDbPath(
+  environment: Partial<
+    Pick<NodeJS.ProcessEnv, "CREDENTIALS_DB_PATH" | "NODE_ENV">
+  > = process.env,
+): string {
+  const configured = environment.CREDENTIALS_DB_PATH?.trim();
+  if (configured) return path.resolve(configured);
+  if (environment.NODE_ENV === "production") {
+    throw new Error("生产环境未配置 CREDENTIALS_DB_PATH");
+  }
+  return DEFAULT_DB_PATH;
+}
+
 export function initializeCredentialSchema(db: Database.Database): void {
   db.pragma("foreign_keys = ON");
   db.pragma("busy_timeout = 5000");
@@ -96,12 +109,18 @@ export function initializeCredentialSchema(db: Database.Database): void {
 }
 
 export function openCredentialDb(
-  dbPath = process.env.CREDENTIALS_DB_PATH ?? DEFAULT_DB_PATH,
+  dbPath?: string,
 ): Database.Database {
-  if (dbPath !== ":memory:") {
-    fs.mkdirSync(path.dirname(path.resolve(dbPath)), { recursive: true });
+  const resolvedPath = dbPath ?? resolveCredentialDbPath();
+  if (resolvedPath !== ":memory:") {
+    const parent = path.dirname(path.resolve(resolvedPath));
+    fs.mkdirSync(parent, { recursive: true, mode: 0o700 });
+    if (process.platform !== "win32") fs.chmodSync(parent, 0o700);
   }
-  const db = new Database(dbPath);
+  const db = new Database(resolvedPath);
+  if (resolvedPath !== ":memory:" && process.platform !== "win32") {
+    fs.chmodSync(path.resolve(resolvedPath), 0o600);
+  }
   db.pragma("journal_mode = WAL");
   initializeCredentialSchema(db);
   return db;
@@ -113,4 +132,3 @@ export function getCredentialDb(): Database.Database {
   singleton ??= openCredentialDb();
   return singleton;
 }
-

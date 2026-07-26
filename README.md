@@ -57,9 +57,10 @@ admin-hub 本身只跑 admin UI + API（`localhost:3001`），不直接服务终
 
 4. （可选）跑 smoke 测试验证全链路：
    ```powershell
-   $env:BASE_URL="http://localhost:3001"
+   $env:BASE_URL="http://localhost:3001/b100"
    $env:ADMIN_USERNAME="<手机号>"
    $env:ADMIN_PASSWORD="<明文密码>"
+   $env:ADMIN_SESSION_PASSWORD="<与 .env.local 相同的会话密钥>"
    npm run smoke
    ```
 
