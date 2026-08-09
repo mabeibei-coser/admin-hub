@@ -11,7 +11,6 @@ import {
   Plus,
   Pencil,
   Copy,
-  QrCode,
   ExternalLink,
   Ban,
   Play,
@@ -33,12 +32,12 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   WRAPPER_STATUSES,
+  wrapperPublicPath,
   wrapperStatusLabel,
   type WrapperStatus,
   type WrapperListRow,
 } from "@/lib/wrappers";
 import { withBase } from "@/lib/url";
-import { QRCodeSVG } from "qrcode.react";
 
 const STATUS_TONE: Record<WrapperStatus, StatusTone> = {
   active: "success",
@@ -53,11 +52,10 @@ interface ListResponse {
 }
 
 const COLUMNS = [
-  "短码",
+  "访问后缀",
   "名称",
   "备注",
   "原始网址",
-  "访问次数",
   "创建时间",
   "创建人",
   "状态",
@@ -126,8 +124,7 @@ function ListContent() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<WrapperListRow | null>(null);
-  const [qrOpen, setQrOpen] = useState<string | null>(null); // short_code for QR modal
-  const [copied, setCopied] = useState<string | null>(null); // short_code for "copied" feedback
+  const [copied, setCopied] = useState<string | null>(null);
   const [toggleConfirm, setToggleConfirm] = useState<{ row: WrapperListRow; action: "disable" | "enable" } | null>(null);
 
   const fetch_ = useCallback(async () => {
@@ -151,7 +148,8 @@ function ListContent() {
   }, [shortCodeParam, nameParam, statusParam, pageParam]);
 
   useEffect(() => {
-    fetch_();
+    const timer = window.setTimeout(() => void fetch_(), 0);
+    return () => window.clearTimeout(timer);
   }, [fetch_]);
 
   function applyFilters() {
@@ -200,7 +198,7 @@ function ListContent() {
   }
 
   async function handleCopy(row: WrapperListRow) {
-    const url = `${window.location.origin}${withBase(`/w/${row.short_code}`)}`;
+    const url = `${window.location.origin}${wrapperPublicPath(row.short_code)}`;
     try {
       await copyToClipboard(url);
       setCopied(row.short_code);
@@ -231,12 +229,12 @@ function ListContent() {
         {/* 筛选 + 添加 */}
         <div className="surface-panel p-4 flex flex-wrap gap-3 items-end">
           <div>
-            <label htmlFor="filter-code" className="block text-xs text-muted-foreground mb-1">短码</label>
+            <label htmlFor="filter-code" className="block text-xs text-muted-foreground mb-1">访问后缀</label>
             <input
               id="filter-code"
               type="text"
               value={shortCodeInput}
-              placeholder="短码搜索"
+              placeholder="后缀搜索"
               onChange={(e) => setShortCodeInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyFilters(); } }}
               className="h-8 w-28 text-sm border border-input rounded-md px-2 bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue-400)]/30"
@@ -333,7 +331,6 @@ function ListContent() {
                         <ExternalLink className="size-3" />
                       </a>
                     </TableCell>
-                    <TableCell className="tabular-nums text-xs text-muted-foreground">{row.click_count}</TableCell>
                     <TableCell className="tabular-nums text-xs text-muted-foreground whitespace-nowrap">{formatTsWithTime(row.created_at)}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{row.created_by_name || "—"}</TableCell>
                     <TableCell><StatusPill tone={STATUS_TONE[row.status]}>{wrapperStatusLabel(row.status)}</StatusPill></TableCell>
@@ -346,9 +343,9 @@ function ListContent() {
                           <Copy className="size-3" />
                           {copied === row.short_code ? "已复制" : "复制"}
                         </button>
-                        <button onClick={() => setQrOpen(row.short_code)} title="二维码" className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-border text-muted-foreground bg-card hover:bg-muted transition-all duration-150 cursor-pointer">
-                          <QrCode className="size-3" />
-                        </button>
+                        <a href={wrapperPublicPath(row.short_code)} target="_blank" rel="noopener noreferrer" title="打开公开页" className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-border text-muted-foreground bg-card hover:bg-muted transition-all duration-150 cursor-pointer">
+                          <ExternalLink className="size-3" />打开
+                        </a>
                         <button
                           onClick={() => setToggleConfirm({ row, action: row.status === "active" ? "disable" : "enable" })}
                           title={row.status === "active" ? "停用" : "启用"}
@@ -394,11 +391,11 @@ function ListContent() {
                     <span className="text-xs font-mono text-muted-foreground">{row.short_code}</span>
                   </div>
                   <div className="text-xs text-muted-foreground mb-2 line-clamp-1">{row.note}</div>
-                  <div className="text-xs text-muted-foreground mb-2">访问 {row.click_count} 次 · {row.created_by_name || "—"}</div>
+                  <div className="text-xs text-muted-foreground mb-2">创建人：{row.created_by_name || "—"}</div>
                   <div className="flex gap-1.5 flex-wrap">
                     <button onClick={() => openEdit(row)} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-[var(--blue-200)] text-[var(--blue-700)] bg-[var(--blue-50)]"><Pencil className="size-3" />编辑</button>
                     <button onClick={() => handleCopy(row)} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-[var(--green-200)] text-[var(--green-700)] bg-[var(--green-50)]"><Copy className="size-3" />{copied === row.short_code ? "已复制" : "复制"}</button>
-                    <button onClick={() => setQrOpen(row.short_code)} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-border text-muted-foreground bg-card"><QrCode className="size-3" /></button>
+                    <a href={wrapperPublicPath(row.short_code)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ring-1 ring-border text-muted-foreground bg-card"><ExternalLink className="size-3" />打开</a>
                     <button onClick={() => setToggleConfirm({ row, action: row.status === "active" ? "disable" : "enable" })} className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ${row.status === "active" ? "ring-1 ring-[var(--semantic-warning)]/30 text-[var(--semantic-warning)] bg-[oklch(0.97_0.06_70)]" : "ring-1 ring-[var(--semantic-positive)]/30 text-[var(--semantic-positive)] bg-[oklch(0.96_0.04_155)]"}`}>
                       {row.status === "active" ? <><Ban className="size-3" />停用</> : <><Play className="size-3" />启用</>}
                     </button>
@@ -412,20 +409,13 @@ function ListContent() {
       </div>
 
       {/* Dialog */}
-      <WrapperDialog open={dialogOpen} editing={editing} onClose={() => setDialogOpen(false)} onSaved={fetch_} />
-
-      {/* QR Modal */}
-      {qrOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setQrOpen(null)}>
-          <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
-          <div className="relative z-10 bg-card border border-border rounded-xl p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <QRCodeSVG value={`${window.location.origin}${withBase(`/w/${qrOpen}`)}`} size={200} />
-            <p className="text-xs text-muted-foreground text-center mt-3 break-all">
-              {window.location.origin}{withBase(`/w/${qrOpen}`)}
-            </p>
-            <Button onClick={() => setQrOpen(null)} variant="outline" className="mt-3 w-full">关闭</Button>
-          </div>
-        </div>
+      {dialogOpen && (
+        <WrapperDialog
+          key={editing?.id ?? "new"}
+          editing={editing}
+          onClose={() => setDialogOpen(false)}
+          onSaved={fetch_}
+        />
       )}
 
       {/* Toggle Confirm */}
@@ -440,7 +430,7 @@ function ListContent() {
         >
           <p>
             {toggleConfirm.action === "disable"
-              ? `确定停用「${toggleConfirm.row.name}」吗？停用后公开链接将显示 410 无法访问，但访问计数会保留。`
+              ? `确定停用「${toggleConfirm.row.name}」吗？停用后公开链接会显示停用提示页。`
               : `确定启用「${toggleConfirm.row.name}」吗？`}
           </p>
         </ConfirmDialog>
@@ -457,7 +447,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       </div>
       <div className="space-y-0.5 text-center">
         <p className="text-sm text-muted-foreground">还没有智能体包装</p>
-        <p className="text-xs text-muted-foreground">点「添加智能体」录入外部智能体链接，生成短码公开链接</p>
+        <p className="text-xs text-muted-foreground">点「添加智能体」录入智谱分享链接，生成公开访问链接</p>
       </div>
       <button onClick={onAdd} className="mt-2 inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-md ring-1 ring-[var(--blue-200)] text-[var(--blue-700)] bg-[var(--blue-50)] hover:bg-[var(--blue-100)] transition-all duration-150">
         <Plus className="size-3" />添加智能体

@@ -1,55 +1,65 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import { X, Bot, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { withBase } from "@/lib/url";
-import type { WrapperListRow } from "@/lib/wrappers";
+import {
+  WRAPPER_FOOTER_MAX_LENGTH,
+  validateFooterText,
+  validateSourceUrl,
+  validateWrapperSuffix,
+  wrapperPublicPath,
+  type WrapperListRow,
+} from "@/lib/wrappers";
 
 interface Props {
-  open: boolean;
   editing: WrapperListRow | null;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function WrapperDialog({ open, editing, onClose, onSaved }: Props) {
+function subscribeToOrigin() {
+  return () => undefined;
+}
+
+function getBrowserOrigin() {
+  return window.location.origin;
+}
+
+function getServerOrigin() {
+  return "";
+}
+
+export function WrapperDialog({ editing, onClose, onSaved }: Props) {
   const isEdit = !!editing;
-  const [shortCode, setShortCode] = useState("");
-  const [name, setName] = useState("");
-  const [note, setNote] = useState("");
-  const [sourceUrl, setSourceUrl] = useState("");
-  const [footerText, setFooterText] = useState("");
-  const [status, setStatus] = useState<"active" | "disabled">("active");
+  const [shortCode, setShortCode] = useState(editing?.short_code ?? "");
+  const [name, setName] = useState(editing?.name ?? "");
+  const [note, setNote] = useState(editing?.note ?? "");
+  const [sourceUrl, setSourceUrl] = useState(editing?.source_url ?? "");
+  const [footerText, setFooterText] = useState(editing?.footer_text ?? "");
+  const [status, setStatus] = useState<"active" | "disabled">(editing?.status ?? "active");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shortCodeChecking, setShortCodeChecking] = useState(false);
   const [shortCodeExists, setShortCodeExists] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const browserOrigin = useSyncExternalStore(
+    subscribeToOrigin,
+    getBrowserOrigin,
+    getServerOrigin,
+  );
 
-  // 重置表单
-  useEffect(() => {
-    if (!open) return;
-    setError(null);
-    setSubmitting(false);
-    setShortCode(editing?.short_code ?? "");
-    setName(editing?.name ?? "");
-    setNote(editing?.note ?? "");
-    setSourceUrl(editing?.source_url ?? "");
-    setFooterText(editing?.footer_text ?? "");
-    setStatus(editing?.status ?? "active");
-    setShortCodeExists(false);
-  }, [open, editing]);
-
-  // 短码 debounce 查重（仅新建时）
+  // 访问后缀 debounce 查重（仅新建时）
   const checkShortCode = useCallback(
     (code: string) => {
       if (isEdit) return;
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (code.length < 3) {
+      if (!validateWrapperSuffix(code).ok) {
+        setShortCodeChecking(false);
         setShortCodeExists(false);
         return;
       }
@@ -79,7 +89,7 @@ export function WrapperDialog({ open, editing, onClose, onSaved }: Props) {
     };
   }, []);
 
-  if (!open) return null;
+  const shortCodeValid = validateWrapperSuffix(shortCode).ok;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -92,16 +102,13 @@ export function WrapperDialog({ open, editing, onClose, onSaved }: Props) {
     const trimmedFooter = footerText.trim();
 
     if (!isEdit) {
-      if (!trimmedCode || trimmedCode.length < 3) {
-        setError("短码至少 3 个字符");
-        return;
-      }
-      if (!/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$/.test(trimmedCode)) {
-        setError("短码只能包含字母、数字和短横线，首尾不能是短横线");
+      const suffixCheck = validateWrapperSuffix(trimmedCode);
+      if (!suffixCheck.ok) {
+        setError(suffixCheck.error ?? "域名访问后缀不正确");
         return;
       }
       if (shortCodeExists) {
-        setError("该短码已被占用");
+        setError("该访问后缀已被占用");
         return;
       }
     }
@@ -117,18 +124,14 @@ export function WrapperDialog({ open, editing, onClose, onSaved }: Props) {
       setError("请填写原始网址");
       return;
     }
-    try {
-      new URL(trimmedUrl);
-      if (!trimmedUrl.startsWith("https://")) {
-        setError("原始网址必须以 https:// 开头");
-        return;
-      }
-    } catch {
-      setError("原始网址格式不正确");
+    const sourceUrlCheck = validateSourceUrl(trimmedUrl);
+    if (!sourceUrlCheck.ok) {
+      setError(sourceUrlCheck.error ?? "原始网址格式不正确");
       return;
     }
-    if (!trimmedFooter || trimmedFooter.length > 500) {
-      setError("底部说明需 1-500 字");
+    const footerCheck = validateFooterText(trimmedFooter);
+    if (!footerCheck.ok) {
+      setError(footerCheck.error ?? "底部说明不正确");
       return;
     }
 
@@ -198,44 +201,6 @@ export function WrapperDialog({ open, editing, onClose, onSaved }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 短码 */}
-          <div className="space-y-1.5">
-            <Label htmlFor="wrap-code">短码</Label>
-            {isEdit ? (
-              <>
-                <Input id="wrap-code" value={shortCode} readOnly disabled className="bg-muted text-muted-foreground" style={{ fontSize: "16px" }} />
-                <p className="text-[11px] text-muted-foreground">短码不可修改。</p>
-              </>
-            ) : (
-              <>
-                <Input
-                  id="wrap-code"
-                  placeholder="如 fire-ai、hazard-test"
-                  value={shortCode}
-                  onChange={(e) => {
-                    const v = e.target.value.toLowerCase().replace(/[^a-zA-Z0-9-]/g, "");
-                    setShortCode(v);
-                    checkShortCode(v);
-                  }}
-                  style={{ fontSize: "16px" }}
-                  className={shortCodeExists ? "ring-2 ring-[var(--semantic-danger)]" : ""}
-                />
-                {shortCode.length >= 3 && shortCodeChecking && (
-                  <p className="text-[11px] text-muted-foreground">检测中…</p>
-                )}
-                {shortCode.length >= 3 && !shortCodeChecking && shortCodeExists && (
-                  <p className="text-[11px] text-[var(--semantic-danger)]">该短码已被占用</p>
-                )}
-                {shortCode.length >= 3 && !shortCodeChecking && !shortCodeExists && (
-                  <p className="text-[11px] text-[var(--semantic-positive)]">短码可用</p>
-                )}
-                <p className="text-[11px] text-muted-foreground">
-                  3-32 位字母/数字/短横线，首尾不能是短横线。此为公开链接的后缀。
-                </p>
-              </>
-            )}
-          </div>
-
           {/* 智能体名称 */}
           <div className="space-y-1.5">
             <Label htmlFor="wrap-name">智能体名称</Label>
@@ -260,6 +225,7 @@ export function WrapperDialog({ open, editing, onClose, onSaved }: Props) {
               maxLength={500}
               style={{ fontSize: "16px" }}
             />
+            <p className="text-[11px] text-muted-foreground">仅后台可见，不会写入公开页面。</p>
           </div>
 
           {/* 原始网址 */}
@@ -275,7 +241,7 @@ export function WrapperDialog({ open, editing, onClose, onSaved }: Props) {
             />
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <ExternalLink className="size-3" />
-              请确认目标智能体支持 iframe 嵌入，且源站使用 HTTPS。
+              当前仅支持智谱 AppCenter 的智能体分享链接。
             </p>
           </div>
 
@@ -288,11 +254,56 @@ export function WrapperDialog({ open, editing, onClose, onSaved }: Props) {
               placeholder="如：以上内容由AI生成仅供参考，请认真阅读并核实"
               value={footerText}
               onChange={(e) => setFooterText(e.target.value)}
-              maxLength={500}
+              maxLength={WRAPPER_FOOTER_MAX_LENGTH}
               className="resize-none"
             />
             <p className="text-[11px] text-muted-foreground">
-              显示在包装页底部的免责或说明文字，支持换行。
+              显示在包装页底部，最多 80 字、两行。
+            </p>
+          </div>
+
+          {/* 域名访问后缀 */}
+          <div className="space-y-1.5">
+            <Label htmlFor="wrap-code">域名访问后缀</Label>
+            {isEdit ? (
+              <>
+                <Input id="wrap-code" value={shortCode} readOnly disabled className="bg-muted text-muted-foreground" style={{ fontSize: "16px" }} />
+                <p className="text-[11px] text-muted-foreground">保存后不再修改，避免已分享链接失效。</p>
+              </>
+            ) : (
+              <>
+                <Input
+                  id="wrap-code"
+                  placeholder="如：8c2f3537"
+                  value={shortCode}
+                  maxLength={32}
+                  onChange={(e) => {
+                    const v = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
+                    setShortCode(v);
+                    checkShortCode(v);
+                  }}
+                  style={{ fontSize: "16px" }}
+                  className={shortCodeExists ? "ring-2 ring-[var(--semantic-danger)]" : ""}
+                  autoComplete="off"
+                />
+                {shortCodeValid && shortCodeChecking && (
+                  <p className="text-[11px] text-muted-foreground">正在检查是否可用…</p>
+                )}
+                {shortCodeValid && !shortCodeChecking && shortCodeExists && (
+                  <p className="text-[11px] text-[var(--semantic-danger)]">该访问后缀已被占用</p>
+                )}
+                {shortCodeValid && !shortCodeChecking && !shortCodeExists && (
+                  <p className="text-[11px] text-[var(--semantic-positive)]">该访问后缀可用</p>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  3-32 位小写字母、数字或短横线，首尾不能是短横线。
+                </p>
+              </>
+            )}
+            <p className="break-all rounded-md bg-muted px-2.5 py-2 text-[11px] text-muted-foreground">
+              公开链接：{browserOrigin}{shortCode
+                ? wrapperPublicPath(shortCode)
+                : "/?no=访问后缀"}
             </p>
           </div>
 
@@ -326,14 +337,14 @@ export function WrapperDialog({ open, editing, onClose, onSaved }: Props) {
               </div>
               {status === "disabled" && (
                 <p className="text-[11px] text-[var(--semantic-warning)]">
-                  停用后该智能体的公开链接将无法访问（显示 410）。
+                  停用后公开链接会显示停用提示页。
                 </p>
               )}
             </div>
           )}
 
           {error && (
-            <p className="text-sm text-[var(--semantic-danger)] bg-[oklch(0.97_0.04_25)] dark:bg-[oklch(0.3_0.08_25)] rounded-lg px-3 py-2">
+            <p role="alert" aria-live="polite" className="text-sm text-[var(--semantic-danger)] bg-[oklch(0.97_0.04_25)] dark:bg-[oklch(0.3_0.08_25)] rounded-lg px-3 py-2">
               {error}
             </p>
           )}

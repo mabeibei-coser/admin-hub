@@ -12,8 +12,8 @@ export default function PublicWrapperLayout({ children }: { children: React.Reac
     <>
       <style>{`
         /* 强制浅色模式，不受 admin 后台暗色主题影响 */
-        body { background: #f5f5f5 !important; color-scheme: light !important; }
-        body.dark { background: #f5f5f5 !important; }
+        html, body { overflow: hidden !important; background: #fff !important; color-scheme: light !important; }
+        body.dark { background: #fff !important; }
         html.dark { color-scheme: light !important; }
       `}</style>
       {children}

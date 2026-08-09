@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMenu } from "@/lib/admin-session";
-import { getAdminDb } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import {
+  validateFooterText,
   validateSourceUrl,
   wrapperAccessFilter,
   WRAPPER_STATUS_KEYS,
@@ -12,7 +13,7 @@ const MENU = "wrappers";
 
 /**
  * PUT /api/admin/wrappers/[id]
- * 更新 name/note/source_url/footer_text/status。短码不可修改。
+ * 更新 name/note/source_url/footer_text/status。访问后缀不可修改。
  * 原子 WHERE：非超管只能改自己创建的（changes===0 → 404）。
  */
 export async function PUT(
@@ -31,14 +32,17 @@ export async function PUT(
   }
 
   const body = await req.json().catch(() => null);
-  if (!body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
     return NextResponse.json({ error: "请求体格式错误" }, { status: 400 });
   }
 
   const sets: string[] = [];
   const vals: Array<string | number | null> = [];
 
-  if (typeof body.name === "string") {
+  if ("name" in body) {
+    if (typeof body.name !== "string") {
+      return NextResponse.json({ error: "智能体名称格式错误" }, { status: 400 });
+    }
     const name = body.name.trim();
     if (!name || name.length > 100) {
       return NextResponse.json({ error: "智能体名称需要 1-100 字" }, { status: 400 });
@@ -46,7 +50,10 @@ export async function PUT(
     sets.push("name = ?");
     vals.push(name);
   }
-  if (typeof body.note === "string") {
+  if ("note" in body) {
+    if (typeof body.note !== "string") {
+      return NextResponse.json({ error: "备注格式错误" }, { status: 400 });
+    }
     const note = body.note.trim();
     if (!note || note.length > 500) {
       return NextResponse.json({ error: "备注需要 1-500 字" }, { status: 400 });
@@ -54,7 +61,10 @@ export async function PUT(
     sets.push("note = ?");
     vals.push(note);
   }
-  if (typeof body.source_url === "string") {
+  if ("source_url" in body) {
+    if (typeof body.source_url !== "string") {
+      return NextResponse.json({ error: "原始网址格式错误" }, { status: 400 });
+    }
     const urlCheck = validateSourceUrl(body.source_url);
     if (!urlCheck.ok) {
       return NextResponse.json({ error: urlCheck.error }, { status: 400 });
@@ -62,15 +72,22 @@ export async function PUT(
     sets.push("source_url = ?");
     vals.push(body.source_url.trim());
   }
-  if (typeof body.footer_text === "string") {
+  if ("footer_text" in body) {
+    if (typeof body.footer_text !== "string") {
+      return NextResponse.json({ error: "底部说明格式错误" }, { status: 400 });
+    }
     const ft = body.footer_text.trim();
-    if (!ft || ft.length > 500) {
-      return NextResponse.json({ error: "底部说明需要 1-500 字" }, { status: 400 });
+    const footerCheck = validateFooterText(ft);
+    if (!footerCheck.ok) {
+      return NextResponse.json({ error: footerCheck.error }, { status: 400 });
     }
     sets.push("footer_text = ?");
     vals.push(ft);
   }
-  if (typeof body.status === "string") {
+  if ("status" in body) {
+    if (typeof body.status !== "string") {
+      return NextResponse.json({ error: "状态格式错误" }, { status: 400 });
+    }
     if (!WRAPPER_STATUS_KEYS.includes(body.status as WrapperStatus)) {
       return NextResponse.json({ error: "无效的状态" }, { status: 400 });
     }
@@ -89,7 +106,7 @@ export async function PUT(
   const filter = wrapperAccessFilter(session);
   const accessWhere = filter.whereSql ? ` AND ${filter.whereSql}` : "";
 
-  const result = getAdminDb()
+  const result = getDb()
     .prepare(
       `UPDATE wrappers SET ${sets.join(", ")} WHERE id = ?${accessWhere}`
     )
@@ -102,7 +119,7 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/admin/wrappers/[id] — 软删除（改 status='disabled'，保留 click_count 历史）。
+ * DELETE /api/admin/wrappers/[id] — 软删除（改 status='disabled'）。
  * 原子 WHERE：非超管只能停用自己的。
  */
 export async function DELETE(
@@ -123,7 +140,7 @@ export async function DELETE(
   const filter = wrapperAccessFilter(session);
   const accessWhere = filter.whereSql ? ` AND ${filter.whereSql}` : "";
 
-  const result = getAdminDb()
+  const result = getDb()
     .prepare(
       `UPDATE wrappers SET status = 'disabled', updated_at = ? WHERE id = ?${accessWhere}`
     )

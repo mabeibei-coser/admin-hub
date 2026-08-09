@@ -231,13 +231,15 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_cu_created ON courseware_users(created_at DESC);
   `);
 
-  // 智能体包装：外部智能体链接的 iframe 包装页。管理员录入后生成短码链接。
+  // 智能体包装：外部智能体链接的 iframe 包装页。管理员录入后生成访问后缀。
   _db.exec(`
     CREATE TABLE IF NOT EXISTS wrappers (
       id                  INTEGER PRIMARY KEY AUTOINCREMENT,
       short_code          TEXT    NOT NULL
                           CHECK (length(short_code) >= 3 AND length(short_code) <= 32
-                             AND short_code GLOB '[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]'),
+                             AND short_code NOT GLOB '*[^a-z0-9-]*'
+                             AND substr(short_code, 1, 1) != '-'
+                             AND substr(short_code, -1, 1) != '-'),
       name                TEXT    NOT NULL CHECK (length(name) >= 1 AND length(name) <= 100),
       note                TEXT    NOT NULL CHECK (length(note) >= 1 AND length(note) <= 500),
       source_url          TEXT    NOT NULL CHECK (source_url GLOB 'https://*'),
@@ -254,6 +256,26 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_wrappers_created_by  ON wrappers(created_by_admin_id);
     CREATE INDEX IF NOT EXISTS idx_wrappers_created_at  ON wrappers(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_wrappers_status      ON wrappers(status);
+    CREATE TRIGGER IF NOT EXISTS trg_wrappers_short_code_insert
+      BEFORE INSERT ON wrappers
+      WHEN length(NEW.short_code) < 3
+        OR length(NEW.short_code) > 32
+        OR NEW.short_code GLOB '*[^a-z0-9-]*'
+        OR substr(NEW.short_code, 1, 1) = '-'
+        OR substr(NEW.short_code, -1, 1) = '-'
+      BEGIN
+        SELECT RAISE(ABORT, 'invalid wrapper short_code');
+      END;
+    CREATE TRIGGER IF NOT EXISTS trg_wrappers_short_code_update
+      BEFORE UPDATE OF short_code ON wrappers
+      WHEN length(NEW.short_code) < 3
+        OR length(NEW.short_code) > 32
+        OR NEW.short_code GLOB '*[^a-z0-9-]*'
+        OR substr(NEW.short_code, 1, 1) = '-'
+        OR substr(NEW.short_code, -1, 1) = '-'
+      BEGIN
+        SELECT RAISE(ABORT, 'invalid wrapper short_code');
+      END;
   `);
 
   return _db;

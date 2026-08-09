@@ -8,6 +8,7 @@
     "start": "next start -H 127.0.0.1",
     "lint": "eslint",
     "test:credential": "node --test --experimental-strip-types tests/credential-hub/*.test.mts",
+    "test:wrappers": "node --test --experimental-strip-types tests/wrappers/*.test.mts",
     "smoke": "node scripts/smoke-admin.mjs",
     "sync-contracts": "node scripts/sync-contracts.mjs",
     "sync-salary": "node scripts/sync-contracts.mjs salary"
@@ -25,7 +26,6 @@
     "jspdf": "^4.2.1",
     "lucide-react": "^1.8.0",
     "next": "16.2.3",
-    "qrcode.react": "^4.2.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.72.1",

@@ -89,6 +89,7 @@ C\:*
 
 # playwright
 /.playwright-cli/
+/output/playwright/
 playwright-report/
 test-results/
 e2e/fixtures/.tmp-*
