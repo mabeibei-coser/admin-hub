@@ -24,7 +24,6 @@ import {
   Laptop,
   Home,
   Settings,
-  Settings,
   KeyRound,
   Bot,
 } from "lucide-react";
