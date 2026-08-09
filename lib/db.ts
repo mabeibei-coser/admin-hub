@@ -231,6 +231,31 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_cu_created ON courseware_users(created_at DESC);
   `);
 
+  // 智能体包装：外部智能体链接的 iframe 包装页。管理员录入后生成短码链接。
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS wrappers (
+      id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+      short_code          TEXT    NOT NULL
+                          CHECK (length(short_code) >= 3 AND length(short_code) <= 32
+                             AND short_code GLOB '[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]'),
+      name                TEXT    NOT NULL CHECK (length(name) >= 1 AND length(name) <= 100),
+      note                TEXT    NOT NULL CHECK (length(note) >= 1 AND length(note) <= 500),
+      source_url          TEXT    NOT NULL CHECK (source_url GLOB 'https://*'),
+      footer_text         TEXT    NOT NULL CHECK (length(footer_text) >= 1 AND length(footer_text) <= 500),
+      status              TEXT    NOT NULL DEFAULT 'active'
+                          CHECK (status IN ('active','disabled')),
+      click_count         INTEGER NOT NULL DEFAULT 0,
+      created_by_admin_id INTEGER NOT NULL,
+      created_at          INTEGER NOT NULL,
+      updated_at          INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_wrappers_short_code
+      ON wrappers(short_code COLLATE NOCASE);
+    CREATE INDEX IF NOT EXISTS idx_wrappers_created_by  ON wrappers(created_by_admin_id);
+    CREATE INDEX IF NOT EXISTS idx_wrappers_created_at  ON wrappers(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_wrappers_status      ON wrappers(status);
+  `);
+
   return _db;
 }
 

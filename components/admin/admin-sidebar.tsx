@@ -24,7 +24,9 @@ import {
   Laptop,
   Home,
   Settings,
+  Settings,
   KeyRound,
+  Bot,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PROJECTS, type ProjectId } from "@/lib/projects";
@@ -44,6 +46,7 @@ interface MeData {
   showAsgMembers: boolean;
   showAsgDocuments: boolean;
   showAtaMembers: boolean;
+  showWrappers: boolean;
   showAdmins: boolean;
 }
 
@@ -204,7 +207,7 @@ export function AdminSidebar() {
         </nav>
 
         {/* === 服务管理 section === */}
-        {(!me || me.showService || me.showCoursewareUsers || me.showAsgDocuments) && (
+        {(!me || me.showService || me.showCoursewareUsers || me.showAsgDocuments || me.showWrappers) && (
           <>
             <SectionHeader label="服务管理" />
             <nav className="px-3 flex flex-col gap-0.5">
@@ -230,6 +233,14 @@ export function AdminSidebar() {
                   icon={FolderLock}
                   active={pathname.startsWith("/admin/asg-documents")}
                   href="/admin/asg-documents"
+                />
+              )}
+              {(!me || me.showWrappers) && (
+                <SidebarNavItem
+                  label="智能体包装"
+                  icon={Bot}
+                  active={pathname.startsWith("/admin/wrappers")}
+                  href="/admin/wrappers"
                 />
               )}
             </nav>
@@ -416,11 +427,13 @@ export function AdminMobileBar() {
   const showAsgMembers = !me || me.showAsgMembers;
   const showAsgDocuments = !me || me.showAsgDocuments;
   const showAtaMembers = !me || me.showAtaMembers;
+  const showWrappers = !me || me.showWrappers;
   const inServiceTracking = pathname.startsWith("/admin/service-tracking");
   const inCoursewareUsers = pathname.startsWith("/admin/courseware-users");
   const inAsgMembers = pathname.startsWith("/admin/asg-members");
   const inAsgDocuments = pathname.startsWith("/admin/asg-documents");
   const inAtaMembers = pathname.startsWith("/admin/ata-members");
+  const inWrappers = pathname.startsWith("/admin/wrappers");
 
   return (
     <>
@@ -474,6 +487,13 @@ export function AdminMobileBar() {
               href="/admin/asg-documents"
               active={inAsgDocuments}
               label="文档资料"
+            />
+          )}
+          {showWrappers && (
+            <MobilePill
+              href="/admin/wrappers"
+              active={inWrappers}
+              label="智能体包装"
             />
           )}
           {showAsgMembers && (

@@ -17,6 +17,7 @@ export async function GET() {
     showAsgMembers,
     showAsgDocuments,
     showAtaMembers,
+    showWrappers,
     showAdmins,
   } = deriveVisibleMenus(session);
 
@@ -55,6 +56,7 @@ export async function GET() {
     showAsgMembers,
     showAsgDocuments,
     showAtaMembers,
+    showWrappers,
     showAdmins,
   });
 }

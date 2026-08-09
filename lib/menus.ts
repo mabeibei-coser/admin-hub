@@ -16,7 +16,8 @@ export type ExtraMenuKey =
   | "courseware-users"
   | "asg-members"
   | "asg-documents"
-  | "ata-members";
+  | "ata-members"
+  | "wrappers";
 
 /** menus_json 里能存的所有 key 类型。"admins" 由 is_super 派生，不存这里。 */
 export type StoredMenuKey = "all" | ProjectId | ExtraMenuKey;
@@ -57,6 +58,11 @@ export const EXTRA_MENUS: ReadonlyArray<{
     key: "ata-members",
     label: "薪资查询用户",
     description: "薪酬域 VIP 会员与收款",
+  },
+  {
+    key: "wrappers",
+    label: "智能体包装",
+    description: "外部智能体链接包装管理",
   },
 ];
 
@@ -102,6 +108,7 @@ export function deriveVisibleMenus(s: {
   showAsgMembers: boolean;
   showAsgDocuments: boolean;
   showAtaMembers: boolean;
+  showWrappers: boolean;
   showAdmins: boolean;
 } {
   return {
@@ -114,6 +121,7 @@ export function deriveVisibleMenus(s: {
     showAsgMembers: canViewMenu(s, "asg-members"),
     showAsgDocuments: canViewMenu(s, "asg-documents"),
     showAtaMembers: canViewMenu(s, "ata-members"),
+    showWrappers: canViewMenu(s, "wrappers"),
     showAdmins: !!s.isSuper,
   };
 }
