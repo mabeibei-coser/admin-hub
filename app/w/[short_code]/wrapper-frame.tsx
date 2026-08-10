@@ -2,19 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-const COMPACT_DESIGN_WIDTH = 840;
-const WIDE_DESIGN_WIDTH = 1024;
 const TOP_MASK_HEIGHT = 54;
 const FOOTER_MASK_HEIGHT = 34;
-
-interface FrameMetrics {
-  ready: boolean;
-  scale: number;
-  shellWidth: number;
-  canvasWidth: number;
-  viewportHeight: number;
-  canvasHeight: number;
-}
 
 interface Props {
   sourceUrl: string;
@@ -22,50 +11,9 @@ interface Props {
   footerText: string;
 }
 
-const INITIAL_METRICS: FrameMetrics = {
-  ready: false,
-  scale: 1,
-  shellWidth: COMPACT_DESIGN_WIDTH,
-  canvasWidth: COMPACT_DESIGN_WIDTH,
-  viewportHeight: 720,
-  canvasHeight: 720,
-};
-
 export function WrapperFrame({ sourceUrl, title, footerText }: Props) {
-  const [metrics, setMetrics] = useState<FrameMetrics>(INITIAL_METRICS);
   const [loaded, setLoaded] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
-
-  useEffect(() => {
-    function measure() {
-      const viewportWidth = Math.max(1, document.documentElement.clientWidth);
-      const viewportHeight = Math.max(
-        1,
-        Math.round(window.visualViewport?.height ?? window.innerHeight),
-      );
-      const canvasWidth = viewportWidth >= WIDE_DESIGN_WIDTH
-        ? WIDE_DESIGN_WIDTH
-        : COMPACT_DESIGN_WIDTH;
-      const scale = Math.min(1, viewportWidth / canvasWidth);
-
-      setMetrics({
-        ready: true,
-        scale,
-        shellWidth: Math.round(canvasWidth * scale),
-        canvasWidth,
-        viewportHeight,
-        canvasHeight: Math.ceil(viewportHeight / scale),
-      });
-    }
-
-    measure();
-    window.addEventListener("resize", measure);
-    window.visualViewport?.addEventListener("resize", measure);
-    return () => {
-      window.removeEventListener("resize", measure);
-      window.visualViewport?.removeEventListener("resize", measure);
-    };
-  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setTimedOut(true), 15_000);
@@ -74,22 +22,8 @@ export function WrapperFrame({ sourceUrl, title, footerText }: Props) {
 
   return (
     <main className="wp-stage">
-      <div
-        className="wp-shell"
-        style={{
-          width: metrics.ready ? metrics.shellWidth : "100%",
-          height: metrics.viewportHeight,
-        }}
-      >
-        <div
-          className="wp-canvas"
-          style={{
-            width: metrics.canvasWidth,
-            height: metrics.canvasHeight,
-            transform: `scale(${metrics.scale})`,
-            visibility: metrics.ready ? "visible" : "hidden",
-          }}
-        >
+      <div className="wp-shell">
+        <div className="wp-canvas">
           <iframe
             className="wp-frame"
             src={sourceUrl}
@@ -107,7 +41,7 @@ export function WrapperFrame({ sourceUrl, title, footerText }: Props) {
           </footer>
         </div>
 
-        {(!metrics.ready || !loaded) && !timedOut && (
+        {!loaded && !timedOut && (
           <div className="wp-loading" role="status" aria-live="polite">
             正在打开智能体…
           </div>
@@ -137,13 +71,14 @@ export function WrapperFrame({ sourceUrl, title, footerText }: Props) {
         .wp-shell {
           position: relative;
           flex: none;
+          width: 100%;
+          height: 100%;
           overflow: hidden;
           background: #ffffff;
         }
         .wp-canvas {
           position: absolute;
-          inset: 0 auto auto 0;
-          transform-origin: top left;
+          inset: 0;
           background: #ffffff;
         }
         .wp-frame {
