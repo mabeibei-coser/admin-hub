@@ -73,3 +73,7 @@ shadcn 的 `components/ui/` 也各一份。
 ## 与全局规则的关系
 
 继承 `~/.Codex/AGENTS.md`（用户全局偏好）和 `D:\_workspace\01_项目-Coding\AGENTS.md`（Coding 项目 Karpathy 原则）。
+
+## 维护经验入口
+
+开工读取 [维护经验](docs/maintenance-experience.md)，命中后核对原始来源；结束按 [共用工具说明](../.gstack/maintenance/README.md) 实际执行 check/close。首次接入不代表历史已审。

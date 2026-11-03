@@ -151,3 +151,7 @@ admin-hub/
 1. nginx 注释掉 `/b100/` location，`nginx -s reload`
 2. pm2 停掉 admin-hub：`pm2 stop admin-hub`
 3. 完全撤回切割：在 career-report 仓 git revert `c1f4b17`（"切走管理后台"那个 commit）后重新部署 career-report
+
+## 维护经验
+
+见 [项目维护经验与问题索引](docs/maintenance-experience.md)，检查与收尾命令见 [共用维护说明](../.gstack/maintenance/README.md)。

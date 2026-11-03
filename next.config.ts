@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            value: "frame-src https://appcenter.bigmodel.cn; frame-ancestors 'self'",
+            value: "frame-src https:; frame-ancestors 'self'",
           },
           { key: "Referrer-Policy", value: "no-referrer" },
           { key: "X-Content-Type-Options", value: "nosniff" },

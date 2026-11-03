@@ -447,7 +447,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       </div>
       <div className="space-y-0.5 text-center">
         <p className="text-sm text-muted-foreground">还没有智能体包装</p>
-        <p className="text-xs text-muted-foreground">点「添加智能体」录入智谱分享链接，生成公开访问链接</p>
+        <p className="text-xs text-muted-foreground">点「添加智能体」录入智能体 HTTPS 链接，生成公开访问链接</p>
       </div>
       <button onClick={onAdd} className="mt-2 inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-md ring-1 ring-[var(--blue-200)] text-[var(--blue-700)] bg-[var(--blue-50)] hover:bg-[var(--blue-100)] transition-all duration-150">
         <Plus className="size-3" />添加智能体

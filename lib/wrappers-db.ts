@@ -21,7 +21,7 @@ export function findWrapperByShortCode(code: string): WrapperRow | undefined {
     .get(normalizeShortCode(code)) as WrapperRow | undefined;
 }
 
-/** 按 short_code 查找可公开展示的记录；旧数据或直接写库的非白名单网址一律拒绝 */
+/** 按 short_code 查找可公开展示的记录；旧数据或直接写库的网址仍须通过 HTTPS 安全校验 */
 export function findActiveWrapperByShortCode(code: string): WrapperRow | undefined {
   const row = findWrapperByShortCode(code);
   if (!row) return undefined;

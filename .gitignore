@@ -102,3 +102,6 @@ e2e/fixtures/.tmp-*
 body.html
 # 项目级别的实验目录（独立的本地工具，不属于 admin-hub 核心代码）
 admin-hub-course/
+
+# maintenance machine receipts
+.planning/_system/

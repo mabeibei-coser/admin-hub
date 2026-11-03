@@ -1,0 +1,17 @@
+{
+  "format": 1,
+  "project_id": "B100",
+  "case_prefix": "B100",
+  "document": "docs/maintenance-experience.md",
+  "source_roots": [
+    "app",
+    "components",
+    "lib",
+    "docs",
+    "tests",
+    "scripts",
+    ".planning"
+  ],
+  "daily_owner": "coding-maintenance-daily",
+  "enrolled_at": "2026-11-03T22:15:09.886994+08:00"
+}

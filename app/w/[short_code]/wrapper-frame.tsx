@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-const TOP_MASK_HEIGHT = 54;
-const FOOTER_MASK_HEIGHT = 34;
-
 interface Props {
   sourceUrl: string;
   title: string;
@@ -35,11 +32,10 @@ export function WrapperFrame({ sourceUrl, title, footerText }: Props) {
               setTimedOut(false);
             }}
           />
-          <div className="wp-top-mask" aria-hidden="true" />
-          <footer className="wp-footer-mask" title={footerText}>
-            <span>{footerText}</span>
-          </footer>
         </div>
+        <footer className="wp-footer" title={footerText}>
+          <span>{footerText}</span>
+        </footer>
 
         {!loaded && !timedOut && (
           <div className="wp-loading" role="status" aria-live="polite">
@@ -71,14 +67,16 @@ export function WrapperFrame({ sourceUrl, title, footerText }: Props) {
         .wp-shell {
           position: relative;
           flex: none;
+          display: flex;
+          flex-direction: column;
           width: 100%;
           height: 100%;
           overflow: hidden;
           background: #ffffff;
         }
         .wp-canvas {
-          position: absolute;
-          inset: 0;
+          flex: 1;
+          min-height: 0;
           background: #ffffff;
         }
         .wp-frame {
@@ -88,19 +86,10 @@ export function WrapperFrame({ sourceUrl, title, footerText }: Props) {
           border: 0;
           background: #ffffff;
         }
-        .wp-top-mask {
-          position: absolute;
-          z-index: 2;
-          inset: 0 0 auto;
-          height: ${TOP_MASK_HEIGHT}px;
-          background: #ffffff;
-        }
-        .wp-footer-mask {
-          position: absolute;
-          z-index: 2;
-          inset: auto 0 0;
+        .wp-footer {
+          flex: none;
           box-sizing: border-box;
-          height: ${FOOTER_MASK_HEIGHT}px;
+          height: 34px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -112,7 +101,7 @@ export function WrapperFrame({ sourceUrl, title, footerText }: Props) {
           font: 12px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           text-align: center;
         }
-        .wp-footer-mask span {
+        .wp-footer span {
           display: -webkit-box;
           overflow: hidden;
           -webkit-box-orient: vertical;

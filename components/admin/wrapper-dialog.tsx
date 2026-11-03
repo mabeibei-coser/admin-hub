@@ -234,14 +234,14 @@ export function WrapperDialog({ editing, onClose, onSaved }: Props) {
             <Input
               id="wrap-url"
               type="url"
-              placeholder="https://appcenter.bigmodel.cn/..."
+              placeholder="https://example.com/agent/..."
               value={sourceUrl}
               onChange={(e) => setSourceUrl(e.target.value)}
               style={{ fontSize: "16px" }}
             />
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <ExternalLink className="size-3" />
-              当前仅支持智谱 AppCenter 的智能体分享链接。
+              支持各平台的 HTTPS 智能体链接；目标平台需允许页面嵌入。
             </p>
           </div>
 
@@ -258,7 +258,7 @@ export function WrapperDialog({ editing, onClose, onSaved }: Props) {
               className="resize-none"
             />
             <p className="text-[11px] text-muted-foreground">
-              显示在包装页底部，最多 80 字、两行。
+              独立显示在页面底部，不遮挡智能体内容，最多 80 字、两行。
             </p>
           </div>
 

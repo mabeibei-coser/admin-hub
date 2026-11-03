@@ -68,16 +68,6 @@ export function validateSourceUrl(url: string): { ok: boolean; error?: string } 
     if (parsed.username || parsed.password) {
       return { ok: false, error: "原始网址不能包含账号或密码" };
     }
-    if (
-      parsed.origin !== "https://appcenter.bigmodel.cn" ||
-      parsed.pathname !== "/console/appcenter_v2/chat" ||
-      !parsed.searchParams.get("share_code")?.trim()
-    ) {
-      return {
-        ok: false,
-        error: "当前仅支持智谱 AppCenter 的智能体分享链接",
-      };
-    }
     return { ok: true };
   } catch {
     return { ok: false, error: "原始网址格式不正确" };

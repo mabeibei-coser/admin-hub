@@ -33,23 +33,25 @@ test("底部说明限制为包装页能容纳的两行短文案", () => {
   assert.equal(validateFooterText("a".repeat(81)).ok, false);
 });
 
-test("原始网址只接受智谱 AppCenter 智能体分享链接", () => {
-  assert.equal(
-    validateSourceUrl(
-      "https://appcenter.bigmodel.cn/console/appcenter_v2/chat?share_code=6KXIIP71l6aH2rTMa5hVJ",
-    ).ok,
-    true,
-  );
-
+test("原始网址接受各平台 HTTPS 链接，保留安全校验", () => {
   for (const url of [
-    "http://appcenter.bigmodel.cn/console/appcenter_v2/chat?share_code=x",
-    "https://evil.example/console/appcenter_v2/chat?share_code=x",
-    "https://appcenter.bigmodel.cn:444/console/appcenter_v2/chat?share_code=x",
-    "https://appcenter.bigmodel.cn/other?share_code=x",
-    "https://appcenter.bigmodel.cn/console/appcenter_v2/chat",
-    "https://user:pass@appcenter.bigmodel.cn/console/appcenter_v2/chat?share_code=x",
+    "https://appcenter.bigmodel.cn/console/appcenter_v2/chat?share_code=test",
+    "https://www.coze.cn/store/agent/example",
+    "https://chat.example.com/chat/agent#conversation",
+    "https://agent.example.com:8443/",
+    "https://appcenter.bigmodel.cn/other",
+  ]) {
+    assert.equal(validateSourceUrl(url).ok, true, url);
+    assert.equal(isWrapperPubliclyAccessible({ status: "active", source_url: url }), true);
+    assert.equal(isWrapperPubliclyAccessible({ status: "disabled", source_url: url }), false);
+  }
+  for (const url of [
+    "", "not-a-url", "http://example.com/agent", "javascript:alert(1)",
+    "data:text/html,hello", "ftp://example.com/agent",
+    "https://user:pass@example.com/agent", "https://user@example.com/agent",
   ]) {
     assert.equal(validateSourceUrl(url).ok, false, url);
+    assert.equal(isWrapperPubliclyAccessible({ status: "active", source_url: url }), false);
   }
 });
 
@@ -104,11 +106,11 @@ test("数据库约束拦截非法后缀，普通管理员 UPDATE 条件可执行
     assert.equal(foreignUpdate.changes, 0);
     assert.equal(foreignDisable.changes, 0);
 
-    insert.run("legacy-evil", "https://evil.example/agent", now, now);
+    insert.run("other-platform", "https://agent.example.com/agent", now, now);
     const legacyRow = db
       .prepare("SELECT status, source_url FROM wrappers WHERE short_code = ?")
-      .get("legacy-evil") as { status: string; source_url: string };
-    assert.equal(isWrapperPubliclyAccessible(legacyRow), false);
+      .get("other-platform") as { status: string; source_url: string };
+    assert.equal(isWrapperPubliclyAccessible(legacyRow), true);
     db.close();
   } finally {
     if (previousDbPath === undefined) delete process.env.DB_PATH;
